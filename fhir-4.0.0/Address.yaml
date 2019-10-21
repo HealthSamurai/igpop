@@ -1,0 +1,12 @@
+attrs:
+  use: {type: code, desc: home | work | temp | old | billing - purpose of this address}
+  city: {type: string, desc: 'Name of city, town etc.'}
+  type: {type: code, desc: postal | physical | both}
+  state: {type: string, desc: Sub-unit of country (abbreviations ok)}
+  line: {coll: true, type: string, desc: 'Street name, number, direction & P.O. Box etc.'}
+  id: {type: string, desc: Unique id for inter-element referencing}
+  postalCode: {type: string, desc: Postal code for area}
+  period: {type: Period, desc: Time period when address was/is in use}
+  country: {type: string, desc: Country (e.g. can be ISO 3166 2 or 3 letter code)}
+  district: {type: string, desc: District name (aka county)}
+  text: {type: string, desc: Text representation of the address}
