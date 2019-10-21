@@ -1,19 +1,8 @@
 # Lollipop is Sugar FHIR Profiling
 
-With this project we want to simplify definition of FHIR profiles
-with Data DSL, which can be maintained manually and pushed into source
-code repository. FHIR StructureDefinitions and other resources can be generated
-from this DSL. It should be DRY, Convetion Over Configuration and 100% pragmatic.
-
-IG generator is comming as part of this utils.
-
-
-### Features
-
-* in place extension and valueset definitions
-* validators in multiple languages 
-* first class extensiosn 
-
+* DRY FHIR profiles for hackers.
+* Convention over Configuration.
+* Generate FHIR StructureDefinition and ValueSets
 
 ### TODO
 
@@ -22,6 +11,40 @@ IG generator is comming as part of this utils.
 * best practice warnings
 * generate docs
 * generate validators
+
+## Convetions
+
+Profile file path defines resource type, id and url of profile
+
+Extensions attrs prefixed with +
+
+```
++race:
+  type: Coding
+  ....
+```
+
+
+Required elements are postifixed with `*``
+
+```
+status*: {}
+name*: {}
+```
+
+ValueSet binding with vse - extensible or vsr - required
+
+```
+gender: { vsr: fhir:administrative-gender }
++race:
+  attrs:
+    ombCategory: {vse: race-category }
+
+```
+
+Simplified slicing with `match` directive
+
+
 
 ## Basic structure
 
@@ -35,13 +58,9 @@ desc: |
   
 # constraint FHIR elements and define extensions
 attrs:
-  race:
-    ext: http://hl7.org/fhir/us/core/StructureDefinition/us-core-race
-    mustSupport: true
+  +race:
     desc: Patient race
-  ethnicity:
-    ext: http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity
-    mustSupport: true
+  +ethnicity:
     desc: Patient ethnicity
 
 
@@ -65,15 +84,11 @@ collection - this means `at least one element is present`.
 
 ```yaml
 attrs:
-  birthDate:
+  birthDate*:
     type: date
-    isRequired: true
-  name:
-    isRequired: true
-  identifier:
-    min: 1 # same as isRequired: true
-    max: 10 # constraint max number of identifiers - bad idea
-    isCollection: true
+  name*: {}
+  identifier*:
+    maxItems: 10 # constraint max number of identifiers - bad idea
 
 ```
 
@@ -83,8 +98,7 @@ Ruling out use of an element by setting its maximum cardinality to 0
 
 ```
 attrs:
-  animal:
-    dontUse: true
+  -animal: {}
 ```
 
 ### Documentation
