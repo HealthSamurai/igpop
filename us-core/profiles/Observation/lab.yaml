@@ -1,0 +1,28 @@
+desc: |
+ Laboratory results are grouped and summarized using the DiagnosticReport
+ resource which reference Observation resources. Each Observation resource
+ represents an individual laboratory test and result value, a “nested” panel
+ (such as a microbial susceptibility panel) which references other observations,
+ or rarely a laboratory test with component result values. This profile sets
+ minimum expectations for the Observation resource resource to record, search
+ and fetch laboratory test results associated with a patient. It identifies
+ which core elements, extensions, vocabularies and value sets SHALL be present
+ in the resource when using this profile.
+
+attrs:
+  status*: { vsr: 'fhir:observation-status' }
+  category*:
+    match:
+      coding:
+        - system: "http://terminology.hl7.org/CodeSystem/observation-category"
+          code: "laboratory"
+  code*: { vse: 'fhir:observation-codes' }
+  subject*: { refs: [ /Patient ]}
+  effective: { desc: Datetime must be at least to day }
+  value:
+    Quantity: { }
+    CodeableConcept: {}
+    integer: {}
+    Range: {}
+    Ratio: {}
+  dataAbsentReason: { vse: 'fhir:data-absent-reason' }

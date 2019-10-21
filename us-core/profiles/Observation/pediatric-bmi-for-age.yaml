@@ -1,0 +1,19 @@
+desc: |
+ This profile sets minimum expectations for the Observation resource to record,
+ search and fetch pediatric body mass index (BMI) per age and gender
+ observations associated with a patient. It is based on the FHIR Vital Signs
+ Profile and identifies the additional mandatory core elements, extensions,
+ vocabularies and value sets which SHALL be present in the Observation resource
+ when using this profile.
+
+attrs:
+  code*:
+    match:
+      system: http://loinc.org
+      code: 59576-9
+  value*:
+    Quantity:
+      value*: {}
+      unit*: {}
+      system*: { match: 'http://unitsofmeasure.org'}
+      code*:  { match: '%'}

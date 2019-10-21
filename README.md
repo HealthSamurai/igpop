@@ -133,3 +133,8 @@ Resource modification is not good!
 Providing more specific or additional mappings (e.g. to HL7 v2  or HL7 v3 ) 
 for the resource when used in a particular context
 
+
+## Notes
+
+* every listed element is mustSupport: true unless it's not
+* 

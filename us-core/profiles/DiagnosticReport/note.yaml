@@ -1,0 +1,22 @@
+desc: |
+  This profile sets minimum expectations for searching and fetching Diagnostic
+  Reports and Notes using the DiagnosticReport resource. This profile identifies
+  the mandatory core elements, extensions, vocabularies and value sets which
+  SHALL be present in the DiagnosticReport when using this profile.
+
+attrs: 
+  status*: {}
+  category*: {vsr: diagnosticreport-category}
+  code*: {vse: report-code}
+  subject*:
+    refs: [ /Patient ]
+  encounter:
+    refs: [ /Encounter ]
+  effective*:
+    desc: Time of the report or note
+    union: [dateTime, Period]
+  issued: {}
+  performer:
+    refs: [ /Practitioner /Organization]
+  media: {}
+  presentedForm: {}

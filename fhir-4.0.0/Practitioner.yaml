@@ -1,0 +1,25 @@
+attrs:
+  address: {coll: true, type: Address, desc: Address(es) of the practitioner that are not role specific (typically home address)}
+  meta: {type: Meta, desc: Metadata about the resource}
+  name: {coll: true, type: HumanName, desc: The name(s) associated with the practitioner}
+  implicitRules: {type: uri, desc: A set of rules under which this content was created}
+  birthDate: {type: date, desc: The date  on which the practitioner was born}
+  contained: {coll: true, type: Resource, desc: 'Contained, inline Resources'}
+  photo: {coll: true, type: Attachment, desc: Image of the person}
+  language: {type: code, desc: Language of the resource content}
+  active: {type: boolean, desc: Whether this practitioner's record is in active use}
+  communication: {coll: true, type: CodeableConcept, desc: A language the practitioner can use in patient communication}
+  id: {type: id, desc: Logical id of this artifact}
+  identifier: {coll: true, type: Identifier, desc: An identifier for the person as this agent}
+  qualification:
+    coll: true
+    desc: Certification, licenses, or training pertaining to the provision of care
+    attrs:
+      code: {req: true, type: CodeableConcept, desc: Coded representation of the qualification}
+      id: {type: string, desc: Unique id for inter-element referencing}
+      identifier: {coll: true, type: Identifier, desc: An identifier for this qualification for the practitioner}
+      issuer: {type: Reference, desc: Organization that regulates and issues the qualification}
+      period: {type: Period, desc: Period during which the qualification is valid}
+  telecom: {coll: true, type: ContactPoint, desc: A contact detail for the practitioner (that apply to all roles)}
+  gender: {type: code, desc: male | female | other | unknown}
+  text: {type: Narrative, desc: 'Text summary of the resource, for human interpretation'}

@@ -1,0 +1,19 @@
+oid: 2.16.840.1.113883.4.642.2.575
+system:  urn:oid:2.16.840.1.113883.6.238
+concepts:
+- code: '1002-5'
+  display: American Indian or Alaska Native
+- code: '028-9'
+  display: Asian
+- code: '054-5'
+  display: Black or African American	
+- code: '076-8'
+  display: Native Hawaiian or Other Pacific Islander
+- code: 106-3
+  display: White
+- code: UNK
+  system: http://terminology.hl7.org/CodeSystem/v3-NullFlavor
+  display: Unknown
+- code: ASKU
+  system: http://terminology.hl7.org/CodeSystem/v3-NullFlavor
+  display: Asked but no answer

@@ -1,0 +1,23 @@
+desc: |
+  This profile sets minimum expectations for the Organization resource to
+  searching for and fetching a Organization associated with a patient or
+  provider. It identifies which core elements, extensions, vocabularies and
+  value sets SHALL be present in the resource when using this profile.
+
+attrs:
+  identifier*:
+    desc: Must have an identifier (e.g. NPI)
+    attrs:
+      system*: {}
+      value*: {}
+  active*: {}
+  name*: {}
+  telecom*: {}
+  address*:
+    attrs:
+      line: { maxItems: 4 }
+      city: {}
+      state: { vsr: usps-state }
+      postalCode: { desc: 'US Zip Codes' }
+      country: {}
+  endpoint: {}

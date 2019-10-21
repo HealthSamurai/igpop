@@ -1,0 +1,63 @@
+desc: 
+  This profile sets minimum expectations for the CarePlan resource to record
+  search and fetch assessment and plan of treatment data associated with a patient.
+  It identifies which core elements, extensions, vocabularies and value sets
+  SHALL be present in the resource when using this profile.
+attrs:
+  subject:
+    req: true
+    refers:
+      - resourceType: Patient
+        profile: us-core
+  text:
+    attrs:
+      status:
+        req: true
+        vs:
+          url: us-core:us-core-narrative-status
+          concepts:
+           - code: additional
+             display: additional
+             definition: The contents of the narrative may contain additional information not found in the structured data. Note that there is no computable way to determine what the extra information is, other than by human inspection.
+           - code: generated
+             display: generated
+             definition: The contents of the narrative are entirely generated from the core elements in the content.
+  status:
+    req: true
+    type: code
+    vs:
+      url: fhir:request-status
+    concepts:
+     - code: draft
+       display: Draft
+     - code: active
+       display: Active
+     - code: on-hold
+       display: On Hold
+     - code: revoked
+       display: Revoked
+     - code: completed
+       display: Completed
+     - code: entered-in-error
+       display: Entered In Error
+     - code: unknown
+       display: Unknown
+  intent:
+    req: true
+    vs:
+      url:  fhir:care-plan-intent
+  category:
+    coll: true
+    contains:
+      coding:
+        - system: "http://hl7.org/fhir/us/core/CodeSystem/careplan-category"
+          code: assess-plan
+api:
+  search:
+    params:
+      patient:
+        req: true
+      category:
+        req: true
+      date:
+        req: true

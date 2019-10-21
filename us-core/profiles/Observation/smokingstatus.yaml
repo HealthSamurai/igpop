@@ -1,0 +1,26 @@
+desc: |
+  This profile sets minimum expectations for the Observation resource to record,
+  search and fetch smoking status data associated with a patient. It identifies
+  which core elements, extensions, vocabularies and value sets SHALL be present
+  in the resource when using this profile.
+
+attrs:
+  status*:
+    vs:
+      id: observation-smoking-status-status 
+      concepts:
+        - code: final
+          display: Final
+        - code: entered-in-error
+          display: Entered in Error
+  code*:
+    vs:
+      id: smoking-status-observation-codes
+      concepts:
+        - code: 72166-2
+          system: http://loinc.org
+          display: Tobacco smoking status NHIS
+  subject*: { refs: [ /Patient ]}
+  issued*: {}
+  value*:
+    CodeableConcept: { vse: observation-smokingstatus }
