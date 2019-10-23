@@ -1,0 +1,14 @@
+description: 'Base StructureDefinition for Narrative Type: A human-readable summary of the resource conveying the essential clinical and business information for the resource.'
+elements::
+  id:
+    description: Unique id for inter-element referencing
+    type: string
+  status:
+    description: generated | extensions | additional | empty
+    required: true
+    type: code
+    valueset: {id: 'http://hl7.org/fhir/ValueSet/narrative-status|4.0.0', strength: required}
+  div:
+    description: Limited xhtml content
+    required: true
+    type: xhtml

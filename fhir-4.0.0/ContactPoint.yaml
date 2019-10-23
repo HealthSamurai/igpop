@@ -1,7 +1,0 @@
-attrs:
-  id: {type: string, desc: Unique id for inter-element referencing}
-  period: {type: Period, desc: Time period when the contact point was/is in use}
-  rank: {type: positiveInt, desc: Specify preferred order of use (1 = highest)}
-  system: {type: code, desc: phone | fax | email | pager | url | sms | other}
-  use: {type: code, desc: home | work | temp | old | mobile - purpose of this contact point}
-  value: {type: string, desc: The actual contact point details}

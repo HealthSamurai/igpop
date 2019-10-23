@@ -1,49 +1,36 @@
-# Lollipop is Sugar FHIR Profiling
+# igpop is Sugar FHIR Profiling
 
-DRY FHIR profiling for hackers.
+DRY FHIR profiling for programming humans
 
-* Convention over Configuration.
+* 80/20 of profiling
+* convention over configuration
 * to be manually written
 * Data DSL - no grammars and parsers
 
 ### Features
 
-* generate StructureDefinition, ValueSets etc
-* generate IG
-* validate profiles
+* generate FHIR StructureDefinition, ValueSets etc
+* generate IG static site
+* generate json schema
 * linter for profiles
 
-## Project Structure 
+## New Project
 
-
-DRY: File path defines resource type, id and url of profile.
-If in index.yaml we have `id: us-core`
-
-Profile in pr/Patient.yaml has id = us-core-patient
-VavlueSet in vs/race.yaml has id = us-core-valueset-race.yaml
-
+Install igpop util and start your project
 
 ```
-us-core/
-  core.yaml # package metadata
-  Patient/
-    attrs.yaml # basic profile for Patient
-    vs/ # patient specific valusets
-      race.yaml
-      race.concepts.ndjson
-  Practitioner.yaml # basic for practitioner
-  Observation/
-    lab.yaml # lab profile for Observation 
-    smoking-status/
-      core.yaml # another observation profile 
-      vs/status-status.yaml
-      ex/sm-1.yaml # example for observation
-  vs/ # value sets
-    shared.yaml
-
-deps/ # dependencies
-  fhir/vs/administrative-gender.yaml
-
+src/
+  Patient.yaml <- basic profile for Patient
+  Observation.smoking-status.yaml <- smoking status profile for Observation
+  valuset.smoking-status.yaml <- valuset for smoking status
+  ...
+build/
+  fhir/ <- SD, VS etc
+  json-schema/ <- json-schema
+  igpop/ <- igpop build
+  site/  <- static site
+IG.yaml <- manifest file
+package.json
 ```
 
 

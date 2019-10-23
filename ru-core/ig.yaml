@@ -1,0 +1,5 @@
+id: ru-core
+url: https://fhir.ru
+description: RU-Core Руководство для разработчиков
+deps:
+  fhir: ../fhir/4.0.0

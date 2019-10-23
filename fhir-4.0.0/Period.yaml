@@ -1,4 +1,0 @@
-attrs:
-  end: {type: dateTime, desc: 'End time with inclusive boundary, if not ongoing'}
-  id: {type: string, desc: Unique id for inter-element referencing}
-  start: {type: dateTime, desc: Starting time with inclusive boundary}

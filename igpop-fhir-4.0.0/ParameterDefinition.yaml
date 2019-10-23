@@ -1,0 +1,30 @@
+description: 'Base StructureDefinition for ParameterDefinition Type: The parameters to the module. This collection specifies both the input and output parameters. Input parameters are provided by the caller as part of the $evaluate operation. Output parameters are included in the GuidanceResponse.'
+elements::
+  id:
+    description: Unique id for inter-element referencing
+    type: string
+  name:
+    description: Name used to access the parameter value
+    type: code
+  use:
+    description: in | out
+    required: true
+    type: code
+    valueset: {id: 'http://hl7.org/fhir/ValueSet/operation-parameter-use|4.0.0', strength: required}
+  min:
+    description: Minimum cardinality
+    type: integer
+  max:
+    description: Maximum cardinality (a number of *)
+    type: string
+  documentation:
+    description: A brief description of the parameter
+    type: string
+  type:
+    description: What type of value
+    required: true
+    type: code
+    valueset: {id: 'http://hl7.org/fhir/ValueSet/all-types|4.0.0', strength: required}
+  profile:
+    description: What profile the value is expected to be
+    type: canonical

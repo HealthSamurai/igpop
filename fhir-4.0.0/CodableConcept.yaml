@@ -1,4 +1,0 @@
-attrs:
-  coding: {coll: true, type: Coding, desc: Code defined by a terminology system}
-  id: {type: string, desc: Unique id for inter-element referencing}
-  text: {type: string, desc: Plain text representation of the concept}
