@@ -4,23 +4,28 @@ desc: |
   which core elements, extensions, vocabularies and value sets SHALL be present
   in the resource when using this profile.
 
-attrs:
-  status*:
-    vs:
+elements:
+  status:
+    req: true
+    valueset:
       id: observation-smoking-status-status 
+      system: ???
       concepts:
         - code: final
           display: Final
         - code: entered-in-error
           display: Entered in Error
-  code*:
-    vs:
+  code:
+    req: true
+    valueset:
       id: smoking-status-observation-codes
       concepts:
         - code: 72166-2
           system: http://loinc.org
           display: Tobacco smoking status NHIS
-  subject*: { refs: [ /Patient ]}
-  issued*: {}
-  value*:
-    CodeableConcept: { vse: observation-smokingstatus }
+  subject: { req: true, refs: [ /Patient ]}
+  issued: { req: true}
+  value:
+    req: true
+    CodeableConcept:
+      valueset: {id: observation-smokingstatus}

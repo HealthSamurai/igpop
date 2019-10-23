@@ -1,0 +1,18 @@
+search:
+  req: true
+  params:
+    _id: {req: true}
+    identifier: {req: true}
+    name: {req: true}
+    family: {}
+    birthDate: {req: true}
+    gender: {req: true}
+  combo:
+    - params: [name, birthDate]
+      req: true
+    - params: [gender, birthDate]
+      req: true
+    - params: [birthDate, family]
+    - params: [family, gender]
+read:
+  req: true

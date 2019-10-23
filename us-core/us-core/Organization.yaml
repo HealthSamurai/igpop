@@ -4,20 +4,25 @@ desc: |
   provider. It identifies which core elements, extensions, vocabularies and
   value sets SHALL be present in the resource when using this profile.
 
-attrs:
-  identifier*:
+elements:
+  identifier[]:
+    minItems: 1
     desc: Must have an identifier (e.g. NPI)
-    attrs:
-      system*: {}
-      value*: {}
-  active*: {}
-  name*: {}
-  telecom*: {}
-  address*:
-    attrs:
+    elements:
+      system: { req: true }
+      value: { req: true }
+  active: { req: true }
+  name: { req: true }
+  telecom[]:
+  address[]:
+    elements:
       line: { maxItems: 4 }
       city: {}
-      state: { vsr: usps-state }
+      state: { valueset: {id: usps-state } }
       postalCode: { desc: 'US Zip Codes' }
       country: {}
-  endpoint: {}
+  endpoint[]: {}
+
+examples:
+  org-1:
+    name: 'Hospital 1'

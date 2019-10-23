@@ -4,20 +4,20 @@ desc: |
  It identifies which core elements, extensions, vocabularies and value sets
  SHALL be present in the resource when using this profile.
 
-attrs:
-  identifier:
+elements:
+  identifier[]:
     slice:
       npi:
-        match: {system: 'http://hl7.org/fhir/sid/us-npi'}
+        match: { system: 'http://hl7.org/fhir/sid/us-npi' }
         desc: National Provider Identifier (NPI)
-        attrs:
-          value*: {}
-  name*:
-    attrs:
-      family*: {}
+        elements: { value: { req: true } }
+  name[]:
+    minItems: 1
+    elements:
+      family[]: { minItems: 1 }
 
 api:
   search:
     params:
-      name: {}
-      identifier: {}
+      name:
+      identifier:

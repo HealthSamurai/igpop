@@ -1,0 +1,54 @@
+description: Базовый Профайл для Пациента
+
+elements:
+  id: {}
+  identifier[]:
+    minItems: 1
+    descrption: Идентификаторы пациента такие как паспорт, СНИЛС и т.д.
+    elements:
+      system:
+        description: Тип документа/идентификатора
+        required: true
+        valueset:
+          id: patient-identity
+          strength: extensible
+          concepts:
+          - code: urn:identity:snils
+          - code: urn:identity:insurance-gov
+          - code: urn:identity:passport-rf
+          - code: urn:identity:birth-certificate
+          - code: urn:identity:passport-ussr
+          - code: urn:identity:insurance-gov-legacy
+          - code: urn:identity:insurance-gov-temporary
+  name[]:
+    descrption: Имена пациента
+    minItems: 1
+    elements:
+      given[]:
+        descrption: Имя и Отчество пациента. Первым должно идти Имя, вторым Отчество
+      family:
+        descrption: Фамилия пациента
+  gender:
+    valueset:
+      id: fhir:administrative-gender
+      concepts:
+        - code: male
+          display: Мужчина
+        - code: female
+          display: Женщина
+  address[]:
+    descrption: Адресса пациента
+    elements:
+      line[]:
+      city:
+
+examples:
+  pt-1:
+    identifier:
+    - system: urn:identity:snils
+      value: '2484334554'
+    name:
+      - family: Иванов
+        given: ['Антон', 'Альбертович']
+    gender: male
+    birthDate: 1976-02-04

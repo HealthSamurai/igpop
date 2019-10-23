@@ -3,18 +3,15 @@ desc:
   search and fetch assessment and plan of treatment data associated with a patient.
   It identifies which core elements, extensions, vocabularies and value sets
   SHALL be present in the resource when using this profile.
-attrs:
-  subject:
-    req: true
-    refers:
-      - resourceType: Patient
-        profile: us-core
+
+elements:
+  subject: { req: true, refs: [ ./Patient ] } 
   text:
-    attrs:
+    elements:
       status:
         req: true
-        vs:
-          url: us-core:us-core-narrative-status
+        valueset:
+          id: narrative-status
           concepts:
            - code: additional
              display: additional
@@ -25,39 +22,15 @@ attrs:
   status:
     req: true
     type: code
-    vs:
-      url: fhir:request-status
-    concepts:
-     - code: draft
-       display: Draft
-     - code: active
-       display: Active
-     - code: on-hold
-       display: On Hold
-     - code: revoked
-       display: Revoked
-     - code: completed
-       display: Completed
-     - code: entered-in-error
-       display: Entered In Error
-     - code: unknown
-       display: Unknown
+    valuset: { id: 'fhir:request-status' }
   intent:
     req: true
-    vs:
-      url:  fhir:care-plan-intent
-  category:
-    coll: true
-    contains:
-      coding:
-        - system: "http://hl7.org/fhir/us/core/CodeSystem/careplan-category"
-          code: assess-plan
+    valuset: { id: 'fhir:care-plan-intent' } 
+  category[]:
+    contains: { coding: [{ system: "http://hl7.org/fhir/us/core/CodeSystem/careplan-category", code: assess-plan }] }
 api:
   search:
     params:
-      patient:
-        req: true
-      category:
-        req: true
-      date:
-        req: true
+      patient: {req: true}
+      category: {req: true}
+      date: {req: true}

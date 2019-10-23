@@ -7,22 +7,22 @@ desc: |
 attrs:
   identifier:
     attrs:
-      system*: {}
-      value*: {}
-  status*: {}
-  class*: {}
-  type*: { vse: encounter-type }
-  subject: { refs: [ ./Patient ] }
+      system*:
+      value*:
+  status*:
+  class*:
+  type*: { codes: encounter-type }
+  subject: { refs: [ /Patient ] }
   participant:
     attrs:
-      type: {}
-      period: {}
-      indifidual: { refs: [ ./Practitioner ]}
-  period: {}
-  reasonCode: {}
+      type:
+      period:
+      indifidual: { refs: [ /Practitioner ]}
+  period:
+  reasonCode:
   hospitalization:
     attrs:
-      dischargeDisposition: {}
+      dischargeDisposition:
   location:
     attrs:
-      location*: { refs: [ ./Location ]}
+      location*: { refs: [ /Location ]}

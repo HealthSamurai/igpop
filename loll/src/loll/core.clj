@@ -38,6 +38,13 @@
 (defn validate [ctx schema resource]
   (dissoc (validate-impl ctx {:path []} schema resource) :path))
 
+(clj-yaml.core/parse-string "
+
+attrs:
+ do[]: {}
+
+")
+
 
 
 

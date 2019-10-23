@@ -9,20 +9,26 @@ desc: |
  which core elements, extensions, vocabularies and value sets SHALL be present
  in the resource when using this profile.
 
-attrs:
-  status*: { vsr: 'fhir:observation-status' }
-  category*:
-    match:
-      coding:
-        - system: "http://terminology.hl7.org/CodeSystem/observation-category"
-          code: "laboratory"
-  code*: { vse: 'fhir:observation-codes' }
-  subject*: { refs: [ /Patient ]}
+elements:
+  status: { req: true, valueset: { id: 'fhir:observation-status' } }
+  category[]:
+    req: true
+    contains: { coding: [{system: "http://terminology.hl7.org/CodeSystem/observation-category", code: "laboratory"}] }
+  code: { req: true, valueset:  {id: 'fhir:observation-codes'}}
+  subject: { req: true,  refs: [ /Patient ]}
   effective: { desc: Datetime must be at least to day }
   value:
-    Quantity: { }
-    CodeableConcept: {}
-    integer: {}
-    Range: {}
-    Ratio: {}
-  dataAbsentReason: { vse: 'fhir:data-absent-reason' }
+    Quantity:
+    CodeableConcept:
+    integer:
+    Range:
+    Ratio:
+  dataAbsentReason: { valueset: { id: 'fhir:data-absent-reason' }}
+
+example:
+  obs-1:
+    category:
+    - { coding: [{ system: "http://terminology.hl7.org/CodeSystem/observation-category", code: "laboratory"}] }
+    code: {code: '????'}
+    subject: { reference: 'Patient/pt-1'}
+    valueInteger: 5

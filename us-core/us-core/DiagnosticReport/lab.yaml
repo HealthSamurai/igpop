@@ -12,19 +12,23 @@ desc: |
 
 rule:
   oneof: [result, presentedForm]
-attrs: 
-  status*:
-    vsr: 'fhir:diagnostic-report-status'
+elements: 
+  status:
+    req: true
+    valuset: {id: 'fhir:diagnostic-report-status'}
   category:
-    vse: diagnosticreport-category
-  code*:
-    vse: diagnosticreport-report-and-note-codes
-  subject*:
+    valuset: diagnosticreport-category
+  code:
+    required: true
+    valuset: {id: 'diagnosticreport-report-and-note-codes'}
+  subject:
+    req: true
     refs: [ ./Patient ]
-  effective*:
+  effective:
+    req: true
     desc: Specimen Collection Datetime or Period
     union: [dateTime, Period]
-  issued*: {}
+  issued: { req: true }
   result:
     refs: [ ./Observation ]
   presentedForm: {}

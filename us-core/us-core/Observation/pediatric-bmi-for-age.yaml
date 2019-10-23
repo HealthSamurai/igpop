@@ -6,14 +6,14 @@ desc: |
  vocabularies and value sets which SHALL be present in the Observation resource
  when using this profile.
 
-attrs:
-  code*:
-    match:
-      system: http://loinc.org
-      code: 59576-9
-  value*:
+elements:
+  code:
+    req: true
+    match: { system: 'http://loinc.org', code: '59576-9' } 
+  value:
+    req: true
     Quantity:
-      value*: {}
-      unit*: {}
-      system*: { match: 'http://unitsofmeasure.org'}
-      code*:  { match: '%'}
+      value: { req: true}
+      unit: {req: true}
+      system: { const: 'http://unitsofmeasure.org'}
+      code:  { const: '%'}

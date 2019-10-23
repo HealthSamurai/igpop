@@ -1,0 +1,17 @@
+desc: ...
+system: ???
+concepts:
+- code: draft
+  display: Draft
+- code: active
+  display: Active
+- code: on-hold
+  display: On Hold
+- code: revoked
+  display: Revoked
+- code: completed
+  display: Completed
+- code: entered-in-error
+  display: Entered In Error
+- code: unknown
+  display: Unknown

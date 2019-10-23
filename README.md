@@ -1,154 +1,124 @@
 # Lollipop is Sugar FHIR Profiling
 
-* DRY FHIR profiles for hackers.
+DRY FHIR profiling for hackers.
+
 * Convention over Configuration.
-* Generate FHIR StructureDefinition and ValueSets
+* to be manually written
+* Data DSL - no grammars and parsers
 
-### TODO
+### Features
 
-* generate FHIR profiles
+* generate StructureDefinition, ValueSets etc
+* generate IG
 * validate profiles
-* best practice warnings
-* generate docs
-* generate validators
+* linter for profiles
 
-## Convetions
+## Project Structure 
 
-Profile file path defines resource type, id and url of profile
 
-Extensions attrs prefixed with +
+DRY: File path defines resource type, id and url of profile.
+If in index.yaml we have `id: us-core`
+
+Profile in pr/Patient.yaml has id = us-core-patient
+VavlueSet in vs/race.yaml has id = us-core-valueset-race.yaml
+
 
 ```
-+race:
-  type: Coding
-  ....
+us-core/
+  core.yaml # package metadata
+  Patient/
+    attrs.yaml # basic profile for Patient
+    vs/ # patient specific valusets
+      race.yaml
+      race.concepts.ndjson
+  Practitioner.yaml # basic for practitioner
+  Observation/
+    lab.yaml # lab profile for Observation 
+    smoking-status/
+      core.yaml # another observation profile 
+      vs/status-status.yaml
+      ex/sm-1.yaml # example for observation
+  vs/ # value sets
+    shared.yaml
+
+deps/ # dependencies
+  fhir/vs/administrative-gender.yaml
+
 ```
-
-
-Required elements are postifixed with `*``
-
-```
-status*: {}
-name*: {}
-```
-
-ValueSet binding with vse - extensible or vsr - required
-
-```
-gender: { vsr: fhir:administrative-gender }
-+race:
-  attrs:
-    ombCategory: {vse: race-category }
-
-```
-
-Simplified slicing with `match` directive
-
 
 
 ## Basic structure
 
 Profile definition is a yaml document. 
+It consist of keys with it's onw semantic
+
+* desc - description
+* elements - list of elements
+* api - API profiling
+* example - collection of examples
+
+
+File: us-core/Patient.yaml defines us-core-patient basic profile
 
 ```yaml
-id: us-core-patient
-resourceType: Patient
-desc: |
+description: |
   Information about an individual or animal receiving health care services
   
 # constraint FHIR elements and define extensions
-attrs:
-  +race:
-    desc: Patient race
-  +ethnicity:
-    desc: Patient ethnicity
+elements: ...
 
+# REST API definition
+api: ...
 
+# collection of examples
+examples: ...
 ```
 
 
-## Profiling
+### desc
+
+Text notes about profile or element. Can be in markdown format.
+
+### elements
+
+Key-Value object which defines or constraint elements.
+
+Collection elements are posfixed with `[]`.
+
+Complex elements can have nested `elements` definitions.
 
 
+Each element can have keys:
 
-### Changing Cardinality
+* description - description
+* type - primitive or complex type name
+* required - make element required
+* maxItems & minItems - constraints for collection 
+* valuset - binding to valueset
+* contains - rule wich check inclusion of pattern in collection
+* match - rule wich check inclusion of pattern
+* elements - nested elements for complex elements
 
-Restricting the cardinality of the element; e.g. the base might allow 0..*,
-and a particular application might support 1..2
-
-To overcome XML legacy in FHIR we took more JSON oriented view of FHIR resources
-and distinguish collections from singular elements. So we use `isRequired` to mark singular
-elements required (i.e. 1..1 in FHIR). We use `min/max` to constraint collections. If `isRequired` is set on
-collection - this means `at least one element is present`.
-
+Example:
 
 ```yaml
-attrs:
-  birthDate*:
-    type: date
-  name*: {}
-  identifier*:
-    maxItems: 10 # constraint max number of identifiers - bad idea
+id: Patient
+description: Basic FHIR Patient Profile
+elements:
+  identifier[]:
+    minItems: 1
+    elements:
+      value: { required: true }
+      system:
+        valueset:
+          id: patient-systems
+          concepts:
+          - {code: 'ssn'}
+          - {code: 'driver-license}
+  name[]:
+    minItems: 1
+    elements:
+      family: { required: true }
+      given[]: { minItems: 1 }
 
 ```
-
-### Turn of element
-
-Ruling out use of an element by setting its maximum cardinality to 0
-
-```
-attrs:
-  -animal: {}
-```
-
-### Documentation
-
-Providing refined definitions, comments/usage notes and examples for the elements 
-defined in a Resource to reflect the usage of the element within the context of the Profile
-
-### Define must-support
-
-Declaring that one or more elements in the structure must be 'supported' (see below)
-
-
-
-### FHIRPath constraints + simplified dsl rules
-
-Making additional constraints on the content of nested elements within the resource 
-(expressed as XPath statements)
-
-Add FHIRPath invariants
-
-
-### Union Types
-
-Restricting the types for an element that allows multiple types
-
-### Typed Reference
-
-Requiring a typed element or the target of a resource reference to conform to 
-another structure profile (declared in the same profile, or elsewhere)
-
-### ValueSet binding
-
-Specifying a binding to a different terminology value set (see below)
-
-
-### [-] Default Value
-
-Restricting the contents of an element to a single fixed value
-
-Implicit logic is not good! 
-Resource modification is not good!
-
-
-### [-] Mapping to other standards
-
-Providing more specific or additional mappings (e.g. to HL7 v2  or HL7 v3 ) 
-for the resource when used in a particular context
-
-
-## Notes
-
-* every listed element is mustSupport: true unless it's not
-* 

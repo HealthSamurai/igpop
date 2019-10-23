@@ -5,18 +5,14 @@ desc: |
   which SHALL be present in the AllergyIntolerance resource when using this profile.
 
 
-attrs:
+elements:
   code:
     req: true
-    vs:
-      url: us-core:us-core-allergy-substance
-      from:
-        open: true
-        file: AllergyIntolerance/us-core-allergy-substance
+    valueset: { id: 'allergy-substance' }
   clinicalStatus:
     desc: active | inactive | resolved
-    vs:
-      url: fhir:allergyintolerance-clinical
+    valueset:
+      id: 'fhir:allergyintolerance-clinical'
       system: us-core:us-core-allergy-substance
       concepts:
         - code: active
@@ -31,8 +27,7 @@ attrs:
           definition: A reaction to the identified substance has been clinically reassessed by testing or re-exposure and is considered no longer to be present. Re-exposure could be accidental, unplanned, or outside of any clinical setting.	~resolved
   verificationStatus:
     desc: unconfirmed | confirmed | refuted | entered-in-error
-    vs:
-      url: fhir:allergyintolerance-verification
+    valueset: { id: 'fhir:allergyintolerance-verification' }
   patient:
     req: true
     refers:
