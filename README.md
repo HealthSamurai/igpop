@@ -6,6 +6,8 @@ DRY FHIR profiling for programming humans
 * convention over configuration
 * to be manually written
 * Data DSL - no grammars and parsers
+* inline extensions
+* inline valuesets
 
 ### Features
 
@@ -29,49 +31,39 @@ build/
   json-schema/ <- json-schema
   igpop/ <- igpop build
   site/  <- static site
-IG.yaml <- manifest file
+ig.yaml <- manifest file
 package.json
 ```
 
 
-## Basic structure
+## Profiles
 
-Profile definition is a yaml document. 
-It consist of keys with it's onw semantic
+You create basic profile for resource type by 
+creating `src/<resource-type>.yaml` file.
 
-* desc - description
-* elements - list of elements
-* api - API profiling
-* example - collection of examples
+For example `src/Patient.yaml` is your basic Patient.
+Id and url for generated structure definition will be deduced
+from ig.yaml id and url by convetion.
 
-
-File: us-core/Patient.yaml defines us-core-patient basic profile
+Basic structure of your profile is:
 
 ```yaml
-description: |
-  Information about an individual or animal receiving health care services
+# profile description
+description: ...
   
-# constraint FHIR elements and define extensions
+# constraints & extensions definitions
 elements: ...
 
-# REST API definition
+# REST API definitions
 api: ...
 
-# collection of examples
+# Examples section
 examples: ...
 ```
 
-
-### desc
-
-Text notes about profile or element. Can be in markdown format.
-
 ### elements
 
-Key-Value object which defines or constraint elements.
-
-Collection elements are posfixed with `[]`.
-
+Object which defines element selectors to put constraints or define extensions.
 Complex elements can have nested `elements` definitions.
 
 
@@ -79,33 +71,55 @@ Each element can have keys:
 
 * description - description
 * type - primitive or complex type name
-* required - make element required
-* maxItems & minItems - constraints for collection 
 * valuset - binding to valueset
-* contains - rule wich check inclusion of pattern in collection
-* match - rule wich check inclusion of pattern
 * elements - nested elements for complex elements
+* constant - check for equality
+* Collections:
+  * maxItems & minItems - constraints for collection 
+  * contains - rule wich check inclusion of pattern in collection
+* Single elements
+  * required - make element required
+  * match - rule wich check inclusion of pattern
 
-Example:
+Example src/Patient.yaml:
 
 ```yaml
-id: Patient
-description: Basic FHIR Patient Profile
+description: My Basic Patient Profile
 elements:
-  identifier[]:
+  identifier: # []
+    # require at least one element in collection
     minItems: 1
     elements:
+      # require value in identifier
       value: { required: true }
       system:
+        required: true
+        # define binding and inline definition for valuset
         valueset:
           id: patient-systems
+          strength: extensible
+          system: local
           concepts:
           - {code: 'ssn'}
           - {code: 'driver-license}
-  name[]:
+  name:
     minItems: 1
     elements:
       family: { required: true }
-      given[]: { minItems: 1 }
+      given:  { minItems: 1 }
+  # if element listed without attributes - that means 'mustSupport' will be added
+  birthDate: {}
 
 ```
+
+## Constraint cardinality
+
+igpop distinguishes collections and singular elements.
+
+## Define ValueSet bindings
+
+## Constant checks
+
+## Slicing
+
+## Define extensions 

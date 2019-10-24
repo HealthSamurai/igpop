@@ -1,50 +1,40 @@
 (ns igpop.core
   (:require [clj-yaml.core :as yaml]
             [clojure.java.io :as io]
-            [clojure.set]))
+            [clojure.set])
+  (:gen-class))
 
-(defn basic-schema []
-  (yaml/parse-string
-   (slurp (.getPath (io/resource "loll/schema.yaml")))
-   :keywords true))
+(defmulti run (fn [nm & args] (keyword nm)))
 
-(defmacro reduce-with [acc coll f]
-  `(reduce ~f ~acc ~coll))
+(def commands
+  {"help"     {:fn :help}
+   "validate" {:fn :validate}
+   "build"    {:fn :build}})
 
-(defn add-error
-  ([v-ctx msg]
-   (update v-ctx :errors conj {:path (:path v-ctx) :message msg}))
-  ([v-ctx k msg]
-   (update v-ctx :errors conj {:path (conj (:path v-ctx) k) :message msg})))
+(defmethod run
+  :help
+  [_ & args]
+  (println "igpop [cmd] [subcmd] opts")
+  (doseq [[k v] commands]
+    (println " " k " - " (:desc v))))
 
-(defn validate-impl [ctx {pth :path :as v-ctx} schema subj]
-  (if (and (:req schema) (nil? subj))
-    (add-error v-ctx (str "Element is required"))
-    (if-let [attrs (:attrs schema)]
-      (let [o-keys (into #{} (keys subj))
-            s-keys (into #{} (keys attrs))
-            unknowns (clojure.set/difference o-keys s-keys)
-            v-ctx (if-not (empty? unknowns)
-                    (reduce-with v-ctx unknowns
-                                 (fn [acc k]
-                                   (add-error acc k "Unknown element")))
-                    v-ctx)]
-        (reduce-with
-         v-ctx attrs
-         (fn [v-ctx [k sch]]
-           (validate-impl ctx (update v-ctx :path conj k) sch (get subj k)))))
-      v-ctx)))
+(defmethod run
+  :validate
+  [& args]
+  (println "Validate..." args))
 
-(defn validate [ctx schema resource]
-  (dissoc (validate-impl ctx {:path []} schema resource) :path))
+(defmethod run
+  :build
+  [& args]
+  (println "Build..." args))
 
-(clj-yaml.core/parse-string "
-
-attrs:
- do[]: {}
-
-")
-
-
-
-
+(defn -main [& args]
+  (if-let [cmd (first args)]
+    (do
+      (println "Run " cmd)
+      (if-let [handler (get commands cmd)]
+        (do
+          (println ">>" handler)
+          (apply run args))
+        (run :help)))
+    (run :help)))
