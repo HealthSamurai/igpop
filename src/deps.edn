@@ -12,6 +12,7 @@
          zprint                         {:mvn/version "0.4.16"}
          hiccup                         {:mvn/version "1.0.5"}
          garden                         {:mvn/version "1.3.9"}
+         json-schema                    {:mvn/version "0.2.0-RC10"}
 
          ;; support for java 11+
          org.clojure/core.rrb-vector {:mvn/version "0.0.14"}}
@@ -32,11 +33,8 @@
                  :jvm-opts   ^:replace ["-XX:-OmitStackTraceInFastThrow"]
                  :main-opts  ["-m" "test-runner"]}
 
-  :build
-  {:extra-paths ["build" "ui/build.prod"]
-   :jvm-opts    ^:replace ["-XX:-OmitStackTraceInFastThrow"]
-   :extra-deps  {cambada {:git/url "https://github.com/HealthSamurai/cambada"
-                          :sha     "e44a0bebd039285f3e10f15f5703d6eaf92672c7"}}
-   :main-opts   ["-m" "build"]}
-  }
- }
+  :build {:extra-paths ["build"]
+          :jvm-opts    ^:replace ["-XX:-OmitStackTraceInFastThrow"]
+          :extra-deps  {cambada {:git/url "https://github.com/HealthSamurai/cambada"
+                                 :sha     "e44a0bebd039285f3e10f15f5703d6eaf92672c7"}}
+          :main-opts   ["-m" "build"]}}}

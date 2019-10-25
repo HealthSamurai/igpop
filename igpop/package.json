@@ -1,10 +1,10 @@
 {
     "name": "igpop",
-    "version": "0.0.1-betta",
+    "version": "0.0.1-SNAPSHOT2",
     "description": "Sugar FHIR profiling for programming beings",
     "author": "niquola",
     "license": "MIT",
     "bin": {
-        "igpop": "bin/igpop"
+        "igpop": "./bin/igpop"
     }
 }

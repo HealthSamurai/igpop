@@ -20,20 +20,14 @@ stop:
 down:
 	docker-compose down
 
+clear:
+	rm -rf target && clj -A:build
+
 jar:
-	cd ui && make prod && cd .. && rm -rf target && clj -A:build
+	clj -A:build
 
-docker:
-	docker build -t ${IMG} .
-
-pub:
-	docker push ${IMG}
-
-deploy:
-	cd deploy && cat srv.tpl.yaml | ./envtpl.mac | kubectl apply -f -
-
-all: jar docker pub deploy
-	echo "Done"
+build: jar
+	cp target/igpop-0.0.1-standalone.jar ../igpop/bin/igpop.jar
 
 test:
 	clj -A:test:runner
