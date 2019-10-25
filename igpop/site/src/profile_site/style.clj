@@ -191,7 +191,7 @@
 
    ;; Dropdown container (hidden by default).
    [:.dropdown-container
-    {:display "none"
+    {;;:display "none"
      :color "#9DAAB6"
      :border-left-color "rgb(230, 236, 241)"}]
 

@@ -12,7 +12,8 @@
              [:title title]]
             [:body content
              [:script {:src "/assets/listener.js"}]
-              ]]))
+             [:script {:src "/assets/jquery-3.4.1.min.js"}]
+             [:script {:src "/assets/menu-handler.js"}]]]))
 
 (defn get-cardinality [attr]
   (cond
@@ -84,11 +85,11 @@
         [:a ;;{:href "/profiles"}
          "Profile Pages"]
         [:svg.drop-down-list-icon {:height "1em" :width "1em" :fill "none" :viewBox "0 0 24 24" :stroke-width "2" :stroke-linecap "round" :stroke "currentColor"}
-         [:g [:polyline {:points "9 18 15 12 9 6"}]]]]
+         [:g [:polyline {:points "9 12 15 18 21 12"}]]]]
        [:div.dropdown-container
-        [:div.lmenu-item.lmenu-add-items
+        [:div.lmenu-item.lmenu-add-items.btn-patient
          [:a {:href "/profiles/Patient"} "Patient"]]
-        [:div.lmenu-item.lmenu-add-items
+        [:div.lmenu-item.lmenu-add-items.btn-organization
          [:a {:href "/profiles/Organization"} "Organization"]]
         [:div.lmenu-item.lmenu-add-items
          [:a {:href "/profiles"} "Practitioner"]]]
@@ -96,7 +97,7 @@
         [:a ;;{:href "/Terminology"}
          "Terminology"]
         [:svg.drop-down-list-icon {:height "1em" :width "1em" :fill "none" :viewBox "0 0 24 24" :stroke-width "2" :stroke-linecap "round" :stroke "currentColor"}
-         [:g [:polyline {:points "9 18 15 12 9 6"}]]]]
+         [:g [:polyline {:points "9 12 15 18 21 12"}]]]]
        [:div.dropdown-container
         [:div.lmenu-item.lmenu-add-items
          [:a {:href "/"}"Patient Identifiers"]]]]]
@@ -225,7 +226,7 @@
   (let [prl (profile resource)]
     (-> menu
         ;;(assoc-in [(.indexOf menu (last menu)) (.indexOf (last menu) [:div {:class "body-content"}]) 2] prl)
-        (assoc-in (vector-first-path #(= % {:class "body-content"}) menu) prl)
+        ;; (assoc-in (vector-first-path #(= % {:class "body-content"}) menu) prl)
 
         (with-meta {:title (get resource :resourceType)}))))
 

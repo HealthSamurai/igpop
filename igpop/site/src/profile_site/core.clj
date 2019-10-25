@@ -9,7 +9,8 @@
             [profile-site.views :as psv]
             [profile-site.style :as pss]
             [profile-site.utils :refer :all]
-            [profile-site.data :as psd]))
+            [profile-site.data :as psd])
+  (:gen-class))
 
 (defn patient-page [request]
   {:status 200

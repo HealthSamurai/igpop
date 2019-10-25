@@ -1,4 +1,4 @@
-{:paths ["src" "resources"]
+{:paths ["src" "resources" "classes"]
  :deps {org.clojure/clojure {:mvn/version "1.10.0"}
         http-kit {:mvn/version "2.3.0"}
         javax.servlet/servlet-api {:mvn/version "2.5"}

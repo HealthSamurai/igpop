@@ -8,10 +8,6 @@
 (defn get-data [path]
   (slurp (io/resource path)))
 
-(io/resource "Patient.yaml")
-
-(get-data "PatientFULL.yaml")
-
 (def patient-profile (yaml/parse-string (get-data "PatientFULL.yaml")))
 
 (def organization-profile (yaml/parse-string (get-data "Organization.yaml")))
@@ -28,5 +24,9 @@
 
 (comment
   (into-file "./resources/public" (md-summary->hc (get-data "summary.md")) "summary")
-  (into-file "./resources/public" (psv/profile patient-profile) "patient")
-  (into-file "./resources/public" (psv/profile organization-profile) "organization"))
+
+  (into-file "./resources/public/" (psv/profile patient-profile) "patient")
+
+  (into-file "./resources/public/" (psv/profile organization-profile) "organization")
+
+  )
