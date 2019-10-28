@@ -36,27 +36,8 @@
   )
 
 (defn ig []
-
   (read-profiles ig-path)
-  #_{:profiles {:Patient {:basic {}}
-              :Encouter {:basic {}}
-              :Organization {:basic {}
-                             :hospital {}}
-              :EpisodeOfCare {:cardio {}
-                              :onco {}}
-              :DiagnosticReport {:labs {}
-                                 :radiology {}}
-              :Observation {:labs {}
-                            :smoking-status {}}
-              :Device {:labs {}
-                            :smoking-status {}}
-              :DocumentReference {:lab-report {}
-                                  :ccd {}
-                                  :and {}}
-              :ValueSets {:first {}
-                          :second {}
-                          :third {}}}
-   :valuesets {:patient-race {}}})
+  )
 
 (defn menu [ctx]
   [:div#main-menu
@@ -66,7 +47,7 @@
       (if (and (= 1 (count profiles))
                (= :basic (first (keys profiles))))
         [:a {:href (str "/profiles/" (name rt) "/basic")} (name rt)]
-        [:div 
+        [:div
          [:a (name rt)]
          (into [:section]
                (for [[nm pr] profiles]
@@ -85,18 +66,19 @@
 (defn render-row [is-lst? pth nm el]
   [:tr
    [:td.tree
-
-    (for [p pth]
-      [:div {:class p}])
-    (if is-lst?
-      [:div.conn.last]
-      [:div.conn])
+    (loop [res [:span]
+           [p & ps] pth]
+      (if (nil? p)
+        res
+        (recur
+         (conj res [:div {:class (str p (when (and is-lst? (empty? ps)) " last"))}])
+         ps)))
+    [:div.conn]
     [:snan.nm
      (if-let [tp (:type el)]
        [:span.tp {:class tp}
         (subs tp 0 1)]
        [:span.tp {:class "obj"} "{}"])
-     #_[:span (pr-str pth)]
      nm
      (when (:required el) [:span.required "*"])]]
    [:td (when-let [tp (:type el)]
@@ -114,7 +96,9 @@
             rows'' (if-let [els' (if (= :extension nm) el (:elements el))]
                      (elements rows'
                                (if is-lst?
-                                 (conj (into [] (butlast pth)) "lsps" "sps")
+                                 (if (empty? pth)
+                                   (conj pth "sps")
+                                   (conj (into [] (butlast pth)) "lsps" "sps"))
                                  (conj pth "sps"))
                                els')
                     rows')]

@@ -119,6 +119,7 @@
        [:tr {:margin 0 :padding 0
              :border-bottom "1px solid #eee"}]
        
+       [:td.tree {:white-space "nowrap"}]
        [:td {:margin 0 :line-height "30px" :padding 0}]]
       [:.sps {:border-left "1px solid #aaa"
               :margin-left "20px"
@@ -126,7 +127,10 @@
               :height "30px"
               :margin-top "0px"
               :margin-bottom " -10px"
-              }]
+              }
+       [:&.last {:margin-bottom "4px"
+                 :height "18px"
+                 }]]
       [:.lsps {:border-left "1px solid transparent"
               :height "20px"
               :margin-left "20px"
@@ -159,15 +163,16 @@
                      :integrity "sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS"
                      :crossorigin "anonymous"}]
 
-             ;; [:link {:href "//fonts.googleapis.com/css?family Montserrat" :rel "stylesheet"}]
-             [:link {:href "//fonts.googleapis.com/css?family Montserrat:100,300,400,500,700,900" :rel "stylesheet"}]
-             ;; [:link {:href "//fonts.googleapis.com/css?family Roboto" :rel "stylesheet"}]
-             [:link {:href "//fonts.googleapis.com/css?family Roboto:100,300,400,500,700,900" :rel "stylesheet"}]
+             [:link {:href "//fonts.googleapis.com/css?family=Montserrat|Roboto&display=swap" :rel "stylesheet"}]
+             ;; [:link {:href "//fonts.googleapis.com/css?family Montserrat:100,300,400,500,700,900" :rel "stylesheet"}]
+             ;; [:link {:href "//fonts.googleapis.com/css?family=Roboto" :rel "stylesheet"}]
+             ;; [:link {:href "//fonts.googleapis.com/css?family Roboto:100,300,400,500,700,900" :rel "stylesheet"}]
              [:style style]
              [:title "IGPOP"]]
             [:body
              (into [:div.body] content)
-             [:script {:src "/assets/listener.js"}]
-             [:script {:src "/assets/jquery-3.4.1.min.js"}]
-             [:script {:src "/assets/menu-handler.js"}]]]))
+             ;; [:script {:src "/assets/listener.js"}]
+             ;; [:script {:src "/assets/jquery-3.4.1.min.js"}]
+             ;; [:script {:src "/assets/menu-handler.js"}]
+             ]]))
 
