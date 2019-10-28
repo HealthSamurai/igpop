@@ -7,22 +7,22 @@ description: |
 elements:
   identifier:
     elements:
-      system:
-      value:
-  status:
-  class:
+      system: {}
+      value: {}
+  status: {}
+  class: {}
   type: { valueset: {id: encounter-type} }
   subject: { refs: [ /Patient ] }
   participant:
     elements:
-      type:
-      period:
+      type: {}
+      period: {}
       indifidual: { refs: [ /Practitioner ]}
-  period:
-  reasonCode:
+  period: {}
+  reasonCode: {}
   hospitalization:
     elements:
-      dischargeDisposition:
+      dischargeDisposition: {}
   location:
     elements:
       location: { refs: [ /Location ]}

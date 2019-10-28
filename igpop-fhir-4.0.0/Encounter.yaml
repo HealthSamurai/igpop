@@ -1,5 +1,5 @@
 description: An interaction between a patient and healthcare provider(s) for the purpose of providing healthcare service(s) or assessing the health status of a patient.
-elements::
+elements:
   id:
     description: Logical id of this artifact
     type: id
@@ -24,7 +24,7 @@ elements::
   statusHistory: #[]
     collection: true
     description: List of past encounter statuses
-    elements::
+    elements:
       id:
         description: Unique id for inter-element referencing
         type: string
@@ -44,7 +44,7 @@ elements::
   classHistory: #[]
     collection: true
     description: List of past encounter classes
-    elements::
+    elements:
       id:
         description: Unique id for inter-element referencing
         type: string
@@ -80,7 +80,7 @@ elements::
   participant: #[]
     collection: true
     description: List of participants involved in the encounter
-    elements::
+    elements:
       id:
         description: Unique id for inter-element referencing
         type: string
@@ -115,7 +115,7 @@ elements::
   diagnosis: #[]
     collection: true
     description: The list of diagnosis relevant to this encounter
-    elements::
+    elements:
       id:
         description: Unique id for inter-element referencing
         type: string
@@ -135,7 +135,7 @@ elements::
     type: Reference
   hospitalization:
     description: Details about the admission to a healthcare service
-    elements::
+    elements:
       id:
         description: Unique id for inter-element referencing
         type: string
@@ -172,7 +172,7 @@ elements::
   location: #[]
     collection: true
     description: List of locations where the patient has been
-    elements::
+    elements:
       id:
         description: Unique id for inter-element referencing
         type: string

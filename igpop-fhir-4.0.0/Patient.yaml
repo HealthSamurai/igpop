@@ -1,5 +1,5 @@
 description: Demographics and other administrative information about an individual or animal receiving care or other health-related services.
-elements::
+elements:
   id:
     description: Logical id of this artifact
     type: id
@@ -54,7 +54,7 @@ elements::
   contact: #[]
     collection: true
     description: A contact party (e.g. guardian, partner, friend) for the patient
-    elements::
+    elements:
       id:
         description: Unique id for inter-element referencing
         type: string
@@ -85,7 +85,7 @@ elements::
   communication: #[]
     collection: true
     description: A language which may be used to communicate with the patient about his or her health
-    elements::
+    elements:
       id:
         description: Unique id for inter-element referencing
         type: string
@@ -106,7 +106,7 @@ elements::
   link: #[]
     collection: true
     description: Link to another patient resource that concerns the same actual person
-    elements::
+    elements:
       id:
         description: Unique id for inter-element referencing
         type: string

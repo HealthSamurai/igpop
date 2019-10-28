@@ -1,0 +1,11 @@
+description: Это про врача
+
+elements:
+  identifier:
+    type: Identifier
+    description: Идентификатор Врача
+  name:
+    description: Имя Врача.
+    elements:
+      family: {}
+      given: {}

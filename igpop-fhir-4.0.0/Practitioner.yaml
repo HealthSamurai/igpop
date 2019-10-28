@@ -1,5 +1,5 @@
 description: A person who is directly or indirectly involved in the provisioning of healthcare.
-elements::
+elements:
   id:
     description: Logical id of this artifact
     type: id
@@ -45,7 +45,7 @@ elements::
   qualification: #[]
     collection: true
     description: Certification, licenses, or training pertaining to the provision of care
-    elements::
+    elements:
       id:
         description: Unique id for inter-element referencing
         type: string

@@ -76,18 +76,15 @@
     [:div.conn]
     [:snan.nm
      (if-let [tp (:type el)]
-       [:span.tp {:class tp}
+       [:span.tp {:class (str tp (when (Character/isUpperCase (first tp)) " complex"))}
         (subs tp 0 1)]
-       [:span.tp {:class "obj"} "{}"])
+       [:span.tp {:class "obj"} "/"])
      nm
      (when (:required el) [:span.required "*"])]]
-   #_[:td.desc
-    [:div (or (:description el) "&nbsp;")]
-    (when-let [tp (:type el)]
-      [:a.tp-link {:href "/"} tp])
-    ]
    [:td (when-let [tp (:type el)]
-          [:a.tp-link {:href "/"} tp])]
+          [:a.tp-link {:href "/"} tp])
+    (when (:collection el) [:span.tp-link.coll " [0..*]"])
+    ]
    [:td.desc
     (or (:description el) "&nbsp;")
     ]])
@@ -111,12 +108,23 @@
                     rows')]
         (recur es rows'')))))
 
+(defn enrich [base profile]
+  (if-let [els (:elements profile)]
+    (let [els' (reduce (fn [acc [k v]]
+                         (if-let [base-element (get-in base [:elements k])]
+                           (assoc acc k (enrich base-element v))
+                           acc)) els els)]
+      (assoc (merge (dissoc base :elements) profile) :elements els'))
+    (merge (dissoc base :elements) profile)))
+
 (defn profile [ctx {{rt :resource-type nm :profile} :route-params}]
-  (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])]
+  (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])
+        base (read-yaml (str "/Users/niquola/igpop/igpop-fhir-4.0.0/" rt ".yaml"))
+        profile (enrich base profile)]
     {:status 200
      :body (views/layout
             [:div#header
-             [:h5 "FHIR US-Core"]
+             [:h5 "FHIR RU Core"]
              [:div#top-nav
               [:a {:href "/"} "Docs"]
               [:a {:href "/profiles"} "Profiles"]
@@ -129,15 +137,18 @@
              [:hr]
 
              [:br]
+             [:br]
              [:h3 "Profile"]
+             [:br]
+             [:h5 [:div.tp.profile.complex "Pr"] (str/lower-case rt) "-" nm]
              (let [rows (elements [] [] (:elements profile))]
                [:table.prof
                 (into [:tbody] rows)])
 
              [:br]
-             [:h3 "API"]
-             [:br]
              [:h3 "Examples"]
+             [:br]
+             [:h3 "API"]
              ])}))
 
 (def routes

@@ -97,52 +97,59 @@
       ;; [:.profile {:box-shadow "1px 2px 3px #E6ECF1"}]
 
       [:.summary {:color "#74818D"}]
-      [:.pth {:color "#6b6e71" :opacity 0.5 :font-weight "400"}]
-      [:.required {:color "red"}]
-      [:.tp {:color "white"
-             :background-color "#aaa"
+      [:.required {:color "red" :opacity 0.5}]
+      [:.coll {:color "#888"}]
+      [:.tp {
+             ;; :color "black"
+             ;; :background-color "#aaa"
+             :position "relative"
+             :z-index 10
              :display "inline-block"
-             :opacity 0.5
+             :opacity 0.8
              :font-size "10px"
              :margin-right "1em"
-             :border "1px solid #777"
-             :font-weight "bold"
+             :font-family "'Montserrat', sans-serif"
+             ;; :border "1px solid #ddd"
+             ;; :box-shadow "1px 1px 1px #aaa"
+             :background-color "#bbb"
+             :color "white"
+             :font-weight "800"
              :vertical-align "middle"
              :line-height "20px"
              :text-align "center"
-             :width "20px" :height "20px" :border-radius "20px"}
-       [:&.string {:background-color "#49cc90"}]
-       [:&.Reference {:background-color "#fca130"
-                      :border-radius "3px 11px 11px 3px"
-                      }]
-       [:&.code
-        :&.Coding
-        :&.CodeableConcept
-        {:background-color "#007bff"
-         :border-radius "11px 3px 3px 11px"
-         }]]
+             :width "20px" :height "20px"
+             :border-radius "20px"}
+       [:&.profile {:background-color "black" :color "white"}]
+       [:&.complex :&.obj
+        {:border "1px solid #aaa"
+         :border-radius "3px"
+         :background-color "white"
+         :color "#555"}]]
       [:.desc {:color "#666" :font-size "14px"}]
       [:table.prof
        {:width "100%"
+        ;; :background-color "#f9f9f9"
+        :margin-left "10px"
         ;; :font-family "'Montserrat', sans-serif"
-        :border-left "1px solid #aaa"}
+        :border-left "1px dotted #aaa"}
        [:tr {:margin 0 :padding 0
              :border-bottom "1px solid #e6ecf0"}
-        [:&:hover {:background-color "#E6ECF1"}]
+        [:&:hover {:background-color "#f5f7f9"}]
+        [:&:last-of-type {:border "none"}]
         ]
        
        [:td.tree {:white-space "nowrap"}]
        [:td {:margin 0 :line-height "30px" :padding 0}]]
-      [:.sps {:border-left "1px solid #aaa"
+      [:.sps {:border-left "1px dotted #aaa"
               :margin-left "20px"
               :position "relative"
-              :top "-8px"
+              :top "-18px"
               :display "inline-block"
-              :height "53px"
-              :margin-top "0px"
-              :margin-bottom "-36px"
+              :height "34px"
+              ;; :margin-top "0px"
+              :margin-bottom "-10px"
               }
-       [:&.last {:margin-bottom "4px"
+       #_[:&.last {:margin-bottom "4px"
                  :height "18px"
                  }]]
       [:.lsps {:border-left "1px solid transparent"
@@ -154,7 +161,7 @@
                :display "inline-block"
                :vertical-align "top"
                :margin-top "16px"
-               :border-top "1px solid #aaa"}]
+               :border-top "1px dotted #aaa"}]
       [:.tp-link {:font-size "13px"}]
       [:.nm {:display "inline-block"
              :font-size "15px"
