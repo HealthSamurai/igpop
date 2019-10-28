@@ -81,9 +81,16 @@
        [:span.tp {:class "obj"} "{}"])
      nm
      (when (:required el) [:span.required "*"])]]
+   #_[:td.desc
+    [:div (or (:description el) "&nbsp;")]
+    (when-let [tp (:type el)]
+      [:a.tp-link {:href "/"} tp])
+    ]
    [:td (when-let [tp (:type el)]
           [:a.tp-link {:href "/"} tp])]
-   [:td.desc (or (:description el) "&nbsp;")]])
+   [:td.desc
+    (or (:description el) "&nbsp;")
+    ]])
 
 (defn elements [rows pth els]
   (loop [[[nm el] & es] els

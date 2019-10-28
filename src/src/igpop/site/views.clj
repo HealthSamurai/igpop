@@ -7,6 +7,7 @@
 (def style
   (gc/css
    [:body
+    [:a {:color "rgb(217, 86, 64)"}]
     [:.body
      {:padding 0
       :flex-direction "column"
@@ -51,6 +52,7 @@
        :background-color "#f5f7f9"
        :overflow-y "auto"
        :padding-bottom "100px"
+       :font-weight "800"
        :font-family "'Montserrat', sans-serif"
        }
       [:a {:padding "7px 24px 7px 16px"
@@ -85,7 +87,9 @@
        :line-height "1.625"
        }
 
-      [:h1 {:margin-bottom "20px" :font-family "'Montserrat', sans-serif"}]
+      [:h1 {:margin-bottom "20px"
+            :font-weight "800"
+            :font-family "'Montserrat', sans-serif"}]
       [:hr {:border-top "2px solid #E6ECF1"}]
       [:span.sub {:float :right
                   :font-size "16px"
@@ -96,37 +100,47 @@
       [:.pth {:color "#6b6e71" :opacity 0.5 :font-weight "400"}]
       [:.required {:color "red"}]
       [:.tp {:color "white"
-             :background-color "#61affe"
+             :background-color "#aaa"
              :display "inline-block"
              :opacity 0.5
              :font-size "10px"
              :margin-right "1em"
+             :border "1px solid #777"
              :font-weight "bold"
              :vertical-align "middle"
              :line-height "20px"
              :text-align "center"
              :width "20px" :height "20px" :border-radius "20px"}
        [:&.string {:background-color "#49cc90"}]
-       [:&.Reference {:background-color "#fca130"}]
+       [:&.Reference {:background-color "#fca130"
+                      :border-radius "3px 11px 11px 3px"
+                      }]
        [:&.code
         :&.Coding
         :&.CodeableConcept
-        {:background-color "#007bff"}]]
+        {:background-color "#007bff"
+         :border-radius "11px 3px 3px 11px"
+         }]]
       [:.desc {:color "#666" :font-size "14px"}]
       [:table.prof
        {:width "100%"
-        :border-left "1px solid #ddd"}
+        ;; :font-family "'Montserrat', sans-serif"
+        :border-left "1px solid #aaa"}
        [:tr {:margin 0 :padding 0
-             :border-bottom "1px solid #eee"}]
+             :border-bottom "1px solid #e6ecf0"}
+        [:&:hover {:background-color "#E6ECF1"}]
+        ]
        
        [:td.tree {:white-space "nowrap"}]
        [:td {:margin 0 :line-height "30px" :padding 0}]]
       [:.sps {:border-left "1px solid #aaa"
               :margin-left "20px"
+              :position "relative"
+              :top "-8px"
               :display "inline-block"
-              :height "30px"
+              :height "53px"
               :margin-top "0px"
-              :margin-bottom " -10px"
+              :margin-bottom "-36px"
               }
        [:&.last {:margin-bottom "4px"
                  :height "18px"
@@ -141,10 +155,11 @@
                :vertical-align "top"
                :margin-top "16px"
                :border-top "1px solid #aaa"}]
-      ;; [:.tp-link {:font-size "13px"}]
-      [:.nmx {:display "inline-block"
+      [:.tp-link {:font-size "13px"}]
+      [:.nm {:display "inline-block"
              :font-size "15px"
-             :font-weight "bold"
+             :font-weight "800"
+             
              }]
       
       
