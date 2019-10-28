@@ -114,19 +114,18 @@
         {:background-color "#007bff"}]]
       [:.desc {:color "#666" :font-size "14px"}]
       [:table.prof
-       {:width "100%"}
+       {:width "100%"
+        :border-left "1px solid #ddd"}
        [:tr {:margin 0 :padding 0
-             :border-bottom "1px solid #ddd"}]
-       [:td.tree {:margin 0 :padding 0}]
-       [:td {:margin 0
-             :line-height "30px"
-             :padding "5px 10px"}]
-
-       ]
+             :border-bottom "1px solid #eee"}]
+       
+       [:td {:margin 0 :line-height "30px" :padding 0}]]
       [:.sps {:border-left "1px solid #aaa"
-              :height "20px"
               :margin-left "20px"
               :display "inline-block"
+              :height "30px"
+              :margin-top "0px"
+              :margin-bottom " -10px"
               }]
       [:.lsps {:border-left "1px solid transparent"
               :height "20px"
