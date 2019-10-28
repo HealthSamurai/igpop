@@ -130,7 +130,8 @@
      :display "flex"}]
 
    [:.left-menu
-    {:padding-top "32px"
+    {
+     :padding-top "32px"
      :padding-left "68px";;"calc((100% - 1448px) / 2)"
      :min-width "298px"
      :height "100%"

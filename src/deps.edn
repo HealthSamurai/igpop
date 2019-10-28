@@ -15,7 +15,10 @@
          json-schema                    {:mvn/version "0.2.0-RC10"}
 
          ;; support for java 11+
-         org.clojure/core.rrb-vector {:mvn/version "0.0.14"}}
+         org.clojure/core.rrb-vector {:mvn/version "0.0.14"}
+
+         markdown-to-hiccup {:mvn/version "0.6.2"}
+         markdown-clj {:mvn/version "1.10.0"}}
 
  :aliases
  {:nrepl      {:extra-paths ["dev" "test"]

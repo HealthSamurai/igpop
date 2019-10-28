@@ -27,7 +27,7 @@
    :headers {"Content-type" "text/html"}
    :body (psv/home-page->html)})
 
-(defroutes app
+#_(defroutes app
   (GET "/" [] #'home-page)
   (GET "/profiles/Patient" [] #'patient-page)
   (GET "/profiles/Organization" [] #'organization-page)
