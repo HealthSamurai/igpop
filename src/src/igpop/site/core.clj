@@ -39,14 +39,18 @@
   (read-profiles ig-path)
   )
 
-(defn menu [ctx]
+(defn current-page [uri res-url]
+  (= uri res-url))
+
+(defn menu [ctx {uri :uri}]
   [:div#main-menu
    (for [[rt profiles] (->> (:profiles ctx)
                             (sort-by first))]
      [:div
       (if (and (= 1 (count profiles))
                (= :basic (first (keys profiles))))
-        [:a {:href (str "/profiles/" (name rt) "/basic")} (name rt)]
+        (let [res-url (str "/profiles/" (name rt) "/basic")]
+          [:a {:href res-url :class (when (current-page uri res-url) "active")} (name rt)])
         [:div
          [:a (name rt)]
          (into [:section]
@@ -63,6 +67,19 @@
           [:div#content
            [:h1 "Hello"]])})
 
+(def type-symbols
+  {"Reference" "⮕"
+   "date" "⧗"
+   "dateTime" "⧗"
+   "Period" "⧗"
+   "Address" "⌂"
+   "HumanName" "👤"
+
+   }
+
+
+  )
+
 (defn render-row [is-lst? pth nm el]
   [:tr
    [:td.tree
@@ -77,13 +94,17 @@
     [:snan.nm
      (if-let [tp (:type el)]
        [:span.tp {:class (str tp (when (Character/isUpperCase (first tp)) " complex"))}
-        (subs tp 0 1)]
+        (or (get type-symbols tp) (subs tp 0 1))]
        [:span.tp {:class "obj"} "/"])
      nm
-     (when (:required el) [:span.required "*"])]]
-   [:td (when-let [tp (:type el)]
-          [:a.tp-link {:href "/"} tp])
+     (when (:required el) [:span.required "*"])]
+    " "
+    (when-let [tp (:type el)]
+      [:a.tp-link {:href "/"} tp])
     (when (:collection el) [:span.tp-link.coll " [0..*]"])
+    ]
+   #_[:td 
+    
     ]
    [:td.desc
     (or (:description el) "&nbsp;")
@@ -117,7 +138,7 @@
       (assoc (merge (dissoc base :elements) profile) :elements els'))
     (merge (dissoc base :elements) profile)))
 
-(defn profile [ctx {{rt :resource-type nm :profile} :route-params}]
+(defn profile [ctx {{rt :resource-type nm :profile} :route-params :as req}]
   (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])
         base (read-yaml (str "/Users/niquola/igpop/igpop-fhir-4.0.0/" rt ".yaml"))
         profile (enrich base profile)]
@@ -130,7 +151,7 @@
               [:a {:href "/profiles"} "Profiles"]
               [:a {:href "/valuesets"} "ValueSets"]]]
 
-            (menu ctx)
+            (menu ctx req)
             [:div#content
              [:h1 rt " " [:span.sub (str/lower-case rt) "-" nm]]
              [:div.summary (:description profile)]
@@ -138,9 +159,7 @@
 
              [:br]
              [:br]
-             [:h3 "Profile"]
-             [:br]
-             [:h5 [:div.tp.profile.complex "Pr"] (str/lower-case rt) "-" nm]
+             [:h5 [:div.tp.profile.complex "Pr"] rt]
              (let [rows (elements [] [] (:elements profile))]
                [:table.prof
                 (into [:tbody] rows)])

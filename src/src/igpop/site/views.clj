@@ -53,22 +53,32 @@
        :overflow-y "auto"
        :padding-bottom "100px"
        :font-weight "800"
-       :font-family "'Montserrat', sans-serif"
+       ;; :font-family "'Montserrat', sans-serif"
        }
       [:a {:padding "7px 24px 7px 16px"
            :box-sizing "content-box"
-           :opacity 0.7
+           ;; :opacity 0.7
            :font-size "14px"
-           :color "inherit";;"#5C6975"
+           :color "#5C6975"
            :display "block"
            :word-break "break-word"
            :background "none"
            :border "1px solid transparent"
            :cursor "pointer"
            :text-decoration "none"
-           :font-weight "600"
+           :font-weight "1000"
            :line-height "1.5"}
        [:&:hover {:background-color "#E6ECF1"}]
+       [:&.active
+        {:background-color "white"
+         :border-left "1px solid #E6ECF1"
+         :border-top "1px solid #E6ECF1"
+         :border-bottom "1px solid #E6ECF1"
+         :border-right "1px solid white"
+         :margin-right "-1px"
+         :z-index 10
+         :color "#d95640"}
+        ]
        ]
       [:section
        {:border-left "1px solid #ddd"
@@ -99,19 +109,14 @@
       [:.summary {:color "#74818D"}]
       [:.required {:color "red" :opacity 0.5}]
       [:.coll {:color "#888"}]
-      [:.tp {
-             ;; :color "black"
-             ;; :background-color "#aaa"
-             :position "relative"
+      [:.tp {:position "relative"
              :z-index 10
              :display "inline-block"
              :opacity 0.8
              :font-size "10px"
              :margin-right "1em"
              :font-family "'Montserrat', sans-serif"
-             ;; :border "1px solid #ddd"
-             ;; :box-shadow "1px 1px 1px #aaa"
-             :background-color "#bbb"
+             :background-color "#87919a"
              :color "white"
              :font-weight "800"
              :vertical-align "middle"
@@ -125,7 +130,8 @@
          :border-radius "3px"
          :background-color "white"
          :color "#555"}]]
-      [:.desc {:color "#666" :font-size "14px"}]
+      [:.desc {:color "#5b6975"
+               :font-size "14px"}]
       [:table.prof
        {:width "100%"
         ;; :background-color "#f9f9f9"
@@ -162,10 +168,12 @@
                :vertical-align "top"
                :margin-top "16px"
                :border-top "1px dotted #aaa"}]
-      [:.tp-link {:font-size "13px"}]
+      [:.tp-link {:font-size "13px"
+                  :color "#909aa2"}]
       [:.nm {:display "inline-block"
              :font-size "15px"
-             :font-weight "800"
+             ;; :font-weight "600"
+             ;; :letter-spacing "0.01em"
              
              }]
       

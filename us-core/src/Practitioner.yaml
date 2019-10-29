@@ -1,9 +1,14 @@
 description: Это про врача
 
 elements:
+  id:
+    type: id
+    description: Назначается сервером
   identifier:
     type: Identifier
     description: Идентификатор Врача
+  address:
+    description: Адрес проживания
   name:
     description: Имя Врача.
     elements:
