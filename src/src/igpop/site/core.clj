@@ -5,9 +5,10 @@
    [igpop.site.views :as views]
    [clojure.string :as str]
    [clj-yaml.core]
-   [clojure.java.io :as io]))
+   [clojure.java.io :as io]
+   [igpop.site.valuesets :as valuesets]))
 
-(def ig-path "/Users/niquola/igpop/us-core")
+(def ig-path "../us-core")
 
 (defn read-yaml [pth]
   (clj-yaml.core/parse-string
@@ -20,9 +21,10 @@
          (reduce
           (fn [acc f]
             (let [nm (.getName f)]
-              (println nm)
               (if (str/starts-with? nm "vs.")
-                acc
+                (let [rt (str/replace nm #"\.yaml$" "")]
+                  (assoc-in acc [:valuesets (keyword rt)]
+                            (read-yaml (.getPath f))))
                 (if (and (str/ends-with? nm ".yaml"))
                   (let [rt (str/replace nm #"\.yaml$" "")]
                     (println "Load.." rt)
@@ -34,7 +36,7 @@
 
 (comment
 
-  (read-profiles ig-path)
+  (get-in (read-profiles ig-path) [:valuesets :vs.patient-identifiers])
 
   (ig)
 
@@ -155,7 +157,7 @@
 
 (defn profile [ctx {{rt :resource-type nm :profile} :route-params :as req}]
   (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])
-        base (read-yaml (str "/Users/niquola/igpop/igpop-fhir-4.0.0/" rt ".yaml"))
+        base (read-yaml (str "../igpop-fhir-4.0.0/" rt ".yaml"))
         profile (enrich base profile)]
     {:status 200
      :body (views/layout
@@ -203,13 +205,13 @@
           (top-nav)
           [:div#main-menu
            [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
-          [:div#content [:h1 "Valueset" vid]])}
+          [:div#content [:h1 "Valueset " vid]])}
   )
 
 (def routes
   {:GET #'welcome
    "valuesets" {:GET #'valuesets-dashboard
-                [:valuset-id] {:GET #'valueset}}
+                [:valuset-id] {:GET #'valuesets/vs}}
    "profiles" {:GET #'profiles-dashboard
                [:resource-type] {:GET #'profile
                                  [:profile] {:GET #'profile}}}})
@@ -224,6 +226,8 @@
 
 (comment
   (def srv (start 8899))
+
+  (srv)
 
   (handler {:uri "/" :request-method :get})
 

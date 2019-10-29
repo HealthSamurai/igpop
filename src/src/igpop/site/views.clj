@@ -107,6 +107,9 @@
       ;; [:.profile {:box-shadow "1px 2px 3px #E6ECF1"}]
 
       [:.summary {:color "#74818D"}]
+      [:.table {:display "table"}]
+      [:.row {:display "table-row"}]
+      [:.column {:display "table-cell"}]
       [:.required {:color "red" :opacity 0.5}]
       [:.coll {:color "#888"}]
       [:.tp {:position "relative"
