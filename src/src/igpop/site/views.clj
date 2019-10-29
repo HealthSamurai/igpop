@@ -68,7 +68,8 @@
            :text-decoration "none"
            :font-weight "1000"
            :line-height "1.5"}
-       [:&:hover {:background-color "#E6ECF1"}]
+       [:&:hover {:background-color "#E6ECF1"}
+        ]
        [:&.active
         {:background-color "white"
          :border-left "1px solid #E6ECF1"
@@ -112,23 +113,25 @@
       [:.tp {:position "relative"
              :z-index 10
              :display "inline-block"
-             :opacity 0.8
+             :opacity 0.5
              :font-size "10px"
              :margin-right "1em"
-             :font-family "'Montserrat', sans-serif"
-             :background-color "#87919a"
-             :color "white"
+             :background-color "white"
+             :box-shadow "0px 0px 2px #5b6975"
+             :color "#5b6975"
              :font-weight "800"
              :vertical-align "middle"
              :line-height "20px"
              :text-align "center"
              :width "20px" :height "20px"
              :border-radius "20px"}
-       [:&.profile {:background-color "black" :color "white"}]
+       [:.fa {:padding-top "5px" :font-size "12px"}]
+       [:&.profile {}]
        [:&.complex :&.obj
-        {:border "1px solid #aaa"
+        {
+         ;; :border "1px solid #aaa"
          :border-radius "3px"
-         :background-color "white"
+         ;; :background-color "white"
          :color "#555"}]]
       [:.desc {:color "#5b6975"
                :font-size "14px"}]
@@ -140,7 +143,9 @@
         :border-left "1px dotted #aaa"}
        [:tr {:margin 0 :padding 0
              :border-bottom "1px solid #e6ecf0"}
-        [:&:hover {:background-color "#f5f7f9"}]
+        [:&:hover {:background-color "#f5f7f9"}
+         [:.tp {:opacity 1}]
+         ]
         [:&:last-of-type {:border "none"}]
         ]
        
@@ -219,7 +224,49 @@
         ]]
 
 
-     ]]))
+     ]
+    [:.el-cnt
+     ;; {:border-left "1px solid #aaa"}
+     [:.el {:border-left "1px solid #aaa"}
+      [:&:last-of-type {:border-left-color "transparent"}
+       [:.el-title  {:border-left-color "transparent"}]]]
+     [:.link
+      {:width "10px"
+       :height "14px"
+       :display "inline-block"
+       :position "absolute"
+       :top 0
+       :left "-1px" 
+       ;; :margin-top "14px"
+       :border-bottom "1px solid #aaa"
+       :border-left "1px solid #aaa"
+       }]
+     [:.el-title {:border-bottom "1px solid #f1f1f1"
+                  :padding-left "10px"
+                  :position "relative"
+                  :margin-top "-1px"
+                  :border-top "1px solid #f1f1f1"
+                  :border-left "1px solid #aaa"
+                  :margin-left "-1px"}
+      [:&:last-of-type {:border-left-color "transparent"}]
+      [:&:hover {:background-color "#f9f9f9"}]
+      ]
+     [:b {:width "200px" :display "inline-block"}]
+     [:.desc {:display "inline-block"}]
+     [:.box {:display "inline-block"
+             :vertical-align "middle"
+             :margin-right "0.8em"
+             :width "20px" :height "20px"
+             :border "1px solid #ddd"
+             :border-radius "100%"}]
+     [:.el-cnt {:margin-left "20px"}
+      [:b {:width "180px" :display "inline-block"}]
+      [:.el-cnt
+       [:b {:width "160px" :display "inline-block"}]
+       ]
+      ]
+     ]
+    ]))
 
 (defn layout [& content]
   (hc/html [:html
@@ -230,6 +277,7 @@
                      :integrity "sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS"
                      :crossorigin "anonymous"}]
 
+             [:link {:href "//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" :rel "stylesheet"}]
              [:link {:href "//fonts.googleapis.com/css?family=Montserrat|Roboto&display=swap" :rel "stylesheet"}]
              ;; [:link {:href "//fonts.googleapis.com/css?family Montserrat:100,300,400,500,700,900" :rel "stylesheet"}]
              ;; [:link {:href "//fonts.googleapis.com/css?family=Roboto" :rel "stylesheet"}]

@@ -75,12 +75,18 @@
            [:h1 "Hello"]])})
 
 (def type-symbols
-  {"Reference" "⮕"
-   "date" "⧗"
-   "dateTime" "⧗"
-   "Period" "⧗"
-   "Address" "⌂"
-   "HumanName" "웃"
+  {"Reference" [:span.fa.fa-arrow-right]
+   "date" [:span.fa.fa-calendar-day]
+   "dateTime" [:span.fa.fa-clock]
+   "Period" [:span.fa.fa-clock]
+   "Address" [:span.fa.fa-home]
+   "CodeableConcept" [:span.fa.fa-tags]
+   "Coding" [:span.fa.fa-tag]
+   "code" [:span.fa.fa-tag]
+   "Identifier" [:span.fa.fa-fingerprint]
+   "HumanName" [:span.fa.fa-user]
+   "string" [:span.fa.fa-pen]
+   "ContactPoint" [:span.fa.fa-phone]
 
    }
 
@@ -102,7 +108,7 @@
      (if-let [tp (:type el)]
        [:span.tp {:class (str tp (when (Character/isUpperCase (first tp)) " complex"))}
         (or (get type-symbols tp) (subs tp 0 1))]
-       [:span.tp {:class "obj"} "/"])
+       [:span.tp {:class "obj"} [:span.fa.fa-folder]])
      nm
      (when (:required el) [:span.required "*"])]
     " "
@@ -110,12 +116,8 @@
       [:a.tp-link {:href "/"} tp])
     (when (:collection el) [:span.tp-link.coll " [0..*]"])
     ]
-   #_[:td 
-    
-    ]
    [:td.desc
-    (or (:description el) "&nbsp;")
-    ]])
+    (or (:description el) "&nbsp;")]])
 
 (defn elements [rows pth els]
   (loop [[[nm el] & es] els
@@ -135,6 +137,16 @@
                                els')
                     rows')]
         (recur es rows'')))))
+
+(defn new-elements [elements]
+  (->> elements
+       (reduce (fn [acc [nm el]]
+                 (conj acc
+                       [:div.el
+                        [:div.el-title [:span.link] [:span.box] [:b nm] [:div.desc (:description el)]]
+                        (when-let [els (or (:elements el) (and (= :extension nm) el))]
+                          (new-elements els))])
+                 ) [:div.el-cnt])))
 
 (defn enrich [base profile]
   (if-let [els (:elements profile)]
@@ -167,6 +179,7 @@
              [:hr]
 
              [:br]
+              (new-elements (:elements profile))
              [:br]
              [:h5 [:div.tp.profile.complex "Pr"] rt]
              (let [rows (elements [] [] (:elements profile))]
