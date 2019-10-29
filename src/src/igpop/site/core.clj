@@ -20,20 +20,27 @@
          (reduce
           (fn [acc f]
             (let [nm (.getName f)]
-              (if (and (str/ends-with? nm ".yaml"))
-                (let [rt (str/replace nm #"\.yaml$" "")]
-                  (assoc-in acc [:profiles (keyword rt) :basic]
-                            (read-yaml (.getPath f))))
-                (println "TODO" nm)))) {}))))
+              (println nm)
+              (if (str/starts-with? nm "valueset")
+                acc
+                (if (and (str/ends-with? nm ".yaml"))
+                  (let [rt (str/replace nm #"\.yaml$" "")]
+                    (println "Load.." rt)
+                    (assoc-in acc [:profiles (keyword rt) :basic]
+                              (read-yaml (.getPath f))))
+                  (do
+                    (println "TODO" nm)
+                    acc))))) {}))))
 
 (comment
 
   (read-profiles ig-path)
 
+  (ig)
+
   )
 
-{:profiles {:Patient {:basic {}}}
- :valusets {:patient-identity {:concepts []}}}
+
 
 (defn ig []
   (read-profiles ig-path)
