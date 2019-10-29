@@ -17,7 +17,7 @@ elements:
     elements:
       type: {}
       period: {}
-      indifidual: { refs: [ /Practitioner ]}
+      individual: { refs: [ /Practitioner ]}
   period: {}
   reasonCode: {}
   hospitalization:
