@@ -183,8 +183,19 @@
   {:status 200
    :body (views/layout
           (top-nav)
-          (menu ctx req)
-          [:div#content [:h1 "Profiles"]])}
+          (->> (:profiles ctx)
+               (sort-by first)
+               (reduce (fn [acc [rt profiles]]
+                         (->> profiles
+                              (reduce (fn [acc [nm pr]]
+                                        (conj acc 
+                                              [:a.db-item {:href (str "/profiles/" (name rt) "/" (name nm))}
+                                               [:h5 (name rt) ":" (name nm)]
+                                               [:div.desc (subs (:description pr) 0 (min (count (:description pr)) 55))]])
+
+                                        ) acc))
+
+                         ) [:div#db-content])))}
   )
 
 (defn valuesets-dashboard [ctx req]

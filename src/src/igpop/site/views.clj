@@ -176,10 +176,47 @@
              ;; :letter-spacing "0.01em"
              
              }]
+
+      
       
       
 
       ]
+[:#db-content
+       {:background-color "white"
+        :padding "40px 0px"
+        :margin "0 -40px"
+        :grid-area "content"
+        :font-size "16px"
+        :font-family "Content-font, Roboto, sans-serif"
+        :font-weight "400"
+        :line-height "1.625"
+        }
+
+       [:.db-item
+        {:box-shadow "0 3px 8px 0 rgba(116, 129, 141, 0.1)"
+         :display "inline-block"
+         :width "350px"
+         :padding "16px 24px"
+         :border "1px solid #E6ECF1"
+         :color "#242A31"
+         :background-color "white"
+         :vertical-align "top"
+         :border-radius "3px"
+         
+         :margin-right "1em"
+         :min-height "108px"
+         :margin-bottom "1em"
+         }
+        [:&:hover {:text-decoration "none"
+                   :border-color "rgb(56, 132, 254)"
+                   :opacity 1
+                   :color "#3884FE"
+                   }]
+        [:h5 {:font-size "16px"
+              :font-weight "800"}]
+        [:.desc {:color "#9DAAB6"}]
+        ]]
 
 
      ]]))
