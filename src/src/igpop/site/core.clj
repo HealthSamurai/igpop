@@ -18,22 +18,22 @@
         files (file-seq (io/file (str pth "/src")))]
     (->> files
          (reduce
-
           (fn [acc f]
             (let [nm (.getName f)]
               (if (and (str/ends-with? nm ".yaml"))
                 (let [rt (str/replace nm #"\.yaml$" "")]
                   (assoc-in acc [:profiles (keyword rt) :basic]
                             (read-yaml (.getPath f))))
-                (println "TODO" nm)))) {})
-         )
-    ))
+                (println "TODO" nm)))) {}))))
 
 (comment
 
   (read-profiles ig-path)
 
   )
+
+{:profiles {:Patient {:basic {}}}
+ :valusets {:patient-identity {:concepts []}}}
 
 (defn ig []
   (read-profiles ig-path)
@@ -63,7 +63,7 @@
    :body (views/layout
           [:div#header
            [:h5 "FHIR-RU Core"]]
-          (menu ctx)
+          (menu ctx req)
           [:div#content
            [:h1 "Hello"]])})
 
@@ -73,7 +73,7 @@
    "dateTime" "⧗"
    "Period" "⧗"
    "Address" "⌂"
-   "HumanName" "👤"
+   "HumanName" "웃"
 
    }
 
@@ -138,19 +138,21 @@
       (assoc (merge (dissoc base :elements) profile) :elements els'))
     (merge (dissoc base :elements) profile)))
 
+(defn top-nav []
+  [:div#header
+   [:h5 "FHIR RU Core"]
+   [:div#top-nav
+    [:a {:href "/"} "Docs"]
+    [:a {:href "/profiles"} "Profiles"]
+    [:a {:href "/valuesets"} "ValueSets"]]])
+
 (defn profile [ctx {{rt :resource-type nm :profile} :route-params :as req}]
   (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])
         base (read-yaml (str "/Users/niquola/igpop/igpop-fhir-4.0.0/" rt ".yaml"))
         profile (enrich base profile)]
     {:status 200
      :body (views/layout
-            [:div#header
-             [:h5 "FHIR RU Core"]
-             [:div#top-nav
-              [:a {:href "/"} "Docs"]
-              [:a {:href "/profiles"} "Profiles"]
-              [:a {:href "/valuesets"} "ValueSets"]]]
-
+            (top-nav)
             (menu ctx req)
             [:div#content
              [:h1 rt " " [:span.sub (str/lower-case rt) "-" nm]]
@@ -170,9 +172,39 @@
              [:h3 "API"]
              ])}))
 
+(defn profiles-dashboard [ctx {{rt :resource-type nm :profile} :route-params :as req}]
+  {:status 200
+   :body (views/layout
+          (top-nav)
+          (menu ctx req)
+          [:div#content [:h1 "Profiles"]])}
+  )
+
+(defn valuesets-dashboard [ctx req]
+  {:status 200
+   :body (views/layout
+          (top-nav)
+          [:div#main-menu
+           [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
+          [:div#content
+           [:h1 "Valuesets"]])}
+  )
+
+(defn valueset [ctx {{vid :valuset-id} :route-params :as req}]
+  {:status 200
+   :body (views/layout
+          (top-nav)
+          [:div#main-menu
+           [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
+          [:div#content [:h1 "Valueset" vid]])}
+  )
+
 (def routes
   {:GET #'welcome
-   "profiles" {[:resource-type] {:GET #'profile
+   "valuesets" {:GET #'valuesets-dashboard
+                [:valuset-id] {:GET #'valueset}}
+   "profiles" {:GET #'profiles-dashboard
+               [:resource-type] {:GET #'profile
                                  [:profile] {:GET #'profile}}}})
 
 (defn handler [{uri :uri meth :request-method :as req}]
