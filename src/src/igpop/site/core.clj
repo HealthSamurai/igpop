@@ -74,79 +74,7 @@
           [:div#content
            [:h1 "Hello"]])})
 
-(def type-symbols
-  {"Reference" [:span.fa.fa-arrow-right]
-   "date" [:span.fa.fa-calendar-day]
-   "dateTime" [:span.fa.fa-clock]
-   "Period" [:span.fa.fa-clock]
-   "Address" [:span.fa.fa-home]
-   "CodeableConcept" [:span.fa.fa-tags]
-   "Coding" [:span.fa.fa-tag]
-   "code" [:span.fa.fa-tag]
-   "Identifier" [:span.fa.fa-fingerprint]
-   "HumanName" [:span.fa.fa-user]
-   "string" [:span.fa.fa-pen]
-   "ContactPoint" [:span.fa.fa-phone]
 
-   }
-
-
-  )
-
-(defn render-row [is-lst? pth nm el]
-  [:tr
-   [:td.tree
-    (loop [res [:span]
-           [p & ps] pth]
-      (if (nil? p)
-        res
-        (recur
-         (conj res [:div {:class (str p (when (and is-lst? (empty? ps)) " last"))}])
-         ps)))
-    [:div.conn]
-    [:snan.nm
-     (if-let [tp (:type el)]
-       [:span.tp {:class (str tp (when (Character/isUpperCase (first tp)) " complex"))}
-        (or (get type-symbols tp) (subs tp 0 1))]
-       [:span.tp {:class "obj"} [:span.fa.fa-folder]])
-     nm
-     (when (:required el) [:span.required "*"])]
-    " "
-    (when-let [tp (:type el)]
-      [:a.tp-link {:href "/"} tp])
-    (when (:collection el) [:span.tp-link.coll " [0..*]"])
-    ]
-   [:td.desc
-    (or (:description el) "&nbsp;")]])
-
-(defn elements [rows pth els]
-  (loop [[[nm el] & es] els
-         rows rows]
-    (if (nil? el)
-      rows
-      (let [is-lst? (empty? es)
-            tr (render-row is-lst? pth nm el)
-            rows' (conj rows tr)
-            rows'' (if-let [els' (if (= :extension nm) el (:elements el))]
-                     (elements rows'
-                               (if is-lst?
-                                 (if (empty? pth)
-                                   (conj pth "sps")
-                                   (conj (into [] (butlast pth)) "lsps" "sps"))
-                                 (conj pth "sps"))
-                               els')
-                    rows')]
-        (recur es rows'')))))
-
-(defn new-elements [elements]
-  (->> elements
-       (reduce (fn [acc [nm el]]
-                 (conj acc
-                       [:div.el
-                        [:div.el-title [:span.link] [:span.box] [:b nm] [:div.desc (:description el)]]
-                        (when-let [els (or (:elements el) (and (= :extension nm) el))]
-                          (new-elements els))])
-                 ) [:div.el-cnt])))
 
 (defn enrich [base profile]
   (if-let [els (:elements profile)]
@@ -165,6 +93,58 @@
     [:a {:href "/profiles"} "Profiles"]
     [:a {:href "/valuesets"} "ValueSets"]]])
 
+(def type-symbols
+  {"Reference" [:span.fa.fa-arrow-right]
+   "date" [:span.fa.fa-calendar-day]
+   "dateTime" [:span.fa.fa-clock]
+   "Period" [:span.fa.fa-clock]
+   "instant" [:span.fa.fa-clock]
+   "Address" [:span.fa.fa-home]
+   "CodeableConcept" [:span.fa.fa-tags]
+   "Coding" [:span.fa.fa-tag]
+   "code" [:span.fa.fa-tag]
+   "Identifier" [:span.fa.fa-fingerprint]
+   "id" [:span.fa.fa-fingerprint]
+   "HumanName" [:span.fa.fa-user]
+   "string" [:span.fa.fa-pen]
+   "Annotation" [:span.fa.fa-pen]
+   "ContactPoint" [:span.fa.fa-phone]})
+
+(defn type-span [tp]
+  [:span.tp {:class (str tp (when (Character/isUpperCase (first tp)) " complex"))}
+   (or (get type-symbols tp) (subs tp 0 1))])
+
+(defn element-row [nm el]
+  [:div.el-title [:span.link]
+   [:span.nm
+    (if-let [tp (:type el)]
+      (type-span tp)
+      [:span.tp {:class "obj"} (if (= :extension nm)
+                                 [:span.fa.fa-folder-plus]
+                                 (if (:elements el)
+                                   [:span.fa.fa-folder]
+                                   "?"))])
+    nm
+    (when (:required el) [:span.required "*"])
+
+    " "
+    (when-let [tp (:type el)]
+      [:span.tp-link  tp])
+    (when (:collection el) [:span.tp-link.coll " [0..*]"])
+    ]
+   [:div.desc (:description el)]])
+
+(defn new-elements [elements]
+  (->> elements
+       (reduce (fn [acc [nm el]]
+                 (conj acc
+                       [:div.el
+                        (element-row nm el)
+                        (when-let [els (or (:elements el) (and (= :extension nm) el))]
+                          (new-elements els))])
+                 ) [:div.el-cnt])))
+
+
 (defn profile [ctx {{rt :resource-type nm :profile} :route-params :as req}]
   (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])
         base (read-yaml (str "/Users/niquola/igpop/igpop-fhir-4.0.0/" rt ".yaml"))
@@ -179,12 +159,9 @@
              [:hr]
 
              [:br]
-              (new-elements (:elements profile))
              [:br]
-             [:h5 [:div.tp.profile.complex "Pr"] rt]
-             (let [rows (elements [] [] (:elements profile))]
-               [:table.prof
-                (into [:tbody] rows)])
+             [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
+              (new-elements (:elements profile))
 
              [:br]
              [:h3 "Examples"]

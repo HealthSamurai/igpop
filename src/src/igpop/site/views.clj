@@ -13,10 +13,7 @@
       :flex-direction "column"
       :font-family "'Roboto', sans-serif"
       :display "grid"
-      :grid-template-areas (str/join "\n"
-                                     ["\"header header header\" "
-                                      "\"nav content ads\""])
-
+      :grid-template-areas (str/join "\n" ["\"header header header\" " "\"nav content ads\""])
       :grid-template-rows "60px 1fr"
       :grid-template-columns "20% 1fr 15%"
       :grid-gap "0px"
@@ -93,180 +90,115 @@
        :padding "40px 88px"
        :grid-area "content"
        :font-size "16px"
-       :font-family "Content-font, Roboto, sans-serif"
+       :font-family "Roboto, sans-serif"
        :font-weight "400"
-       :line-height "1.625"
-       }
-
+       :line-height "1.625"}
       [:h1 {:margin-bottom "20px"
             :font-weight "800"
             :font-family "'Montserrat', sans-serif"}]
       [:hr {:border-top "2px solid #E6ECF1"}]
       [:span.sub {:float :right
                   :font-size "16px"
-                  :color "#888" :display "inline-block"}]
-      ;; [:.profile {:box-shadow "1px 2px 3px #E6ECF1"}]
+                  :color "#888" :display "inline-block"}]]
+     [:#db-content
+      {:background-color "white"
+       :padding "40px 0px"
+       :margin "0 -40px"
+       :grid-area "content"
+       :font-size "16px"
+       :font-family "Roboto, sans-serif"
+       :font-weight "400"
+       :line-height "1.625"}
 
-      [:.summary {:color "#74818D"}]
-      [:.required {:color "red" :opacity 0.5}]
-      [:.coll {:color "#888"}]
-      [:.tp {:position "relative"
-             :z-index 10
-             :display "inline-block"
-             :opacity 0.5
-             :font-size "10px"
-             :margin-right "1em"
-             :background-color "white"
-             :box-shadow "0px 0px 2px #5b6975"
-             :color "#5b6975"
-             :font-weight "800"
-             :vertical-align "middle"
-             :line-height "20px"
-             :text-align "center"
-             :width "20px" :height "20px"
-             :border-radius "20px"}
-       [:.fa {:padding-top "5px" :font-size "12px"}]
-       [:&.profile {}]
-       [:&.complex :&.obj
-        {
-         ;; :border "1px solid #aaa"
-         :border-radius "3px"
-         ;; :background-color "white"
-         :color "#555"}]]
-      [:.desc {:color "#5b6975"
-               :font-size "14px"}]
-      [:table.prof
-       {:width "100%"
-        ;; :background-color "#f9f9f9"
-        :margin-left "10px"
-        ;; :font-family "'Montserrat', sans-serif"
-        :border-left "1px dotted #aaa"}
-       [:tr {:margin 0 :padding 0
-             :border-bottom "1px solid #e6ecf0"}
-        [:&:hover {:background-color "#f5f7f9"}
-         [:.tp {:opacity 1}]
-         ]
-        [:&:last-of-type {:border "none"}]
-        ]
-       
-       [:td.tree {:white-space "nowrap"}]
-       [:td {:margin 0 :line-height "30px" :padding 0}]]
-      [:.sps {:border-left "1px dotted #aaa"
-              :margin-left "20px"
-              :position "relative"
-              :top "-18px"
-              :display "inline-block"
-              :height "34px"
-              ;; :margin-top "0px"
-              :margin-bottom "-10px"
-              }
-       #_[:&.last {:margin-bottom "4px"
-                 :height "18px"
-                 }]]
-      [:.lsps {:border-left "1px solid transparent"
-              :height "20px"
-              :margin-left "20px"
-              :display "inline-block"
-              }]
-      [:.conn {:width "10px"
-               :display "inline-block"
-               :vertical-align "top"
-               :margin-top "16px"
-               :border-top "1px dotted #aaa"}]
-      [:.tp-link {:font-size "13px"
-                  :color "#909aa2"}]
-      [:.nm {:display "inline-block"
-             :font-size "15px"
-             ;; :font-weight "600"
-             ;; :letter-spacing "0.01em"
-             
-             }]
+      [:.db-item
+       {:box-shadow "0 3px 8px 0 rgba(116, 129, 141, 0.1)"
+        :display "inline-block"
+        :width "350px"
+        :padding "16px 24px"
+        :border "1px solid #E6ECF1"
+        :color "#242A31"
+        :background-color "white"
+        :vertical-align "top"
+        :border-radius "3px"
+        :margin-right "1em"
+        :min-height "108px"
+        :margin-bottom "1em"}
 
-      
-      
-      
-
-      ]
-[:#db-content
-       {:background-color "white"
-        :padding "40px 0px"
-        :margin "0 -40px"
-        :grid-area "content"
-        :font-size "16px"
-        :font-family "Content-font, Roboto, sans-serif"
-        :font-weight "400"
-        :line-height "1.625"
-        }
-
-       [:.db-item
-        {:box-shadow "0 3px 8px 0 rgba(116, 129, 141, 0.1)"
-         :display "inline-block"
-         :width "350px"
-         :padding "16px 24px"
-         :border "1px solid #E6ECF1"
-         :color "#242A31"
-         :background-color "white"
-         :vertical-align "top"
-         :border-radius "3px"
-         
-         :margin-right "1em"
-         :min-height "108px"
-         :margin-bottom "1em"
-         }
-        [:&:hover {:text-decoration "none"
-                   :border-color "rgb(56, 132, 254)"
-                   :opacity 1
-                   :color "#3884FE"
-                   }]
-        [:h5 {:font-size "16px"
-              :font-weight "800"}]
-        [:.desc {:color "#9DAAB6"}]
-        ]]
-
-
-     ]
-    [:.el-cnt
-     ;; {:border-left "1px solid #aaa"}
-     [:.el {:border-left "1px solid #aaa"}
-      [:&:last-of-type {:border-left-color "transparent"}
-       [:.el-title  {:border-left-color "transparent"}]]]
-     [:.link
-      {:width "10px"
-       :height "14px"
-       :display "inline-block"
-       :position "absolute"
-       :top 0
-       :left "-1px" 
-       ;; :margin-top "14px"
-       :border-bottom "1px solid #aaa"
-       :border-left "1px solid #aaa"
-       }]
-     [:.el-title {:border-bottom "1px solid #f1f1f1"
-                  :padding-left "10px"
-                  :position "relative"
-                  :margin-top "-1px"
-                  :border-top "1px solid #f1f1f1"
-                  :border-left "1px solid #aaa"
-                  :margin-left "-1px"}
-      [:&:last-of-type {:border-left-color "transparent"}]
-      [:&:hover {:background-color "#f9f9f9"}]
-      ]
-     [:b {:width "200px" :display "inline-block"}]
-     [:.desc {:display "inline-block"}]
-     [:.box {:display "inline-block"
-             :vertical-align "middle"
-             :margin-right "0.8em"
-             :width "20px" :height "20px"
-             :border "1px solid #ddd"
-             :border-radius "100%"}]
-     [:.el-cnt {:margin-left "20px"}
-      [:b {:width "180px" :display "inline-block"}]
+       [:&:hover {:text-decoration "none"
+                  :border-color "rgb(56, 132, 254)"
+                  :opacity 1
+                  :color "#3884FE"}]
+       [:h5 {:font-size "16px"
+             :font-weight "800"}]
+       [:.desc {:color "#9DAAB6"}]]]]
+    [:.summary {:color "#74818D"}]
+    [:.tp {:position "relative"
+           :z-index 10
+           :display "inline-block"
+           :opacity 0.6
+           :font-size "10px"
+           :margin-right "1em"
+           :background-color "white"
+           :box-shadow "0px 0px 2px black"
+           :color "#5b6975"
+           :font-weight "800"
+           :vertical-align "middle"
+           :line-height "20px"
+           :text-align "center"
+           :width "20px" :height "20px"
+           :border-radius "20px"}
+     [:.fa {:padding-top "5px" :font-size "12px"}]
+     [:&.complex :&.obj {:border-radius "3px"}]
+     [:&.profile {:margin-left "-10px" :border-radius "3px"}]]
+    ;; profile 
+    (let [link-color "#b3bac0" ;;"#e6ecf0"
+          link-border (str "1px solid " link-color)
+          left-width 360]
       [:.el-cnt
-       [:b {:width "160px" :display "inline-block"}]
-       ]
-      ]
-     ]
-    ]))
+       {:color "rgb(33,37,41)"
+        :font-weight "400"}
+
+       [:.required {:color "red" :opacity 0.7 :margin "0 0.2em"}]
+       [:.coll {:color "#888"}]
+       [:.desc {:color "#5b6975" :font-size "14px"}]
+       [:.tp-link {:font-size "13px" :color "#909aa2"}]
+       
+
+       [:.el {:border-left link-border}
+        [:&:last-of-type {:border-left-color "transparent"}
+         [:.el-title  {:border-left-color "transparent"
+                       :font-size "15px"
+                       :line-height "30px"}]]]
+       [:.el-title {:border-bottom "1px solid #f1f1f1"
+                    :padding-left "10px"
+                    :position "relative"
+                    :line-height "30px"
+                    :border-left link-border
+                    :margin-left "-1px"}
+        
+        [:&:hover {}]
+        [:&:last-of-type {:border-left-color "transparent"}]]
+       [:.link
+        {:width "10px"
+         :height "22px"
+         :display "inline-block"
+         :position "absolute"
+         :top "-5px" 
+         :left "-1px" 
+         ;; :margin-top "14px"
+         :border-bottom link-border 
+         :border-left link-border}]
+       
+       [:.nm {:width (str left-width "px")
+              :color "rgb(59, 69, 78)"
+              :display "inline-block"
+              :font-size "15px"}]
+       
+       [:.desc {:display "inline-block"}]
+       [:.el-cnt {:margin-left "20px"}
+        [:.nm {:width (str (- left-width 20) "px")}]
+        [:.el-cnt
+         [:.nm {:width (str (- left-width 40) "px")}]]]])]))
 
 (defn layout [& content]
   (hc/html [:html
@@ -279,9 +211,6 @@
 
              [:link {:href "//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" :rel "stylesheet"}]
              [:link {:href "//fonts.googleapis.com/css?family=Montserrat|Roboto&display=swap" :rel "stylesheet"}]
-             ;; [:link {:href "//fonts.googleapis.com/css?family Montserrat:100,300,400,500,700,900" :rel "stylesheet"}]
-             ;; [:link {:href "//fonts.googleapis.com/css?family=Roboto" :rel "stylesheet"}]
-             ;; [:link {:href "//fonts.googleapis.com/css?family Roboto:100,300,400,500,700,900" :rel "stylesheet"}]
              [:style style]
              [:title "IGPOP"]]
             [:body
