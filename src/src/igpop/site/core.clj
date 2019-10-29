@@ -223,19 +223,34 @@
            [:h1 "Valuesets"]])}
   )
 
+(comment (defn valueset [ctx {{vid :valuset-id} :route-params :as req}]
+           {:status 200
+            :body (views/layout
+                   (top-nav)
+                   [:div#main-menu
+                    [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
+                   [:div#content [:h1 "Valueset " vid]])}))
+
 (defn valueset [ctx {{vid :valuset-id} :route-params :as req}]
-  {:status 200
-   :body (views/layout
-          (top-nav)
-          [:div#main-menu
-           [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
-          [:div#content [:h1 "Valueset " vid]])}
-  )
+  (let [vs (get-in ctx [:valuesets (-> "vs."
+                                       (str vid)
+                                       keyword)])
+        description (get vs :description)]
+    {:status 200
+     :body (views/layout
+            (top-nav)
+            [:div#main-menu
+             [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
+            [:div#content [:h1 "Valueset " vid]
+             [:div.summary description]
+             [:hr]
+             [:br]
+             (valuesets/render-tb-vs vs)])}))
 
 (def routes
   {:GET #'welcome
    "valuesets" {:GET #'valuesets-dashboard
-                [:valuset-id] {:GET #'valuesets/vs}}
+                [:valuset-id] {:GET #'valueset}}
    "profiles" {:GET #'profiles-dashboard
                [:resource-type] {:GET #'profile
                                  [:profile] {:GET #'profile}}}})
