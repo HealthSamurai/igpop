@@ -129,73 +129,7 @@
        [:h5 {:font-size "16px"
              :font-weight "800"}]
        [:.desc {:color "#9DAAB6" :font-size "14px"}]]]]
-    [:.summary {:color "#74818D"}]
-    [:.tp {:position "relative"
-           :z-index 10
-           :display "inline-block"
-           :opacity 0.6
-           :font-size "10px"
-           :margin-right "1em"
-           :background-color "white"
-           :box-shadow "0px 0px 2px black"
-           :color "#5b6975"
-           :font-weight "800"
-           :vertical-align "middle"
-           :line-height "20px"
-           :text-align "center"
-           :width "20px" :height "20px"
-           :border-radius "20px"}
-     [:.fa {:padding-top "5px" :font-size "12px"}]
-     [:&.complex :&.obj {:border-radius "3px"}]
-     [:&.profile {:margin-left "-10px" :border-radius "3px"}]]
-    ;; profile 
-    (let [link-color "#b3bac0" ;;"#e6ecf0"
-          link-border (str "1px solid " link-color)
-          left-width 360]
-      [:.el-cnt
-       {:color "rgb(33,37,41)"
-        :font-weight "400"}
-
-       [:.required {:color "red" :opacity 0.7 :margin "0 0.2em"}]
-       [:.coll {:color "#888"}]
-       [:.desc {:color "#5b6975" :font-size "14px"}]
-       [:.tp-link {:font-size "13px" :color "#909aa2"}]
-
-       [:.el {:border-left link-border}
-        [:&:last-of-type {:border-left-color "transparent"}
-         [:.el-header  {:border-left-color "transparent"
-                       :font-size "15px"
-                       :line-height "30px"}]]]
-       [:.el-header {:border-bottom "1px solid #f1f1f1"
-                    :padding-left "10px"
-                    :position "relative"
-                    :line-height "30px"
-                    :border-left link-border
-                    :margin-left "-1px"}
-        
-        [:&:hover {}]
-        [:&:last-of-type {:border-left-color "transparent"}]]
-       [:.link
-        {:width "10px"
-         :height "22px"
-         :display "inline-block"
-         :position "absolute"
-         :top "-5px" 
-         :left "-1px" 
-         ;; :margin-top "14px"
-         :border-bottom link-border 
-         :border-left link-border}]
-       
-       [:.nm {:width (str left-width "px")
-              :color "rgb(59, 69, 78)"
-              :display "inline-block"
-              :font-size "15px"}]
-       
-       [:.desc {:display "inline-block"}]
-       [:.el-cnt {:margin-left "20px"}
-        [:.nm {:width (str (- left-width 20) "px")}]
-        [:.el-cnt
-         [:.nm {:width (str (- left-width 40) "px")}]]]])]))
+    [:.summary {:color "#74818D"}]]))
 
 (defn top-nav []
   [:div#header

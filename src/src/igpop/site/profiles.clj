@@ -2,7 +2,75 @@
   (:require
    [igpop.site.views :as views]
    [clojure.string :as str]
+   [garden.core :as gc]
    [clj-yaml.core]))
+
+(def styles
+  [:body
+   [:.profile {:margin "0 20px"}]
+   [:.tp {:position "relative"
+          :z-index 10
+          :display "inline-block"
+          :opacity 0.6
+          :font-size "10px"
+          :margin-right "1em"
+          :background-color "white"
+          :box-shadow "0px 0px 2px black"
+          :color "#5b6975"
+          :font-weight "800"
+          :vertical-align "middle"
+          :line-height "20px"
+          :text-align "center"
+          :width "20px" :height "20px"
+          :border-radius "20px"}
+    [:.fa {:padding-top "5px" :font-size "12px"}]
+    [:&.complex :&.obj {:border-radius "3px"}]
+    [:&.profile {:margin-left "-10px" :border-radius "3px"}]]
+   (let [link-color "#b3bac0" ;;"#e6ecf0"
+         link-border (str "1px solid " link-color)
+         left-width 360]
+     [:.el-cnt
+      {:color "rgb(33,37,41)"
+       :font-weight "400"}
+
+      [:.required {:color "red" :opacity 0.7 :margin "0 0.2em"}]
+      [:.coll {:color "#888"}]
+      [:.desc {:color "#5b6975" :font-size "14px"}]
+      [:.tp-link {:font-size "13px" :color "#909aa2"}]
+
+      [:.el {:border-left link-border}
+       [:&:last-of-type {:border-left-color "transparent"}
+        [:.el-header  {:border-left-color "transparent"
+                       :font-size "15px"
+                       :line-height "30px"}]]]
+      [:.el-header {:border-bottom "1px solid #f1f1f1"
+                    :padding-left "10px"
+                    :position "relative"
+                    :line-height "30px"
+                    :border-left link-border
+                    :margin-left "-1px"}
+       [:&:hover {}]
+       [:&:last-of-type {:border-left-color "transparent"}]]
+      [:.link
+       {:width "10px"
+        :height "22px"
+        :display "inline-block"
+        :position "absolute"
+        :top "-5px" 
+        :left "-1px" 
+        :border-bottom link-border 
+        :border-left link-border}]
+      [:.el-title {:width (str left-width "px")
+             :color "rgb(59, 69, 78)"
+             :display "inline-block"
+             :font-size "15px"}]
+      [:.desc {:display "inline-block"}]
+      [:.el-cnt {:margin-left "20px"}
+       [:.el-title {:width (str (- left-width 20) "px")}]
+       [:.el-cnt
+        [:.el-title {:width (str (- left-width 40) "px")}]]]])])
+
+(def style-tag [:style (gc/css styles)])
 
 (defn enrich [base profile]
   (if-let [els (:elements profile)]
@@ -70,22 +138,21 @@
 
 (defn collection-span [el]
   (when (:collection el)
-    [:span.tp-link.coll (str "[" (or (:minItems el) 0) ".." (or (:maxItems el) "*") "]")]))
+    [:span.tp-link.coll (str " [" (or (:minItems el) 0) ".." (or (:maxItems el) "*") "]")]))
 
 (defn element-row [nm el]
   [:div.el-header [:span.link]
-   [:span.nm (type-icon nm el) nm (required-span el) " " (type-span el) (collection-span el)]
+   [:span.el-title (type-icon nm el) nm (required-span el) " " (type-span el) (collection-span el)]
    [:div.desc (:description el)]])
 
 (defn new-elements [elements]
   (->> elements
-       (reduce (fn [acc [nm el]]
-                 (conj acc
-                       [:div.el
-                        (element-row nm el)
-                        (when-let [els (or (:elements el) (and (= :extension nm) el))]
-                          (new-elements els))])
-                 ) [:div.el-cnt])))
+       (mapv (fn [[nm el]]
+               [:div.el
+                (element-row nm el)
+                (when-let [els (or (:elements el) (and (= :extension nm) el))]
+                  (new-elements els))]))
+       (into [:div.el-cnt])))
 
 
 (defn profile [ctx {{rt :resource-type nm :profile} :route-params :as req}]
@@ -94,16 +161,16 @@
         profile (enrich base profile)]
     {:status 200
      :body (views/layout
+            style-tag
             (menu ctx req)
             [:div#content
              [:h1 rt " " [:span.sub (str/lower-case rt) "-" nm]]
              [:div.summary (:description profile)]
              [:hr]
-
              [:br]
-             [:br]
-             [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
-              (new-elements (:elements profile))
+             [:div.profile
+              [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
+              (new-elements (:elements profile))]
 
              [:br]
              [:h3 "Examples"]
@@ -111,22 +178,22 @@
              [:h3 "API"]
              ])}))
 
+(defn profile-link [rt nm pr]
+  [:a.db-item {:href (str "/profiles/" (name rt) "/" (name nm))}
+   [:h5 (name rt) ":" (name nm)]
+   [:div.desc (subs (:description pr) 0 (min (count (:description pr)) 55))]])
+
 (defn profiles-dashboard [ctx {{rt :resource-type nm :profile} :route-params :as req}]
   {:status 200
    :body (views/layout
-          (->> (:profiles ctx)
-               (sort-by first)
-               (reduce (fn [acc [rt profiles]]
-                         (->> profiles
-                              (reduce (fn [acc [nm pr]]
-                                        (conj acc 
-                                              [:a.db-item {:href (str "/profiles/" (name rt) "/" (name nm))}
-                                               [:h5 (name rt) ":" (name nm)]
-                                               [:div.desc (subs (:description pr) 0 (min (count (:description pr)) 55))]])
-
-                                        ) acc))
-
-                         ) [:div#db-content])))})
+          style-tag
+          (into [:div#db-content]
+                (->> (:profiles ctx)
+                     (sort-by first)
+                     (mapcat
+                      (fn [[rt profiles]]
+                        (->> profiles
+                             (mapv (fn [[nm pr]] (profile-link rt nm pr)))))))))})
 
 
 

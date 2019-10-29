@@ -43,8 +43,6 @@
 
   )
 
-
-
 (defn ig []
   (read-profiles ig-path)
   )
@@ -114,10 +112,3 @@
   (handler {:uri "/" :request-method :get})
 
   )
-
-
-
-
-
-
-
