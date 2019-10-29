@@ -21,7 +21,7 @@
           (fn [acc f]
             (let [nm (.getName f)]
               (println nm)
-              (if (str/starts-with? nm "valueset")
+              (if (str/starts-with? nm "vs.")
                 acc
                 (if (and (str/ends-with? nm ".yaml"))
                   (let [rt (str/replace nm #"\.yaml$" "")]
