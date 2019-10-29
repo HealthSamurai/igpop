@@ -123,7 +123,6 @@
         :margin-right "1em"
         :min-height "108px"
         :margin-bottom "1em"}
-
        [:&:hover {:text-decoration "none"
                   :border-color "rgb(56, 132, 254)"
                   :opacity 1
