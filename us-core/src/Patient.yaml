@@ -44,7 +44,7 @@ elements:
       system: { required: true }
       value:  { required: true, description: The value that is unique within the system }
   name:
-    minItems: [1]
+    minItems: 1
     description: A name associated with the patient
     rule: 'family.count() + given.count() >= 1'
     elements: { family: {}, given: {}}

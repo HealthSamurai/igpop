@@ -3,7 +3,6 @@
             [hiccup.core :as hc]
             [clojure.string :as str]))
 
-
 (def style
   (gc/css
    [:body
@@ -129,7 +128,7 @@
                   :color "#3884FE"}]
        [:h5 {:font-size "16px"
              :font-weight "800"}]
-       [:.desc {:color "#9DAAB6"}]]]]
+       [:.desc {:color "#9DAAB6" :font-size "14px"}]]]]
     [:.summary {:color "#74818D"}]
     [:.tp {:position "relative"
            :z-index 10
@@ -161,14 +160,13 @@
        [:.coll {:color "#888"}]
        [:.desc {:color "#5b6975" :font-size "14px"}]
        [:.tp-link {:font-size "13px" :color "#909aa2"}]
-       
 
        [:.el {:border-left link-border}
         [:&:last-of-type {:border-left-color "transparent"}
-         [:.el-title  {:border-left-color "transparent"
+         [:.el-header  {:border-left-color "transparent"
                        :font-size "15px"
                        :line-height "30px"}]]]
-       [:.el-title {:border-bottom "1px solid #f1f1f1"
+       [:.el-header {:border-bottom "1px solid #f1f1f1"
                     :padding-left "10px"
                     :position "relative"
                     :line-height "30px"
@@ -199,6 +197,14 @@
         [:.el-cnt
          [:.nm {:width (str (- left-width 40) "px")}]]]])]))
 
+(defn top-nav []
+  [:div#header
+   [:h5 "FHIR RU Core"]
+   [:div#top-nav
+    [:a {:href "/"} "Docs"]
+    [:a {:href "/profiles"} "Profiles"]
+    [:a {:href "/valuesets"} "ValueSets"]]])
+
 (defn layout [& content]
   (hc/html [:html
             [:head
@@ -213,7 +219,7 @@
              [:style style]
              [:title "IGPOP"]]
             [:body
-             (into [:div.body] content)
+             (into [:div.body (top-nav)] content)
              ;; [:script {:src "/assets/listener.js"}]
              ;; [:script {:src "/assets/jquery-3.4.1.min.js"}]
              ;; [:script {:src "/assets/menu-handler.js"}]
