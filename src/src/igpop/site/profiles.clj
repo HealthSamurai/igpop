@@ -32,6 +32,25 @@
     [:.fa {:padding-top "5px" :font-size "12px"}]
     [:&.complex :&.obj {:border-radius "3px"}]
     [:&.profile {:margin-left "-10px" :border-radius "3px"}]]
+
+   [:.activeS {:display "none"
+               ;;:-webkit-transform "translateY(-100%)"
+               ;;:transform "translateY(-100%)"
+               ;;:transition "transform 3000ms linear"
+               ;;:will-change "transform"
+               }]
+
+   [:.table {:display "table"
+             :border-collapse "collapse"
+             :margin-top "24px"
+             :margin-bottom "32px"}]
+   [:.row {:display "table-row"
+           :border-bottom "1px solid #f1f1f1"}]
+   [:.column {:display "table-cell"
+              :padding "8px"}]
+   [:.first-line {:border-bottom "2px solid #E6ECF1"
+                  :color "#5b6975"}]
+
    (let [link-color "#b3bac0" ;;"#e6ecf0"
          link-border (str "1px solid " link-color)
          left-width 360]
@@ -242,8 +261,9 @@
              [:br]
              [:h3 "Examples"]
              [:br]
-             [:h3 "API"]
-             ])}))
+             [:h3 "API"]]
+            [:script {:src "/static/jquery-3.4.1.min.js"}]
+            [:script {:src "/static/collapse-structure.js"}])}))
 
 (defn profile-link [rt nm pr]
   [:a.db-item {:href (str "/profiles/" (name rt) "/" (name nm))}

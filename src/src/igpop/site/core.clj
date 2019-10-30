@@ -21,31 +21,6 @@
            [:h1 "Hello"]])})
 
 
-(defn valuesets-dashboard [ctx req]
-  {:status 200
-   :body (views/layout
-          [:div#main-menu
-           [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
-          [:div#content
-           [:h1 "Valuesets"]])})
-
-
-(defn valueset [ctx {{vid :valuset-id} :route-params :as req}]
-  (let [vs (get-in ctx [:valuesets (-> "vs."
-                                       (str vid)
-                                       keyword)])
-        description (get vs :description)]
-    {:status 200
-     :body (views/layout
-            [:div#main-menu
-             [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
-            [:div#content [:h1 "Valueset " vid]
-             [:div.summary description]
-             [:hr]
-             [:br]
-             (valuesets/render-tb-vs vs)])}))
-
-
 (defn handle-static [h {meth :request-method uri :uri :as req}]
   (if (and (#{:get :head} meth)
            (or (str/starts-with? (or uri "") "/static/")
@@ -84,7 +59,6 @@
   (def srv (start 8899))
 
   (srv)
-  srv
 
   (handler {:uri "/" :request-method :get})
 
