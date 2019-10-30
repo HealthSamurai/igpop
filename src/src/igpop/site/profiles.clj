@@ -14,6 +14,7 @@
   [:body
    [:.profile {:margin "0 20px"}]
    [:.tp {:position "relative"
+          :margin-top "5px"
           :z-index 10
           :display "inline-block"
           :opacity 0.6
@@ -42,20 +43,28 @@
       [:.coll {:color "#888"}]
       [:.desc {:color "#5b6975" :font-size "14px"}]
       [:.tp-link {:font-size "13px" :color "#909aa2"}]
+      [:.el-header {:padding-left "10px"
+                    :position "relative"
+                    :display "flex"
+                    :flex-direction "row"
+                    :justify-content "flex-start"
+                    :line-height "30px"
+                    :border-left link-border
+                    :margin-left "-1px"}
+       [:&:hover {}]
+       [:&:last-of-type {:border-left-color "transparent"}]]
+      [:.el-line {
+                  :display "flex"
+                  :flex-direction "row"
+                  :justify-content "flex-start"
+                  }]
 
       [:.el {:border-left link-border}
        [:&:last-of-type {:border-left-color "transparent"}
         [:.el-header  {:border-left-color "transparent"
                        :font-size "15px"
                        :line-height "30px"}]]]
-      [:.el-header {
-                    :padding-left "10px"
-                    :position "relative"
-                    :line-height "30px"
-                    :border-left link-border
-                    :margin-left "-1px"}
-       [:&:hover {}]
-       [:&:last-of-type {:border-left-color "transparent"}]]
+      
       [:.link
        {:width "10px"
         :height "22px"
@@ -65,12 +74,12 @@
         :left "-1px" 
         :border-bottom link-border 
         :border-left link-border}]
-      [:.el-title {:width (str left-width "px")
-             :color "rgb(59, 69, 78)"
-             :display "inline-block"
-             :font-size "15px"}]
-      [:.el-text {:display "inline-block"
-                  :border-bottom "1px solid #f1f1f1"}]
+      [:.el-title
+       {:width (str left-width "px")
+        :color "rgb(59, 69, 78)"
+        :border-bottom "1px solid #f1f1f1"
+        :display "inline-block"
+        :font-size "15px"}]
       [:.desc {:display "inline-block"}]
       [:.el-cnt {:margin-left "20px"}
        [:.el-title {:width (str (- left-width 20) "px")}]
@@ -149,10 +158,12 @@
     [:span.tp-link.coll (str " [" (or (:minItems el) 0) ".." (or (:maxItems el) "*") "]")]))
 
 (defn element-row [nm el]
-  [:div.el-header [:span.link]
-   [:div.el-title (type-icon nm el)
-    [:div.el-text nm (required-span el) " " (type-span el) (collection-span el)
-     [:div.desc (:description el)]]]])
+  [:div.el-header
+   [:span.link]
+   (type-icon nm el)
+   [:div.el-line
+    [:div.el-title nm (required-span el) " " (type-span el) (collection-span el)]
+    [:div.desc (:description el)]]])
 
 (defn new-elements [elements]
   (->> elements
