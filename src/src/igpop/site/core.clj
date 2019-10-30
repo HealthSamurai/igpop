@@ -3,7 +3,7 @@
    [clojure.string :as str]
    [igpop.loader]
    [igpop.site.profiles]
-   [igpop.site.valuesets :as valuesets]
+   [igpop.site.valuesets]
    [igpop.site.views :as views]
    [org.httpkit.server]
    [ring.middleware.head]
@@ -19,7 +19,6 @@
            [:h5 "FHIR-RU Core"]]
           [:div#content
            [:h1 "Hello"]])})
-
 
 (defn handle-static [h {meth :request-method uri :uri :as req}]
   (if (and (#{:get :head} meth)
@@ -39,8 +38,8 @@
 
 (def routes
   {:GET #'welcome
-   "valuesets" {:GET #'valuesets-dashboard
-                [:valuset-id] {:GET #'valueset}}
+   "valuesets" {:GET #'igpop.site.valuesets/valuesets-dashboard
+                [:valuset-id] {:GET #'igpop.site.valuesets/valueset}}
    "profiles" {:GET #'igpop.site.profiles/profiles-dashboard
                [:resource-type] {:GET #'igpop.site.profiles/profile
                                  [:profile] {:GET #'igpop.site.profiles/profile}}}})
