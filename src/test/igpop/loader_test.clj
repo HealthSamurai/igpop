@@ -14,10 +14,13 @@
   (io/file project-path "node_modules" "igpop-fhir-4.0.0")
 
   (matcho/match
-   project
-   {:fhir {:profiles {:Patient {:elements {:name {}}}}}
-    :profiles {:Patient {:basic {}}}}
-   )
+   (:fhir project)
+   {:profiles {:Patient {:elements {:name {}}}}})
+
+  (matcho/match
+   (:profiles project)
+   {:Patient {:basic {}
+              :lab-report {}}})
 
   (get-in project [:profiles :Patient :basic])
 

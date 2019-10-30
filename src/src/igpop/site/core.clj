@@ -9,7 +9,8 @@
    [ring.middleware.head]
    [ring.util.codec]
    [ring.util.response]
-   [route-map.core]))
+   [route-map.core]
+   [clojure.java.io :as io]))
 
 (defn welcome [ctx req]
   {:status 200
@@ -20,8 +21,8 @@
           [:div#content
            [:h1 "Hello"]])})
 
-(defn handle-static [h {meth :request-method uri :uri :as req}]
-  (if (and (#{:get :head} meth)
+(defn handle-static [{meth :request-method uri :uri :as req}]
+  (when (and (#{:get :head} meth)
            (or (str/starts-with? (or uri "") "/static/")
                (str/starts-with? (or uri "") "/favicon.ico")))
     (let [opts {:root "public"
@@ -29,33 +30,41 @@
                 :allow-symlinks? true}
           path (subs (ring.util.codec/url-decode (:uri req)) 8)]
       (-> (ring.util.response/resource-response path opts)
-          (ring.middleware.head/head-response req)))
-    (h req)))
+          (ring.middleware.head/head-response req)))))
 
-(defn wrap-static [h]
-  (fn [req]
-    (handle-static h req)))
+(defn source [ctx req]
+  {:status 200
+   :body (clj-yaml.core/generate-string (dissoc ctx :fhir))})
 
 (def routes
   {:GET #'welcome
+   "ig.yaml" {:GET #'source}
    "valuesets" {:GET #'igpop.site.valuesets/valuesets-dashboard
                 [:valuset-id] {:GET #'igpop.site.valuesets/valueset}}
    "profiles" {:GET #'igpop.site.profiles/profiles-dashboard
                [:resource-type] {:GET #'igpop.site.profiles/profile
                                  [:profile] {:GET #'igpop.site.profiles/profile}}}})
 
-(defn dispatch [{uri :uri meth :request-method :as req}]
-  (if-let [{handler :match params :params} (route-map.core/match [meth uri] #'routes)]
-    (handler (ig) (assoc req :route-params params))
-    {:status 200 :body "Ok"}))
+(defn dispatch [ctx {uri :uri meth :request-method :as req}]
+  (or
+   (handle-static req)
+   (if-let [{handler :match params :params} (route-map.core/match [meth uri] #'routes)]
+     (do (igpop.loader/reload ctx)
+         (handler @ctx (assoc req :route-params params)))
+     {:status 200 :body "Ok"})))
 
-(def handler (wrap-static #'dispatch))
+(defn mk-handler [home]
+  (let [ctx (atom (igpop.loader/load-project home))]
+    (fn [req]
+      (dispatch ctx req))))
 
 (defn start [home port]
-  (org.httpkit.server/run-server #'handler {:port port}))
+  (let [h (mk-handler home)]
+    (org.httpkit.server/run-server h {:port port})))
 
 (comment
-  (def srv (start 8899))
+
+  (def srv (start (.getAbsolutePath (io/file ".." "us-core")) 8899))
 
   (srv)
 

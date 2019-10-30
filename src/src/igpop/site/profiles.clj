@@ -78,23 +78,20 @@
                   :flex 1
                   :justify-content "flex-start"
                   :border-bottom "1px solid #f1f1f1"}
-       [:&:hover {:background-color "#f5f7f9"}]
-       ]
+       [:&:hover {:background-color "#f5f7f9"}]]
 
       [:.el {:border-left link-border}
        [:&:last-of-type {:border-left-color "transparent"}
         [:.el-header  {:border-left-color "transparent"
                        :font-size "15px"
                        :line-height "30px"}]]]
-      
-      [:.down-link {
-                    :position "absolute"
+
+      [:.down-link {:position "absolute"
                     :top "27px"
                     :bottom "0px"
                     :left "20px"
                     :width "0px"
-                    :border-left link-border
-                    }]
+                    :border-left link-border}]
       [:.link
        {:width "10px"
         :height "17px"
@@ -115,14 +112,6 @@
 
 (def style-tag [:style (gc/css styles)])
 
-(defn enrich [base profile]
-  (if-let [els (:elements profile)]
-    (let [els' (reduce (fn [acc [k v]]
-                         (if-let [base-element (get-in base [:elements k])]
-                           (assoc acc k (enrich base-element v))
-                           acc)) els els)]
-      (assoc (merge (dissoc base :elements) profile) :elements els'))
-    (merge (dissoc base :elements) profile)))
 
 (defn current-page [uri res-url]
   (= uri res-url))
@@ -218,7 +207,8 @@
     (and (= :extension nm)) el
     (:union el) (->> (:union el)
                      (reduce (fn [acc tp]
-                               (assoc acc tp {:type tp})) {}))))
+                               (assoc acc tp (merge (or (get el (keyword tp)) {})
+                                                    {:type tp}))) {}))))
 
 (defn element-row [nm el]
   [:div.el-header
@@ -240,11 +230,8 @@
                   (new-elements els))]))
        (into [:div.el-cnt])))
 
-
 (defn profile [ctx {{rt :resource-type nm :profile} :route-params :as req}]
-  (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])
-        base (read-yaml (str "../igpop-fhir-4.0.0/" rt ".yaml"))
-        profile (enrich base profile)]
+  (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])]
     {:status 200
      :body (views/layout
             style-tag
@@ -258,10 +245,11 @@
               [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
               (new-elements (:elements profile))]
 
-             [:br]
-             [:h3 "Examples"]
-             [:br]
-             [:h3 "API"]]
+             ;; [:br]
+             ;; [:h3 "Examples"]
+             ;; [:br]
+             ;; [:h3 "API"]
+             ]
             [:script {:src "/static/jquery-3.4.1.min.js"}]
             [:script {:src "/static/collapse-structure.js"}])}))
 
