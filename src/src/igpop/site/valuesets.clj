@@ -1,7 +1,7 @@
 (ns igpop.site.valuesets
   (:require [igpop.site.views :as views]))
 
-(defn render-tb-vs [{concepts :concepts system :system :as vs}]
+(defn render-table [{concepts :concepts system :system :as vs}]
   (conj [:div.table
          [:div.row.th.first-line
           [:div.column
@@ -33,8 +33,7 @@
 (defn valuesets-dashboard [ctx req]
   {:status 200
    :body (views/layout
-          [:div#main-menu
-           [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
+          (menu-vs ctx req)
           [:div#content
            [:h1 "Valuesets"]])})
 
@@ -48,6 +47,4 @@
              [:div.summary description]
              [:hr]
              [:br]
-             (render-tb-vs vs)])}))
-
-
+             (render-table vs)])}))

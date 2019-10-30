@@ -4,7 +4,7 @@
    [clojure.java.io :as io]
    [clojure.string :as str]
    [igpop.site.profiles]
-   [igpop.site.valuesets :as valuesets]
+   [igpop.site.valuesets]
    [igpop.site.views :as views]
    [org.httpkit.server]
    [ring.middleware.head]
@@ -27,7 +27,9 @@
           (fn [acc f]
             (let [nm (.getName f)]
               (if (str/starts-with? nm "vs.")
-                (let [rt (str/replace nm #"\.yaml$" "")]
+                (let [rt (-> nm
+                             (str/replace #"\.yaml$" "")
+                             (str/replace #"vs." ""))]
                   (assoc-in acc [:valuesets (keyword rt)]
                             (read-yaml (.getPath f))))
                 (if (and (str/ends-with? nm ".yaml"))
@@ -60,38 +62,6 @@
           [:div#content
            [:h1 "Hello"]])})
 
-
-(defn valuesets-dashboard [ctx req]
-  {:status 200
-   :body (views/layout
-          [:div#main-menu
-           [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
-          [:div#content
-           [:h1 "Valuesets"]])})
-
-(comment (defn valueset [ctx {{vid :valuset-id} :route-params :as req}]
-           {:status 200
-            :body (views/layout
-                   [:div#main-menu
-                    [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
-                   [:div#content [:h1 "Valueset " [:span.sub vid]]])}))
-
-(defn valueset [ctx {{vid :valuset-id} :route-params :as req}]
-  (let [vs (get-in ctx [:valuesets (-> "vs."
-                                       (str vid)
-                                       keyword)])
-        description (get vs :description)]
-    {:status 200
-     :body (views/layout
-            [:div#main-menu
-             [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
-            [:div#content [:h1 "ValueSet " [:span.sub vid]]
-             [:div.summary description]
-             [:hr]
-             [:br]
-             (valuesets/render-tb-vs vs)])}))
-
-
 (defn handle-static [h {meth :request-method uri :uri :as req}]
   (if (and (#{:get :head} meth)
            (or (str/starts-with? (or uri "") "/static/")
@@ -110,8 +80,8 @@
 
 (def routes
   {:GET #'welcome
-   "valuesets" {:GET #'valuesets-dashboard
-                [:valuset-id] {:GET #'valueset}}
+   "valuesets" {:GET #'igpop.site.valuesets/valuesets-dashboard
+                [:valuset-id] {:GET #'igpop.site.valuesets/valueset}}
    "profiles" {:GET #'igpop.site.profiles/profiles-dashboard
                [:resource-type] {:GET #'igpop.site.profiles/profile
                                  [:profile] {:GET #'igpop.site.profiles/profile}}}})
