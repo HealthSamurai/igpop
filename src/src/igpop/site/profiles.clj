@@ -19,7 +19,7 @@
           :display "inline-block"
           :opacity 0.6
           :font-size "10px"
-          ;; :margin-right "1em"
+          :margin-right "4px"
           :background-color "white"
           :box-shadow "0px 0px 2px black"
           :color "#5b6975"
@@ -55,7 +55,7 @@
        [:&:last-of-type {:border-left-color "transparent"}]]
       [:.el-line {:display "flex"
                   :flex-direction "row"
-                  :padding-left "5px"
+                  :padding-left "0.6em"
                   :flex 1
                   :justify-content "flex-start"
                   :border-bottom "1px solid #f1f1f1"}
@@ -68,11 +68,19 @@
                        :font-size "15px"
                        :line-height "30px"}]]]
       
+      [:.down-link {
+                    :position "absolute"
+                    :top "27px"
+                    :bottom "0px"
+                    :left "20px"
+                    :width "0px"
+                    :border-left link-border
+                    }]
       [:.link
        {:width "10px"
-        :height "22px"
+        :height "17px"
         :position "absolute"
-        :top "-5px" 
+        :top "0px" 
         :left "-1px" 
         :border-bottom link-border 
         :border-left link-border}]
@@ -160,6 +168,8 @@
 (defn element-row [nm el]
   [:div.el-header
    [:span.link]
+   (when (:elements el)
+     [:span.down-link])
    (type-icon nm el)
    [:div.el-line
     [:div.el-title nm (required-span el) " " (type-span el) (collection-span el)]
