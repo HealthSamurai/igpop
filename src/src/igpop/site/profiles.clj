@@ -155,7 +155,7 @@
    "Meta" [:span.fa.fa-info-circle]
    "boolean" [:span.fa.fa-toggle-on]
    "Money" [:span.fa.fa-dollar-sign]
-   "base64" [:span.fa.fa-file-archive]
+   "base64Binary" [:span.fa.fa-file-archive]
    "integer" "Z" 
    "positiveInteger" "Z" 
    "Narrative" [:span.fa.fa-pen]

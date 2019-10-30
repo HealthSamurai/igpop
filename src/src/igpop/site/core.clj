@@ -1,8 +1,7 @@
 (ns igpop.site.core
   (:require
-   [clj-yaml.core]
-   [clojure.java.io :as io]
    [clojure.string :as str]
+   [igpop.loader]
    [igpop.site.profiles]
    [igpop.site.valuesets :as valuesets]
    [igpop.site.views :as views]
@@ -10,46 +9,7 @@
    [ring.middleware.head]
    [ring.util.codec]
    [ring.util.response]
-   [route-map.core]
-   ))
-
-(def ig-path "../us-core")
-
-(defn read-yaml [pth]
-  (clj-yaml.core/parse-string
-   (slurp pth)))
-
-(defn read-profiles [pth]
-  (let [manifest (read-yaml (str pth "/ig.yaml"))
-        files (file-seq (io/file (str pth "/src")))]
-    (->> files
-         (reduce
-          (fn [acc f]
-            (let [nm (.getName f)]
-              (if (str/starts-with? nm "vs.")
-                (let [rt (str/replace nm #"\.yaml$" "")]
-                  (assoc-in acc [:valuesets (keyword rt)]
-                            (read-yaml (.getPath f))))
-                (if (and (str/ends-with? nm ".yaml"))
-                  (let [rt (str/replace nm #"\.yaml$" "")]
-                    (println "Load.." rt)
-                    (assoc-in acc [:profiles (keyword rt) :basic]
-                              (read-yaml (.getPath f))))
-                  (do
-                    (println "TODO" nm)
-                    acc))))) {}))))
-
-(comment
-
-  (get-in (read-profiles ig-path) [:valuesets :vs.patient-identifiers])
-
-  (ig)
-
-  )
-
-(defn ig []
-  (read-profiles ig-path)
-  )
+   [route-map.core]))
 
 (defn welcome [ctx req]
   {:status 200
@@ -69,12 +29,6 @@
           [:div#content
            [:h1 "Valuesets"]])})
 
-(comment (defn valueset [ctx {{vid :valuset-id} :route-params :as req}]
-           {:status 200
-            :body (views/layout
-                   [:div#main-menu
-                    [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
-                   [:div#content [:h1 "Valueset " vid]])}))
 
 (defn valueset [ctx {{vid :valuset-id} :route-params :as req}]
   (let [vs (get-in ctx [:valuesets (-> "vs."
@@ -123,7 +77,7 @@
 
 (def handler (wrap-static #'dispatch))
 
-(defn start [port]
+(defn start [home port]
   (org.httpkit.server/run-server #'handler {:port port}))
 
 (comment
