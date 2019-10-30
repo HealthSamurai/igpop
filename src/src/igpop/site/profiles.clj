@@ -129,15 +129,38 @@
    "dateTime" [:span.fa.fa-clock]
    "Period" [:span.fa.fa-clock]
    "instant" [:span.fa.fa-clock]
+   "Range" [:span.fa.fa-arrows-alt-h]
+   "Distance" [:span.fa.fa-arrows-alt-h]
+   "SampledData" [:span.fa.fa-wave-square]
+   "time" [:span.fa.fa-clock]
+   "Duration" [:span.fa.fa-clock]
+   "Timing" [:span.fa.fa-calendar-check]
    "Address" [:span.fa.fa-home]
    "CodeableConcept" [:span.fa.fa-tags]
    "Coding" [:span.fa.fa-tag]
    "code" [:span.fa.fa-tag]
    "Identifier" [:span.fa.fa-fingerprint]
    "id" [:span.fa.fa-fingerprint]
+   "uri" [:span.fa.fa-link]
+   "canonical" [:span.fa.fa-link]
+   "Signature" [:span.fa.fa-signature]
+   "Attachment" [:span.fa.fa-file-download]
+   "url" [:span.fa.fa-link]
+   "Dosage" [:span.fa.fa-pills]
+   "oid" [:span.fa.fa-fingerprint]
+   "uuid" [:span.fa.fa-fingerprint]
+   "Quantity" [:span.fa.fa-tachometer-alt]
+   "Ratio" [:span.fa.fa-balance-scale]
    "HumanName" [:span.fa.fa-user]
+   "Meta" [:span.fa.fa-info-circle]
+   "boolean" [:span.fa.fa-toggle-on]
+   "Money" [:span.fa.fa-dollar-sign]
+   "base64" [:span.fa.fa-file-archive]
+   "integer" "Z" 
+   "positiveInteger" "Z" 
    "Narrative" [:span.fa.fa-pen]
    "string" [:span.fa.fa-pen]
+   "markdown" [:span.fa.fa-pen]
    "Annotation" [:span.fa.fa-pen]
    "ContactPoint" [:span.fa.fa-phone]})
 
@@ -145,11 +168,11 @@
   (if-let [tp (:type el)]
     [:span.tp {:class (str tp (when (Character/isUpperCase (first tp)) " complex"))}
      (or (get type-symbols tp) (subs tp 0 1))]
-    [:span.tp {:class "obj"} (if (= :extension nm)
-                               [:span.fa.fa-folder-plus]
-                               (if (:elements el)
-                                 [:span.fa.fa-folder]
-                                 "?"))]))
+    [:span.tp {:class "obj"} (cond
+                               (= :extension nm) [:span.fa.fa-folder-plus]
+                               (:union el) [:span.fa.fa-question-circle]
+                               (:elements el) [:span.fa.fa-folder]
+                               :else "?")]))
 (defn required-span [el]
   (when (or (:required el)
             (and (:minItems el)
@@ -165,22 +188,36 @@
   (when (:collection el)
     [:span.tp-link.coll (str " [" (or (:minItems el) 0) ".." (or (:maxItems el) "*") "]")]))
 
+(defn has-children? [el]
+  (or 
+   (:elements el)
+   (:union el)))
+
+(defn get-children [nm el]
+  (cond
+    (:elements el) (:elements el)
+    (and (= :extension nm)) el
+    (:union el) (->> (:union el)
+                     (reduce (fn [acc tp]
+                               (assoc acc tp {:type tp})) {}))))
+
 (defn element-row [nm el]
   [:div.el-header
    [:span.link]
-   (when (:elements el)
+   (when (has-children? el) 
      [:span.down-link])
    (type-icon nm el)
    [:div.el-line
     [:div.el-title nm (required-span el) " " (type-span el) (collection-span el)]
-    [:div.desc (:description el)]]])
+    [:div.desc
+     (:description el)]]])
 
 (defn new-elements [elements]
   (->> elements
        (mapv (fn [[nm el]]
                [:div.el
                 (element-row nm el)
-                (when-let [els (or (:elements el) (and (= :extension nm) el))]
+                (when-let [els (get-children nm el)]
                   (new-elements els))]))
        (into [:div.el-cnt])))
 
