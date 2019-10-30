@@ -19,7 +19,7 @@
           :display "inline-block"
           :opacity 0.6
           :font-size "10px"
-          :margin-right "1em"
+          ;; :margin-right "1em"
           :background-color "white"
           :box-shadow "0px 0px 2px black"
           :color "#5b6975"
@@ -51,13 +51,16 @@
                     :line-height "30px"
                     :border-left link-border
                     :margin-left "-1px"}
-       [:&:hover {}]
+       
        [:&:last-of-type {:border-left-color "transparent"}]]
-      [:.el-line {
-                  :display "flex"
+      [:.el-line {:display "flex"
                   :flex-direction "row"
+                  :padding-left "5px"
+                  :flex 1
                   :justify-content "flex-start"
-                  }]
+                  :border-bottom "1px solid #f1f1f1"}
+       [:&:hover {:background-color "#f5f7f9"}]
+       ]
 
       [:.el {:border-left link-border}
        [:&:last-of-type {:border-left-color "transparent"}
@@ -68,7 +71,6 @@
       [:.link
        {:width "10px"
         :height "22px"
-        :display "inline-block"
         :position "absolute"
         :top "-5px" 
         :left "-1px" 
@@ -77,10 +79,8 @@
       [:.el-title
        {:width (str left-width "px")
         :color "rgb(59, 69, 78)"
-        :border-bottom "1px solid #f1f1f1"
-        :display "inline-block"
         :font-size "15px"}]
-      [:.desc {:display "inline-block"}]
+      [:.desc {:flex 1}]
       [:.el-cnt {:margin-left "20px"}
        [:.el-title {:width (str (- left-width 20) "px")}]
        [:.el-cnt

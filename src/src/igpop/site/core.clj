@@ -130,6 +130,7 @@
   (def srv (start 8899))
 
   (srv)
+  srv
 
   (handler {:uri "/" :request-method :get})
 
