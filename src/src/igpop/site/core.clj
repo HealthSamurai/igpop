@@ -1,13 +1,17 @@
 (ns igpop.site.core
   (:require
-   [org.httpkit.server]
-   [route-map.core]
-   [igpop.site.views :as views]
-   [clojure.string :as str]
    [clj-yaml.core]
    [clojure.java.io :as io]
+   [clojure.string :as str]
    [igpop.site.profiles]
-   [igpop.site.valuesets :as valuesets]))
+   [igpop.site.valuesets :as valuesets]
+   [igpop.site.views :as views]
+   [org.httpkit.server]
+   [ring.middleware.head]
+   [ring.util.codec]
+   [ring.util.response]
+   [route-map.core]
+   ))
 
 (def ig-path "../us-core")
 
@@ -53,7 +57,6 @@
    :body (views/layout
           [:div#header
            [:h5 "FHIR-RU Core"]]
-          (menu ctx req)
           [:div#content
            [:h1 "Hello"]])})
 
@@ -88,6 +91,23 @@
              [:br]
              (valuesets/render-tb-vs vs)])}))
 
+
+(defn handle-static [h {meth :request-method uri :uri :as req}]
+  (if (and (#{:get :head} meth)
+           (or (str/starts-with? (or uri "") "/static/")
+               (str/starts-with? (or uri "") "/favicon.ico")))
+    (let [opts {:root "public"
+                :index-files? true
+                :allow-symlinks? true}
+          path (subs (ring.util.codec/url-decode (:uri req)) 8)]
+      (-> (ring.util.response/resource-response path opts)
+          (ring.middleware.head/head-response req)))
+    (h req)))
+
+(defn wrap-static [h]
+  (fn [req]
+    (handle-static h req)))
+
 (def routes
   {:GET #'welcome
    "valuesets" {:GET #'valuesets-dashboard
@@ -96,10 +116,12 @@
                [:resource-type] {:GET #'igpop.site.profiles/profile
                                  [:profile] {:GET #'igpop.site.profiles/profile}}}})
 
-(defn handler [{uri :uri meth :request-method :as req}]
+(defn dispatch [{uri :uri meth :request-method :as req}]
   (if-let [{handler :match params :params} (route-map.core/match [meth uri] #'routes)]
     (handler (ig) (assoc req :route-params params))
     {:status 200 :body "Ok"}))
+
+(def handler (wrap-static #'dispatch))
 
 (defn start [port]
   (org.httpkit.server/run-server #'handler {:port port}))

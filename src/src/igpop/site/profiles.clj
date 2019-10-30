@@ -5,6 +5,11 @@
    [garden.core :as gc]
    [clj-yaml.core]))
 
+
+(defn read-yaml [pth]
+  (clj-yaml.core/parse-string
+   (slurp pth)))
+
 (def styles
   [:body
    [:.profile {:margin "0 20px"}]
@@ -43,7 +48,7 @@
         [:.el-header  {:border-left-color "transparent"
                        :font-size "15px"
                        :line-height "30px"}]]]
-      [:.el-header {:border-bottom "1px solid #f1f1f1"
+      [:.el-header {
                     :padding-left "10px"
                     :position "relative"
                     :line-height "30px"
@@ -64,6 +69,8 @@
              :color "rgb(59, 69, 78)"
              :display "inline-block"
              :font-size "15px"}]
+      [:.el-text {:display "inline-block"
+                  :border-bottom "1px solid #f1f1f1"}]
       [:.desc {:display "inline-block"}]
       [:.el-cnt {:margin-left "20px"}
        [:.el-title {:width (str (- left-width 20) "px")}]
@@ -112,6 +119,7 @@
    "Identifier" [:span.fa.fa-fingerprint]
    "id" [:span.fa.fa-fingerprint]
    "HumanName" [:span.fa.fa-user]
+   "Narrative" [:span.fa.fa-pen]
    "string" [:span.fa.fa-pen]
    "Annotation" [:span.fa.fa-pen]
    "ContactPoint" [:span.fa.fa-phone]})
@@ -142,8 +150,9 @@
 
 (defn element-row [nm el]
   [:div.el-header [:span.link]
-   [:span.el-title (type-icon nm el) nm (required-span el) " " (type-span el) (collection-span el)]
-   [:div.desc (:description el)]])
+   [:div.el-title (type-icon nm el)
+    [:div.el-text nm (required-span el) " " (type-span el) (collection-span el)
+     [:div.desc (:description el)]]]])
 
 (defn new-elements [elements]
   (->> elements

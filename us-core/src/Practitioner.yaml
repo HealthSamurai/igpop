@@ -4,6 +4,11 @@ elements:
   id:
     type: id
     description: Назначается сервером
+  meta:
+    elements:
+      source:
+        description: Export source
+
   identifier:
     type: Identifier
     description: Идентификатор Врача
