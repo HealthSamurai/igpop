@@ -3,7 +3,7 @@
 
 (defn render-tb-vs [{concepts :concepts system :system :as vs}]
   (conj [:div.table
-         [:div.row.th
+         [:div.row.th.first-line
           [:div.column
            [:div.th "Code"]]
           [:div.column

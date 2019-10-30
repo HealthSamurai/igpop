@@ -4,7 +4,7 @@
    [clojure.java.io :as io]
    [clojure.string :as str]
    [igpop.site.profiles]
-   [igpop.site.valuesets]
+   [igpop.site.valuesets :as valuesets]
    [igpop.site.views :as views]
    [org.httpkit.server]
    [ring.middleware.head]
@@ -27,9 +27,7 @@
           (fn [acc f]
             (let [nm (.getName f)]
               (if (str/starts-with? nm "vs.")
-                (let [rt (-> nm
-                             (str/replace #"\.yaml$" "")
-                             (str/replace #"vs." ""))]
+                (let [rt (str/replace nm #"\.yaml$" "")]
                   (assoc-in acc [:valuesets (keyword rt)]
                             (read-yaml (.getPath f))))
                 (if (and (str/ends-with? nm ".yaml"))
@@ -43,9 +41,7 @@
 
 (comment
 
-  (keys (get-in (read-profiles ig-path) [:valuesets]))
-
-  (valuesets/menu-vs (read-profiles ig-path) {})
+  (get-in (read-profiles ig-path) [:valuesets :vs.patient-identifiers])
 
   (ig)
 
@@ -63,6 +59,38 @@
            [:h5 "FHIR-RU Core"]]
           [:div#content
            [:h1 "Hello"]])})
+
+
+(defn valuesets-dashboard [ctx req]
+  {:status 200
+   :body (views/layout
+          [:div#main-menu
+           [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
+          [:div#content
+           [:h1 "Valuesets"]])})
+
+(comment (defn valueset [ctx {{vid :valuset-id} :route-params :as req}]
+           {:status 200
+            :body (views/layout
+                   [:div#main-menu
+                    [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
+                   [:div#content [:h1 "Valueset " [:span.sub vid]]])}))
+
+(defn valueset [ctx {{vid :valuset-id} :route-params :as req}]
+  (let [vs (get-in ctx [:valuesets (-> "vs."
+                                       (str vid)
+                                       keyword)])
+        description (get vs :description)]
+    {:status 200
+     :body (views/layout
+            [:div#main-menu
+             [:a {:href "/valuesets/patient-identity"} "patient-identity"]]
+            [:div#content [:h1 "ValueSet " [:span.sub vid]]
+             [:div.summary description]
+             [:hr]
+             [:br]
+             (valuesets/render-tb-vs vs)])}))
+
 
 (defn handle-static [h {meth :request-method uri :uri :as req}]
   (if (and (#{:get :head} meth)
@@ -82,8 +110,8 @@
 
 (def routes
   {:GET #'welcome
-   "valuesets" {:GET #'igpop.site.valuesets/valuesets-dashboard
-                [:valuset-id] {:GET #'igpop.site.valuesets/valueset}}
+   "valuesets" {:GET #'valuesets-dashboard
+                [:valuset-id] {:GET #'valueset}}
    "profiles" {:GET #'igpop.site.profiles/profiles-dashboard
                [:resource-type] {:GET #'igpop.site.profiles/profile
                                  [:profile] {:GET #'igpop.site.profiles/profile}}}})

@@ -6,6 +6,17 @@
 (def style
   (gc/css
    [:body
+    [:.table {:display "table"
+              :border-collapse "collapse"
+              :margin-top "24px"
+              :margin-bottom "32px"}]
+    [:.row {:display "table-row"
+            :border-bottom "1px solid #f1f1f1"}]
+    [:.column {:display "table-cell"
+               :padding "8px"}]
+    [:.first-line {:border-bottom "2px solid #E6ECF1"
+                   :color "#5b6975"}]
+
     [:a {:color "rgb(217, 86, 64)"}]
     [:.body
      {:padding 0
