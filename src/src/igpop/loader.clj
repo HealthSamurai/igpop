@@ -9,11 +9,11 @@
    (slurp pth)))
 
 (defn enrich [ctx pth obj]
-  (let [base (-> (get-in ctx (into [:fhir :profiles] pth)) (dissoc :elements))]
+  (let [base (-> (get-in ctx (into [:base :profiles] pth)) (dissoc :elements))]
     (if-let [els (:elements obj)]
       (let [els' (reduce (fn [acc [k v]]
                            (let [next-pth (into pth [:elements k])]
-                             (if (get-in ctx (into [:fhir :profiles] next-pth))
+                             (if (get-in ctx (into [:base :profiles] next-pth))
                                (assoc acc k (enrich ctx next-pth v))
                                (if-let [tp (:type base)]
                                  (assoc acc k (enrich ctx [(keyword tp) :elements k] v))
@@ -28,14 +28,11 @@
     (->> files
          (reduce
           (fn [acc f]
-            (println "f:" (.getPath f))
             (let [nm (.getName f)]
               (cond
                 (.isDirectory f)
                 (let [rt (keyword (str/replace nm #"\.yaml$" ""))]
-                  
                   (reduce (fn [acc f]
-                            (println "Sub file" f)
                             (let [sub-nm (.getName f)]
                               (if (and (not (str/starts-with? sub-nm "vs."))
                                        (str/ends-with? sub-nm ".yaml"))
@@ -53,7 +50,6 @@
                             (read-yaml (.getPath f))))
                 (and (str/ends-with? nm ".yaml"))
                 (let [rt (keyword (str/replace nm #"\.yaml$" ""))]
-                  (println "Load.." rt)
                   (let [source (read-yaml (.getPath f))]
                     (-> acc
                         (assoc-in [:sources rt :basic] source)
@@ -95,15 +91,19 @@
 
     (let [manifest (read-yaml (.getPath manifest-file))
           fhir (when-let [fv (:fhir manifest)] (load-fhir home fv))
-          manifest' (assoc manifest :fhir fhir :home home)]
+          manifest' (assoc manifest :base fhir :home home)]
       (merge
        manifest'
        (load-defs manifest' home)))))
 
 (defn reload [ctx]
-  (reset! ctx
-          (merge (dissoc @ctx :profiles :sources :valuesets)
-                 (load-defs @ctx (:home @ctx)))))
+  (swap! ctx
+         (fn [{home :home :as ctx}]
+           (println "??" )
+           (merge
+            (dissoc ctx :profiles :sources :valuesets)
+            (read-yaml (io/file home "ig.yaml"))
+            (load-defs ctx home)))))
 
 
 

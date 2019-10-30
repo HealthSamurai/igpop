@@ -19,7 +19,7 @@
 
   (matcho/match
    (:profiles project)
-   {:Patient {:basic {}
+   {:Patient {:basic {:elements {:name {:type "HumanName"}}}
               :lab-report {}}})
 
   (get-in project [:profiles :Patient :basic])

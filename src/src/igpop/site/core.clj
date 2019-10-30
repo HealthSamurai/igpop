@@ -15,9 +15,7 @@
 (defn welcome [ctx req]
   {:status 200
    :headers {"content-type" "text/html"}
-   :body (views/layout
-          [:div#header
-           [:h5 "FHIR-RU Core"]]
+   :body (views/layout ctx
           [:div#content
            [:h1 "Hello"]])})
 

@@ -32,7 +32,7 @@
 
 (defn valuesets-dashboard [ctx req]
   {:status 200
-   :body (views/layout
+   :body (views/layout ctx
           (menu-vs ctx req)
           [:div#content
            [:h1 "Valuesets"]])})
@@ -41,7 +41,7 @@
   (let [vs (get-in ctx [:valuesets (keyword vid)])
         description (get vs :description)]
     {:status 200
-     :body (views/layout
+     :body (views/layout ctx
             (menu-vs ctx req)
             [:div#content [:h1 "Valueset " vid]
              [:div.summary description]

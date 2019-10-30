@@ -13,6 +13,14 @@
 (def styles
   [:body
    [:.profile {:margin "0 20px"}]
+   [:pre.example {:background-color "#f5f7f9"
+                  :border "1px solid #f5f7f9"
+                  :padding "15px"}]
+   [:.vs {:font-size "12px"
+          :font-decoration "underline"
+          :color "#3b454e"}
+    [:.fa {:font-size "10px"}]
+    ]
    [:.tp {:position "relative"
           :margin-top "5px"
           :z-index 10
@@ -129,7 +137,9 @@
          [:a (name rt)]
          (into [:section]
                (for [[nm pr] profiles]
-                 [:a {:href (str "/profiles/" (name rt) "/" (name nm))} (name nm)]))])])])
+                 (let [res-url (str "/profiles/" (name rt) "/" (name nm))]
+                   [:a {:href res-url :class (when (current-page uri res-url) "active")}
+                    (name nm)])))])])])
 
 (def type-symbols
   {"Reference" [:span.fa.fa-arrow-right]
@@ -219,7 +229,16 @@
    [:div.el-line
     [:div.el-title nm (required-span el) " " (type-span el) (collection-span el)]
     [:div.desc
-     (:description el)]]])
+     (when-let [d (:description el)]
+       [:span d " "])
+     (when-let [vs (:valueset el)]
+       [:a.vs {:href (str "/valuesets/" (:id vs))}
+        [:span.fa.fa-tag]
+        " "
+        (:id vs)]
+       )
+     
+     ]]])
 
 (defn new-elements [elements]
   (->> elements
@@ -233,7 +252,7 @@
 (defn profile [ctx {{rt :resource-type nm :profile} :route-params :as req}]
   (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])]
     {:status 200
-     :body (views/layout
+     :body (views/layout ctx
             style-tag
             (menu ctx req)
             [:div#content
@@ -245,8 +264,14 @@
               [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
               (new-elements (:elements profile))]
 
-             ;; [:br]
-             ;; [:h3 "Examples"]
+             [:br]
+             [:br]
+             [:h3 "Examples"]
+             [:br]
+             (for [[id example] (:examples profile)]
+               [:div
+                [:h5 id]
+                [:pre.example [:code (clj-yaml.core/generate-string example)]]])
              ;; [:br]
              ;; [:h3 "API"]
              ]
@@ -260,7 +285,7 @@
 
 (defn profiles-dashboard [ctx {{rt :resource-type nm :profile} :route-params :as req}]
   {:status 200
-   :body (views/layout
+   :body (views/layout ctx
           style-tag
           (into [:div#db-content]
                 (->> (:profiles ctx)

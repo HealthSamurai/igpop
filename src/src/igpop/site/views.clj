@@ -40,7 +40,9 @@
             :width "20%"
             :text-align "center"
             :padding "5px 0px"
-            :border-right "1px solid #ddd"}]
+            :border-right "1px solid #ddd"}
+       [:.fa {:color "#e94a35"
+              :text-shadow "-1px -1px 1px #000000c7"}]]
       [:#top-nav
        {:text-align "center"
         :padding-left "80px"
@@ -92,9 +94,7 @@
        {:border-left "1px solid #ddd"
         :margin-left "18px"}
        [:a {:color "gray"
-            :font-weight "400"
-            }]]
-      ]
+            :font-weight "400"}]]]
      [:#content
       {:background-color "white"
        :padding "40px 88px"
@@ -106,6 +106,8 @@
       [:h1 {:margin-bottom "20px"
             :font-weight "800"
             :font-family "'Montserrat', sans-serif"}]
+      [:h2 :h3 {:font-weight "800"
+                :font-family "'Montserrat', sans-serif"}]
       [:hr {:border-top "2px solid #E6ECF1"}]
       [:span.sub {:float :right
                   :font-size "16px"
@@ -142,15 +144,18 @@
        [:.desc {:color "#9DAAB6" :font-size "14px"}]]]]
     [:.summary {:color "#74818D"}]]))
 
-(defn top-nav []
+(defn top-nav [ctx]
   [:div#header
-   [:h5 "FHIR RU Core"]
+   [:h5
+    [:span.fa.fa-fire]
+    " "
+    (or (:title ctx) "ig.yaml:.title")]
    [:div#top-nav
     [:a {:href "/"} "Docs"]
     [:a {:href "/profiles"} "Profiles"]
     [:a {:href "/valuesets"} "ValueSets"]]])
 
-(defn layout [& content]
+(defn layout [ctx & content]
   (hc/html [:html
             [:head
              [:meta {:charset "utf-8"}]
@@ -159,12 +164,13 @@
                      :integrity "sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS"
                      :crossorigin "anonymous"}]
 
+             [:link {:rel "icon" :href "/static/icon.png"}] 
              [:link {:href "//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" :rel "stylesheet"}]
              [:link {:href "//fonts.googleapis.com/css?family=Montserrat|Roboto&display=swap" :rel "stylesheet"}]
              [:style style]
-             [:title "IGPOP"]]
+             [:title (or (:title ctx) "ig.yaml:.title")]]
             [:body
-             (into [:div.body (top-nav)] content)
+             (into [:div.body (top-nav ctx)] content)
              ;; [:script {:src "/assets/listener.js"}]
              ;; [:script {:src "/assets/jquery-3.4.1.min.js"}]
              ;; [:script {:src "/assets/menu-handler.js"}]
