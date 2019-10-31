@@ -9,17 +9,17 @@
   (testing "parse-name"
 
     (matcho/match
-     (sut/parse-name "pr.Patient.yaml")
+     (sut/parse-name "Patient.yaml")
      {:to [:source :Patient :basic]
       :format :yaml})
 
-    (matcho/match
-     (sut/parse-name "pr.Patient.example.pt1.yaml")
-     {:to [:source :Patient :basic :example :pt1]
-      :format :yaml})
+    ;; (matcho/match
+    ;;  (sut/parse-name "pr.Patient.example.pt1.yaml")
+    ;;  {:to [:source :Patient :basic :example :pt1]
+    ;;   :format :yaml})
 
     (matcho/match
-     (sut/parse-name "Patient" "pr.lab.yaml")
+     (sut/parse-name "Patient" "lab.yaml")
      {:to [:source :Patient :lab]
       :format :yaml})
 
@@ -29,7 +29,7 @@
       :format :yaml})
 
     (matcho/match
-     (sut/parse-name "vs.dic1.concepts.csv")
+     (sut/parse-name "vs.dic1.csv")
      {:to [:valuesets :dic1 :concepts]
       :format :csv})
 
@@ -59,6 +59,10 @@
   (get-in project [:profiles :Patient :basic])
   (get-in project [:source :Patient :basic :description])
   (get-in project [:valuesets :dict1])
+
+  (keys project)
+  (get-in project [:valuesets])
+
   (matcho/match
    (get-in project [:valuesets :dict1])
    {:concepts [{:code "male" :display "Male"}]})

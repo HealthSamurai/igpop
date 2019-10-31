@@ -47,38 +47,68 @@
   {:yaml :yaml
    :csv  :csv})
 
+(defn capitalized? [s]
+  (when (string? s)
+    (Character/isUpperCase (first s))))
+
+
 (defn parse-name
   ([dir file-name]
-   (let [parts (mapv keyword (str/split file-name #"\."))]
-     (if (<= 3 (count parts))
-       (let [tp (first parts)
-             fmt' (last parts)
-             pth (into [] (rest (butlast parts)))
-             node (get prefixes tp)
-             fmt (get formats fmt')]
-         (if (and fmt node)
-           {:to (into (:to node)
-                      (if (= :pr tp)
-                        (into [(keyword dir)] pth)
-                        pth))
-            :format fmt}
-           (println "Could not parse " file-name))))))
-  ([file-name]
-   (let [parts (mapv keyword (str/split file-name #"\."))]
-     (if (<= 3 (count parts))
-       (let [tp (first parts)
-             fmt' (last parts)
-             pth (into [] (rest (butlast parts)))
-             node (get prefixes tp)
-             fmt (get formats fmt')]
+   (let [parts (str/split file-name #"\.")]
+     (cond
+       (and (= 2 (count parts))
+            (capitalized? dir)
+            (= "yaml" (second parts)))
 
-         (if (and fmt node)
-           {:to (into (:to node)
-                      (if (= :pr tp)
-                        (into [(first pth) :basic] (rest pth))
-                        pth))
-            :format fmt}
-           (println "Could not parse " file-name)))))))
+       {:to [:source (keyword dir) (keyword (first parts))]
+        :format :yaml}
+
+       (and
+        (= 3 (count parts))
+        (= "vs" (first parts))
+        (= "yaml" (nth parts 2)))
+
+       {:to [:valuesets (keyword (second parts))]
+        :format :yaml}
+
+       (and
+        (= 3 (count parts))
+        (= "vs" (first parts))
+        (= "csv" (nth parts 2)))
+
+       {:to [:valuesets (keyword (second parts)) :concepts]
+        :format :csv}
+
+       :else nil)))
+
+  ([file-name]
+   (let [parts (str/split file-name #"\.")]
+     (cond
+       (and (= 2 (count parts))
+            (capitalized? (first parts))
+            (= "yaml" (second parts)))
+
+       {:to [:source (keyword (first parts)) :basic]
+        :format :yaml}
+
+
+       (and (= 3 (count parts))
+            (= "vs" (first parts))
+            (= "yaml" (nth parts 2)))
+
+       {:to [:valuesets (keyword (second parts))]
+        :format :yaml}
+
+       (and (= 3 (count parts))
+            (= "vs" (first parts))
+            (= "csv" (nth parts 2)))
+
+       {:to [:valuesets (keyword (second parts)) :concepts]
+        :format :csv}
+
+
+       :else
+       nil))))
 
 (defmulti read-file (fn [fmt _] fmt))
 (defmethod read-file :yaml
@@ -94,6 +124,9 @@
          (mapv (fn [rows]
                  (zipmap ks (mapv str/trim rows)))))))
 
+(defn merge-in [m pth v]
+  (update-in m pth (fn [x] (if x (merge x v) v))))
+
 (defn load-defs [ctx pth]
   (let [manifest (read-yaml (str pth "/ig.yaml"))
         files (.listFiles (io/file (str pth "/src")))
@@ -107,13 +140,13 @@
                                 (reduce (fn [acc f]
                                           (if-let [insert (parse-name nm (.getName f))]
                                             (let [source (read-file (:format insert) (.getPath f))]
-                                              (assoc-in acc (:to insert) source))
+                                              (merge-in acc (:to insert) source))
                                             acc))
                                         acc (.listFiles f)))
                               (if-let [insert (parse-name nm)]
                                 (let [source (read-file (:format insert) (.getPath f))]
                                   ;; (println "..." insert)
-                                  (assoc-in acc (:to insert) source))
+                                  (merge-in acc (:to insert) source))
                                 (do (println "TODO:" nm)
                                     acc))))) {}))
         profiles (reduce
@@ -123,8 +156,7 @@
                                         (enrich ctx [rt] profile))
                               ) acc profiles)
                     ) {} (:source user-data))]
-    (assoc user-data :profiles profiles)
-    ))
+    (assoc user-data :profiles profiles)))
 
 
 (defn safe-file [& pth]
