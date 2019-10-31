@@ -1,4 +1,4 @@
-desc: |
+description: |
   Laboratory results are grouped and summarized using the DiagnosticReport
   resource which typically reference Observation resource(s). Each Observation
   resource represents an individual laboratory test and result value or
@@ -14,7 +14,7 @@ rule:
   oneof: [result, presentedForm]
 elements: 
   status:
-    req: true
+    required: true
     valuset: {id: 'fhir:diagnostic-report-status'}
   category:
     valuset: diagnosticreport-category
@@ -22,13 +22,13 @@ elements:
     required: true
     valuset: {id: 'diagnosticreport-report-and-note-codes'}
   subject:
-    req: true
+    required: true
     refs: [ ./Patient ]
   effective:
-    req: true
+    required: true
     desc: Specimen Collection Datetime or Period
     union: [dateTime, Period]
-  issued: { req: true }
+  issued: { required: true }
   result:
     refs: [ ./Observation ]
   presentedForm: {}

@@ -1,4 +1,5 @@
-code, system, display, definition
-male, ?, Male, Make
-female, ?, Female, Female 
-unknonw, ?, Unknown, Unknown
+system, code, display, definition
+sys, male, Male, Make
+sys, female, Female, Female 
+sys, androgin, Androgin,
+sys, unknonw, Unknown,

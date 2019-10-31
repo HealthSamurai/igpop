@@ -1,12 +1,12 @@
-desc: |
+description: |
   This profile sets minimum expectations for the CareTeam resource for identifying
   the Care Team members associated with a patient. It identifies which core elements,
   extensions, vocabularies and value sets SHALL be present in the resource when using this profile.
 elements:
-  status: { valueset: 'fhir:careteam-status' } 
+  status: { valueset: {id: 'fhir:careteam-status' }} 
   subject*: { refs: [ ./Patient ] }
   participant[1..]:
-    desc: Care Team participant
+    description: Care Team participant
     elements:
       role*: { valueset: careteam-provider-roles }
       member: { refs: [./Practitioner, ./Organization, ./Patient] }

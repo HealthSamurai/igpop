@@ -1,6 +1,0 @@
-system: 'fhir:administrative-gender'
-concepts:
-- { code: male, display: Male }
-- { code: female, display: Female }
-- { code: other, display: Other }
-- { code: unknown, display: Unknown }
