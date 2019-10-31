@@ -30,6 +30,8 @@
         (let [res-url (str "/valuesets/" (name vs))]
           [:a {:href res-url :class (when (current-page uri res-url) "active")} (name vs)])])]))
 
+(menu-vs {} {})
+
 (defn valuesets-dashboard [ctx req]
   {:status 200
    :body (views/layout
