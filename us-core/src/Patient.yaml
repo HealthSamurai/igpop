@@ -5,7 +5,6 @@ description:
   vocabularies and value sets SHALL be present in the resource when using this
   profile.
 
-
 elements:
   extension:
     race:

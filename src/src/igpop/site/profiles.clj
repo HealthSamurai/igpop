@@ -13,6 +13,14 @@
 (def styles
   [:body
    [:.profile {:margin "0 20px"}]
+   [:pre.example {:background-color "#f5f7f9"
+                  :border "1px solid #f5f7f9"
+                  :padding "15px"}]
+   [:.vs {:font-size "12px"
+          :font-decoration "underline"
+          :color "#3b454e"}
+    [:.fa {:font-size "10px"}]
+    ]
    [:.tp {:position "relative"
           :margin-top "5px"
           :z-index 10
@@ -78,23 +86,20 @@
                   :flex 1
                   :justify-content "flex-start"
                   :border-bottom "1px solid #f1f1f1"}
-       [:&:hover {:background-color "#f5f7f9"}]
-       ]
+       [:&:hover {:background-color "#f5f7f9"}]]
 
       [:.el {:border-left link-border}
        [:&:last-of-type {:border-left-color "transparent"}
         [:.el-header  {:border-left-color "transparent"
                        :font-size "15px"
                        :line-height "30px"}]]]
-      
-      [:.down-link {
-                    :position "absolute"
+
+      [:.down-link {:position "absolute"
                     :top "27px"
                     :bottom "0px"
                     :left "20px"
                     :width "0px"
-                    :border-left link-border
-                    }]
+                    :border-left link-border}]
       [:.link
        {:width "10px"
         :height "17px"
@@ -115,14 +120,6 @@
 
 (def style-tag [:style (gc/css styles)])
 
-(defn enrich [base profile]
-  (if-let [els (:elements profile)]
-    (let [els' (reduce (fn [acc [k v]]
-                         (if-let [base-element (get-in base [:elements k])]
-                           (assoc acc k (enrich base-element v))
-                           acc)) els els)]
-      (assoc (merge (dissoc base :elements) profile) :elements els'))
-    (merge (dissoc base :elements) profile)))
 
 (defn current-page [uri res-url]
   (= uri res-url))
@@ -140,7 +137,9 @@
          [:a (name rt)]
          (into [:section]
                (for [[nm pr] profiles]
-                 [:a {:href (str "/profiles/" (name rt) "/" (name nm))} (name nm)]))])])])
+                 (let [res-url (str "/profiles/" (name rt) "/" (name nm))]
+                   [:a {:href res-url :class (when (current-page uri res-url) "active")}
+                    (name nm)])))])])])
 
 (def type-symbols
   {"Reference" [:span.fa.fa-arrow-right]
@@ -218,7 +217,8 @@
     (and (= :extension nm)) el
     (:union el) (->> (:union el)
                      (reduce (fn [acc tp]
-                               (assoc acc tp {:type tp})) {}))))
+                               (assoc acc tp (merge (or (get el (keyword tp)) {})
+                                                    {:type tp}))) {}))))
 
 (defn element-row [nm el]
   [:div.el-header
@@ -229,7 +229,16 @@
    [:div.el-line
     [:div.el-title nm (required-span el) " " (type-span el) (collection-span el)]
     [:div.desc
-     (:description el)]]])
+     (when-let [d (:description el)]
+       [:span d " "])
+     (when-let [vs (:valueset el)]
+       [:a.vs {:href (str "/valuesets/" (:id vs))}
+        [:span.fa.fa-tag]
+        " "
+        (:id vs)]
+       )
+     
+     ]]])
 
 (defn new-elements [elements]
   (->> elements
@@ -240,13 +249,10 @@
                   (new-elements els))]))
        (into [:div.el-cnt])))
 
-
 (defn profile [ctx {{rt :resource-type nm :profile} :route-params :as req}]
-  (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])
-        base (read-yaml (str "../igpop-fhir-4.0.0/" rt ".yaml"))
-        profile (enrich base profile)]
+  (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])]
     {:status 200
-     :body (views/layout
+     :body (views/layout ctx
             style-tag
             (menu ctx req)
             [:div#content
@@ -259,9 +265,16 @@
               (new-elements (:elements profile))]
 
              [:br]
+             [:br]
              [:h3 "Examples"]
              [:br]
-             [:h3 "API"]]
+             (for [[id example] (:examples profile)]
+               [:div
+                [:h5 id]
+                [:pre.example [:code (clj-yaml.core/generate-string example)]]])
+             ;; [:br]
+             ;; [:h3 "API"]
+             ]
             [:script {:src "/static/jquery-3.4.1.min.js"}]
             [:script {:src "/static/collapse-structure.js"}])}))
 
@@ -272,7 +285,7 @@
 
 (defn profiles-dashboard [ctx {{rt :resource-type nm :profile} :route-params :as req}]
   {:status 200
-   :body (views/layout
+   :body (views/layout ctx
           style-tag
           (into [:div#db-content]
                 (->> (:profiles ctx)
