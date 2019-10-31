@@ -17,9 +17,10 @@
                   :border "1px solid #f5f7f9"
                   :padding "15px"}]
    [:.vs {:font-size "12px"
-          :font-decoration "underline"
+          :text-decoration "underline"
           :color "#3b454e"}
-    [:.fa {:font-size "10px"}]
+    [:.fa {:font-size "9px"
+           :opacity 0.7}]
     ]
    [:.tp {:position "relative"
           :margin-top "5px"
