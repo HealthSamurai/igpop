@@ -14,7 +14,7 @@
   (io/file project-path "node_modules" "igpop-fhir-4.0.0")
 
   (matcho/match
-   (:fhir project)
+   (:base project)
    {:profiles {:Patient {:elements {:name {}}}}})
 
   (matcho/match

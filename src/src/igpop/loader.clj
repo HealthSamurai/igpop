@@ -22,6 +22,19 @@
         (assoc (merge base obj) :elements els'))
       (merge base obj))))
 
+(defn profile? [nm]
+  (and (str/starts-with? nm "pr.")
+       (str/ends-with? nm ".yaml")))
+
+(defn profile-name [nm]
+  (str/replace nm #"(^pr\.|\.yaml$)" ""))
+
+(defn valueset-name [nm]
+  (str/replace nm #"(^vs\.|\.yaml$)" ""))
+
+(profile-name "pr.Patient.yaml")
+(profile-name "pr.Patient.yaml")
+
 (defn load-defs [ctx pth]
   (let [manifest (read-yaml (str pth "/ig.yaml"))
         files (.listFiles (io/file (str pth "/src")))]
@@ -31,13 +44,12 @@
             (let [nm (.getName f)]
               (cond
                 (.isDirectory f)
-                (let [rt (keyword (str/replace nm #"\.yaml$" ""))]
+                (let [rt (keyword nm)]
                   (reduce (fn [acc f]
                             (let [sub-nm (.getName f)]
-                              (if (and (not (str/starts-with? sub-nm "vs."))
-                                       (str/ends-with? sub-nm ".yaml"))
+                              (if (profile? sub-nm)
                                 (let [source (read-yaml (.getPath f))
-                                      prof-name (keyword (str/replace sub-nm #"\.yaml$" ""))]
+                                      prof-name (keyword (profile-name sub-nm))]
                                   (-> acc
                                       (assoc-in [:sources rt prof-name] source)
                                       (assoc-in [:profiles rt prof-name] (enrich ctx [rt] source))))
@@ -45,11 +57,12 @@
                           acc (.listFiles f)))
 
                 (str/starts-with? nm "vs.")
-                (let [rt (str/replace nm #"\.yaml$" "")]
+                (let [rt (valueset-name nm)]
                   (assoc-in acc [:valuesets (keyword rt)]
                             (read-yaml (.getPath f))))
-                (and (str/ends-with? nm ".yaml"))
-                (let [rt (keyword (str/replace nm #"\.yaml$" ""))]
+
+                (profile? nm)
+                (let [rt (keyword (profile-name nm))]
                   (let [source (read-yaml (.getPath f))]
                     (-> acc
                         (assoc-in [:sources rt :basic] source)
@@ -58,7 +71,6 @@
                 (do (println "TODO" nm) acc)
 
                 ))) {}))))
-
 
 
 (defn safe-file [& pth]
