@@ -27,7 +27,7 @@ function getElems(){
     let nestedItems = document.getElementsByClassName("nested");
     for (let j = 0; j < nestedItems.length; j++){
         if (findInCollection(nestedItems[j].classList, "active")){
-            return(nestedItems[i].parentNode.previousSibling);
+            return(nestedItems[j].parentNode.previousSibling);
         }
     }
     return(null);
