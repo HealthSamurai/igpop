@@ -1,5 +1,6 @@
 (ns igpop.site.valuesets
-  (:require [igpop.site.views :as views]))
+  (:require [igpop.site.views :as views]
+            [igpop.site.utils :as u]))
 
 (defn render-table [{concepts :concepts system :system :as vs}]
   (conj [:div.table
@@ -22,15 +23,13 @@
                                      [:div.column
                                       "???"]]) concepts)))
 
-(defn valuesets-to-menu [{valuesets :valuesets}]
+(defn valuesets-to-menu [{valuesets :valuesets :as ctx}]
   (map (fn [itm]
-         {:display (name itm) :href (str "/valuesets/" (name itm))})
+         {:display (name itm) :href (u/href ctx "valuesets" (name itm) {:format "html"})})
        (keys valuesets)))
 
-
-
-(defn valueset-link [nm vs]
-  [:a.db-item {:href (str "/valuesets/" (name nm))}
+(defn valueset-link [nm vs ctx]
+  [:a.db-item {:href (u/href ctx "valuesets" (name nm) {:format "html"})}
    [:h5 (name nm)]
    [:div.desc (when (:description vs) (subs (:description vs) 0 (min (count (:description vs)) 55)))]])
 
@@ -52,4 +51,4 @@
                        (into [:div#db-content]
                              (->> (:valuesets ctx)
                                   (sort-by first)
-                                  (map (fn [[nm vs]] (valueset-link nm vs))))))})
+                                  (map (fn [[nm vs]] (valueset-link nm vs ctx))))))})
