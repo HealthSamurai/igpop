@@ -23,34 +23,9 @@
         (assoc (merge base obj) :elements els'))
       (merge base obj))))
 
-(defn profile? [nm]
-  (and (str/starts-with? nm "pr.")
-       (str/ends-with? nm ".yaml")))
-
-(defn profile-name [nm]
-  (str/replace nm #"(^pr\.|\.yaml$)" ""))
-
-(defn valueset-name [nm]
-  (str/replace nm #"(^vs\.|\.yaml$)" ""))
-
-(profile-name "pr.Patient.yaml")
-(profile-name "pr.Patient.yaml")
-
-(def prefixes
-  {
-   :doc {:to [:docs]}
-   :pr  {:to [:source]}
-   :vs  {:to [:valuesets]}
-   })
-
-(def formats
-  {:yaml :yaml
-   :csv  :csv})
-
 (defn capitalized? [s]
   (when (string? s)
     (Character/isUpperCase (first s))))
-
 
 (defn parse-name
   ([dir file-name]
@@ -124,8 +99,40 @@
          (mapv (fn [rows]
                  (zipmap ks (mapv str/trim rows)))))))
 
+
+(defn read-md-meta [content]
+  (if (str/starts-with? content "---")
+    (let [lines (str/split-lines content)]
+      (loop [[l & ls] (rest lines)
+             meta-lines []]
+        (cond 
+          (nil? l) [{:error "Expected second --- to close metadata"} content]
+          (str/starts-with? l "---")
+          [(clj-yaml.core/parse-string (str/join "\n" meta-lines)) (str/join "\n" ls)]
+          :else
+          (recur ls (conj meta-lines l)))))
+    [{} content]))
+
+(defmethod read-file :md
+  [_ pth]
+  (let [content (slurp pth)
+        [meta content] (read-md-meta content)]
+    (assoc meta :source content)))
+
 (defn merge-in [m pth v]
   (update-in m pth (fn [x] (if x (merge x v) v))))
+
+(defn build-profiles [ctx]
+  (->> ctx
+       :source
+       (reduce
+        (fn [acc [rt profiles]]
+          (reduce (fn [acc [id profile]]
+                    (assoc-in acc [rt id]
+                              (enrich ctx [rt] profile))
+                    ) acc profiles)
+          ) {})
+       (assoc ctx :profiles)))
 
 (defn load-defs [ctx pth]
   (let [manifest (read-yaml (str pth "/ig.yaml"))
@@ -136,27 +143,34 @@
                         (fn [acc f]
                           (let [nm (.getName f)]
                             (if (.isDirectory f)
-                              (let [rt (keyword nm)]
+                              (if (= nm "docs")
                                 (reduce (fn [acc f]
-                                          (if-let [insert (parse-name nm (.getName f))]
-                                            (let [source (read-file (:format insert) (.getPath f))]
-                                              (merge-in acc (:to insert) source))
-                                            acc))
-                                        acc (.listFiles f)))
+                                          (let [parts (str/split (.getName f) #"\.")
+                                                id (keyword (first parts))
+                                                file-path (.getPath f)]
+                                            (cond
+                                              (= "md" (last parts))
+                                              (assoc-in acc [:docs :pages id] (read-file :md file-path))
+                                              (= "yaml" (last parts))
+                                              (let [res (read-file :yaml file-path)]
+                                                (update-in acc [:docs id] (fn [x] (if x (merge x res) res))))
+                                              :else
+                                              acc)))
+                                        acc (.listFiles f))
+                                (let [rt (keyword nm)]
+                                  (reduce (fn [acc f]
+                                            (if-let [insert (parse-name nm (.getName f))]
+                                              (let [source (read-file (:format insert) (.getPath f))]
+                                                (merge-in acc (:to insert) source))
+                                              acc))
+                                          acc (.listFiles f))))
                               (if-let [insert (parse-name nm)]
                                 (let [source (read-file (:format insert) (.getPath f))]
                                   ;; (println "..." insert)
                                   (merge-in acc (:to insert) source))
                                 (do (println "TODO:" nm)
-                                    acc))))) {}))
-        profiles (reduce
-                  (fn [acc [rt profiles]]
-                    (reduce (fn [acc [id profile]]
-                              (assoc-in acc [rt id]
-                                        (enrich ctx [rt] profile))
-                              ) acc profiles)
-                    ) {} (:source user-data))]
-    (assoc user-data :profiles profiles)))
+                                    acc))))) {}))]
+    (build-profiles (merge ctx user-data))))
 
 
 (defn safe-file [& pth]
