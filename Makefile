@@ -6,19 +6,8 @@ SHELL = bash
 VERSION = $(shell cat VERSION)
 DATE = $(shell date)
 
-include .env
-
 repl:
 	clj -A:test:nrepl -R:test:nrepl -e "(-main)" -r
-
-up:
-	docker-compose up -d
-
-stop:
-	docker-compose stop
-
-down:
-	docker-compose down
 
 clear:
 	rm -rf target && clj -A:build

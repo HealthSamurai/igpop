@@ -124,3 +124,16 @@ igpop distinguishes collections and singular elements.
 ## Slicing
 
 ## Define extensions 
+
+# Development
+
+
+```
+
+make repl
+make build
+
+
+
+
+```
