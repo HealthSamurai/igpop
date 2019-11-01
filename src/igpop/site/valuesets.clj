@@ -27,15 +27,7 @@
          {:display (name itm) :href (str "/valuesets/" (name itm))})
        (keys valuesets)))
 
-(defn menu' [itms {uri :uri}]
-  (letfn [(current-page [uri res-url] (= uri res-url))]
-    [:div#main-menu
-     (for [{display :display href :href items :items} (sort-by first itms)]
-       [:div
-        [:a {:href href :class (when (current-page uri href) "active")} display]
-        (when (> (count items) 0)
-          (into [:section] (for [{display :display href :href} items]
-                             [:a {:href href :class (when (current-page uri href) "active")} display])))])]))
+
 
 (defn valueset-link [nm vs]
   [:a.db-item {:href (str "/valuesets/" (name nm))}
@@ -47,7 +39,7 @@
         description (get vs :description)]
     {:status 200
      :body (views/layout ctx
-            (menu' (valuesets-to-menu ctx) req)
+            (views/menu (valuesets-to-menu ctx) req)
             [:div#content [:h1 "Valueset " vid]
              [:div.summary description]
              [:hr]
