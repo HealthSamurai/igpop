@@ -158,8 +158,10 @@
 
 
 (defn current-page [uri res-url]
-  (= (str/replace uri #".html$" "")
-     (str/replace res-url #".html$" "")))
+  ;; (println "CURP:" uri res-url)
+  (str/ends-with?
+   (str/replace res-url #".html$" "")
+   (str/replace uri #".html$" "")))
 
 (defn menu [itms {uri :uri}]
   [:div#main-menu

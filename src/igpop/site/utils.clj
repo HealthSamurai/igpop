@@ -11,6 +11,6 @@
         res (if-let [bu (:base-url ctx)]
               (str (str/join "/" (into [bu] pth)) fmt)
               (str "/" (str/join "/" pth) fmt))]
-    (println "href:" res)
+    ;; (println "href:" res)
     res))
 

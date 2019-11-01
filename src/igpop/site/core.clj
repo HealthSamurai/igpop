@@ -100,7 +100,19 @@
     (dump-page ctx home ["profiles"] :index)
     (doseq [[rt prs] (:profiles ctx)]
       (doseq [[id pr] prs]
-        (dump-page ctx home ["profiles" (name rt) (name id) {:format "html"}])))))
+        (dump-page ctx home ["profiles" (name rt) (name id) {:format "html"}])))
+
+    (.mkdir (io/file home "build" "valuesets"))
+    (dump-page ctx home ["valuesets"] :index)
+    (doseq [[id _] (get-in ctx [:valuesets])]
+      (dump-page ctx home ["valuesets" (name id) {:format "html"}]))
+
+    (.mkdir (io/file home "build" "docs"))
+    (dump-page ctx home ["docs"] :index)
+    (doseq [[id _] (get-in ctx [:docs :pages])]
+      (dump-page ctx home ["docs" (name id) {:format "html"}]))
+
+    ))
 
 (comment
 
