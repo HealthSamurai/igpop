@@ -37,12 +37,10 @@
           (into [:section] (for [{display :display href :href} items]
                              [:a {:href href :class (when (current-page uri href) "active")} display])))])]))
 
-(defn valuesets-dashboard [ctx req]
-  {:status 200
-   :body (views/layout ctx
-          (menu-vs ctx req)
-          [:div#content
-           [:h1 "Valuesets"]])})
+(defn valueset-link [nm vs]
+  [:a.db-item {:href (str "/valuesets/" (name nm))}
+   [:h5 (name nm)]
+   [:div.desc (when (:description vs) (subs (:description vs) 0 (min (count (:description vs)) 55)))]])
 
 (defn valueset [ctx {{vid :valuset-id} :route-params :as req}]
   (let [vs (get-in ctx [:valuesets (keyword vid)])
@@ -55,3 +53,14 @@
              [:hr]
              [:br]
              (render-table vs)])}))
+
+(defn valuesets-dashboard [ctx {{vs :resource-type nm :profile} :route-params :as req}]
+  {:status 200
+   :body (views/layout ctx
+                       (into [:div#db-content]
+                             (->> (:valuesets ctx)
+                                  (sort-by first)
+                                  (mapcat
+                                   (fn [[nm vs]]
+                                     (->> vs
+                                          (mapv (fn [[nm vs]] (valueset-link nm vs)))))))))})

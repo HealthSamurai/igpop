@@ -282,7 +282,7 @@
 (defn profile-link [rt nm pr]
   [:a.db-item {:href (str "/profiles/" (name rt) "/" (name nm))}
    [:h5 (name rt) ":" (name nm)]
-   [:div.desc (subs (:description pr) 0 (min (count (:description pr)) 55))]])
+   [:div.desc (when (:description pr) (subs (:description pr) 0 (min (count (:description pr)) 55)))]])
 
 (defn profiles-dashboard [ctx {{rt :resource-type nm :profile} :route-params :as req}]
   {:status 200
