@@ -2,3 +2,5 @@ example
 target
 .cpcache
 pom.xml
+pom.xml
+.nrepl-port

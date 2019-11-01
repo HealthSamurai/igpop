@@ -66,7 +66,7 @@
 
 (comment
 
-  (def srv (start (.getAbsolutePath (io/file ".." "us-core")) 8899))
+  (def srv (start (.getAbsolutePath (io/file  "example")) 8899))
 
   (srv)
 
