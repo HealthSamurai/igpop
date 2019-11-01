@@ -2,6 +2,7 @@
   (:require
    [clj-yaml.core]
    [clojure.java.io :as io]
+   [clojure.data.csv :as csv]
    [clojure.string :as str]))
 
 (defn read-yaml [pth]
@@ -22,55 +23,154 @@
         (assoc (merge base obj) :elements els'))
       (merge base obj))))
 
-(defn profile? [nm]
-  (and (str/starts-with? nm "pr.")
-       (str/ends-with? nm ".yaml")))
+(defn capitalized? [s]
+  (when (string? s)
+    (Character/isUpperCase (first s))))
 
-(defn profile-name [nm]
-  (str/replace nm #"(^pr\.|\.yaml$)" ""))
+(defn parse-name
+  ([dir file-name]
+   (let [parts (str/split file-name #"\.")]
+     (cond
+       (and (= 2 (count parts))
+            (capitalized? dir)
+            (= "yaml" (second parts)))
 
-(defn valueset-name [nm]
-  (str/replace nm #"(^vs\.|\.yaml$)" ""))
+       {:to [:source (keyword dir) (keyword (first parts))]
+        :format :yaml}
 
-(profile-name "pr.Patient.yaml")
-(profile-name "pr.Patient.yaml")
+       (and
+        (= 3 (count parts))
+        (= "vs" (first parts))
+        (= "yaml" (nth parts 2)))
+
+       {:to [:valuesets (keyword (second parts))]
+        :format :yaml}
+
+       (and
+        (= 3 (count parts))
+        (= "vs" (first parts))
+        (= "csv" (nth parts 2)))
+
+       {:to [:valuesets (keyword (second parts)) :concepts]
+        :format :csv}
+
+       :else nil)))
+
+  ([file-name]
+   (let [parts (str/split file-name #"\.")]
+     (cond
+       (and (= 2 (count parts))
+            (capitalized? (first parts))
+            (= "yaml" (second parts)))
+
+       {:to [:source (keyword (first parts)) :basic]
+        :format :yaml}
+
+
+       (and (= 3 (count parts))
+            (= "vs" (first parts))
+            (= "yaml" (nth parts 2)))
+
+       {:to [:valuesets (keyword (second parts))]
+        :format :yaml}
+
+       (and (= 3 (count parts))
+            (= "vs" (first parts))
+            (= "csv" (nth parts 2)))
+
+       {:to [:valuesets (keyword (second parts)) :concepts]
+        :format :csv}
+
+
+       :else
+       nil))))
+
+(defmulti read-file (fn [fmt _] fmt))
+(defmethod read-file :yaml
+  [_ pth]
+  (read-yaml pth))
+
+(defmethod read-file :csv
+  [_ pth]
+  (let [[headers & rows] (csv/read-csv (io/reader pth))
+        ks (->> headers
+                (mapv (fn [k] (keyword (str/trim k)))))]
+    (->> rows
+         (mapv (fn [rows]
+                 (zipmap ks (mapv str/trim rows)))))))
+
+
+(defn read-md-meta [content]
+  (if (str/starts-with? content "---")
+    (let [lines (str/split-lines content)]
+      (loop [[l & ls] (rest lines)
+             meta-lines []]
+        (cond 
+          (nil? l) [{:error "Expected second --- to close metadata"} content]
+          (str/starts-with? l "---")
+          [(clj-yaml.core/parse-string (str/join "\n" meta-lines)) (str/join "\n" ls)]
+          :else
+          (recur ls (conj meta-lines l)))))
+    [{} content]))
+
+(defmethod read-file :md
+  [_ pth]
+  (let [content (slurp pth)
+        [meta content] (read-md-meta content)]
+    (assoc meta :source content)))
+
+(defn merge-in [m pth v]
+  (update-in m pth (fn [x] (if x (merge x v) v))))
+
+(defn build-profiles [ctx]
+  (->> ctx
+       :source
+       (reduce
+        (fn [acc [rt profiles]]
+          (reduce (fn [acc [id profile]]
+                    (assoc-in acc [rt id]
+                              (enrich ctx [rt] profile))
+                    ) acc profiles)
+          ) {})
+       (assoc ctx :profiles)))
 
 (defn load-defs [ctx pth]
   (let [manifest (read-yaml (str pth "/ig.yaml"))
-        files (.listFiles (io/file (str pth "/src")))]
-    (->> files
-         (reduce
-          (fn [acc f]
-            (let [nm (.getName f)]
-              (cond
-                (.isDirectory f)
-                (let [rt (keyword nm)]
-                  (reduce (fn [acc f]
-                            (let [sub-nm (.getName f)]
-                              (if (profile? sub-nm)
-                                (let [source (read-yaml (.getPath f))
-                                      prof-name (keyword (profile-name sub-nm))]
-                                  (-> acc
-                                      (assoc-in [:sources rt prof-name] source)
-                                      (assoc-in [:profiles rt prof-name] (enrich ctx [rt] source))))
-                                acc)))
-                          acc (.listFiles f)))
-
-                (str/starts-with? nm "vs.")
-                (let [rt (valueset-name nm)]
-                  (assoc-in acc [:valuesets (keyword rt)]
-                            (read-yaml (.getPath f))))
-
-                (profile? nm)
-                (let [rt (keyword (profile-name nm))]
-                  (let [source (read-yaml (.getPath f))]
-                    (-> acc
-                        (assoc-in [:sources rt :basic] source)
-                        (assoc-in [:profiles rt :basic] (enrich ctx [rt] source)))))
-                :else
-                (do (println "TODO" nm) acc)
-
-                ))) {}))))
+        files (.listFiles (io/file (str pth "/src")))
+        user-data (->> files
+                       (sort-by #(count (.getName %)))
+                       (reduce
+                        (fn [acc f]
+                          (let [nm (.getName f)]
+                            (if (.isDirectory f)
+                              (if (= nm "docs")
+                                (reduce (fn [acc f]
+                                          (let [parts (str/split (.getName f) #"\.")
+                                                id (keyword (first parts))
+                                                file-path (.getPath f)]
+                                            (cond
+                                              (= "md" (last parts))
+                                              (assoc-in acc [:docs :pages id] (read-file :md file-path))
+                                              (= "yaml" (last parts))
+                                              (let [res (read-file :yaml file-path)]
+                                                (update-in acc [:docs id] (fn [x] (if x (merge x res) res))))
+                                              :else
+                                              acc)))
+                                        acc (.listFiles f))
+                                (let [rt (keyword nm)]
+                                  (reduce (fn [acc f]
+                                            (if-let [insert (parse-name nm (.getName f))]
+                                              (let [source (read-file (:format insert) (.getPath f))]
+                                                (merge-in acc (:to insert) source))
+                                              acc))
+                                          acc (.listFiles f))))
+                              (if-let [insert (parse-name nm)]
+                                (let [source (read-file (:format insert) (.getPath f))]
+                                  ;; (println "..." insert)
+                                  (merge-in acc (:to insert) source))
+                                (do (println "TODO:" nm)
+                                    acc))))) {}))]
+    (build-profiles (merge ctx user-data))))
 
 
 (defn safe-file [& pth]
@@ -111,7 +211,6 @@
 (defn reload [ctx]
   (swap! ctx
          (fn [{home :home :as ctx}]
-           (println "??" )
            (merge
             (dissoc ctx :profiles :sources :valuesets)
             (read-yaml (io/file home "ig.yaml"))

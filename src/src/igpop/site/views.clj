@@ -151,7 +151,7 @@
     " "
     (or (:title ctx) "ig.yaml:.title")]
    [:div#top-nav
-    [:a {:href "/"} "Docs"]
+    [:a {:href "/docs"} "Docs"]
     [:a {:href "/profiles"} "Profiles"]
     [:a {:href "/valuesets"} "ValueSets"]]])
 

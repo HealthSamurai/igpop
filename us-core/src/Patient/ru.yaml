@@ -3,7 +3,6 @@ description: Базовый Профайл для Пациента
 elements:
   id: {}
   identifier: # []
-    minItems: 1
     descrption: Идентификаторы пациента такие как паспорт, СНИЛС и т.д.
     elements:
       system:
@@ -14,7 +13,6 @@ elements:
           strength: extensible
   name: # []
     description: Имена пациента
-    minItems: 1
     elements:
       given: # []
         descrption: Имя и Отчество пациента. Первым должно идти Имя, вторым Отчество

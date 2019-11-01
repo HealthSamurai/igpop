@@ -22,9 +22,10 @@ Install igpop util and start your project
 
 ```
 src/
-  pr.Patient.yaml <- basic profile for Patient
-  pr.Observation.smoking-status.yaml <- smoking status profile for Observation
+  Patient.yaml <- basic profile for Patient
+  Observation/smoking-status.yaml <- smoking status profile for Observation
   vs.smoking-status.yaml <- valuset for smoking status
+  vs.smoking-status.csv <- you can put concepts as a csv file
   ...
 build/
   fhir/ <- SD, VS etc
@@ -39,7 +40,7 @@ package.json
 ## Profiles
 
 You create basic profile for resource type by 
-creating `src/pr.<resource-type>.yaml` file.
+creating `src/<resource-type>.yaml` file.
 
 For example `src/Patient.yaml` is your basic Patient.
 Id and url for generated structure definition will be deduced

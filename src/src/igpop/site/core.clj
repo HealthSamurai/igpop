@@ -4,6 +4,7 @@
    [igpop.loader]
    [igpop.site.profiles]
    [igpop.site.valuesets]
+   [igpop.site.docs]
    [igpop.site.views :as views]
    [org.httpkit.server]
    [ring.middleware.head]
@@ -37,6 +38,8 @@
 (def routes
   {:GET #'welcome
    "ig.yaml" {:GET #'source}
+   "docs" {:GET #'igpop.site.docs/dashboard
+           [:doc-id] {:GET #'igpop.site.docs/doc-page}}
    "valuesets" {:GET #'igpop.site.valuesets/valuesets-dashboard
                 [:valuset-id] {:GET #'igpop.site.valuesets/valueset}}
    "profiles" {:GET #'igpop.site.profiles/profiles-dashboard
