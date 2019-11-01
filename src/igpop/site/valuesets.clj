@@ -60,7 +60,4 @@
                        (into [:div#db-content]
                              (->> (:valuesets ctx)
                                   (sort-by first)
-                                  (mapcat
-                                   (fn [[nm vs]]
-                                     (->> vs
-                                          (mapv (fn [[nm vs]] (valueset-link nm vs)))))))))})
+                                  (map (fn [[nm vs]] (valueset-link nm vs))))))})
