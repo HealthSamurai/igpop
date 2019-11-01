@@ -124,7 +124,8 @@
 
 
 (defn current-page [uri res-url]
-  (= uri res-url))
+  (= (str/replace uri #".html$" "")
+     (str/replace res-url #".html$" "")))
 
 (defn menu [ctx {uri :uri}]
   [:div#main-menu
