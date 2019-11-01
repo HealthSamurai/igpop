@@ -61,6 +61,7 @@
 
 (defn start [home port]
   (let [h (mk-handler home)]
+    (println "Run server on http://localhost:" port)
     (org.httpkit.server/run-server h {:port port})))
 
 (comment

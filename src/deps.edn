@@ -17,8 +17,6 @@
          org.clojure/data.csv {:mvn/version "0.1.4"}
          ;; support for java 11+
          org.clojure/core.rrb-vector {:mvn/version "0.0.14"}
-
-         markdown-to-hiccup {:mvn/version "0.6.2"}
          markdown-clj {:mvn/version "1.10.0"}}
 
  :aliases
@@ -33,9 +31,9 @@
   :test         {:extra-paths ["test"]}
 
   :runner       {:extra-deps {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner"
-                                                         :sha     "3cb0a9daf1cb746259dc8309b218f9211ad3b33b"}}
+                                                         :sha     "209b64504cb3bd3b99ecfec7937b358a879f55c1"}}
                  :jvm-opts   ^:replace ["-XX:-OmitStackTraceInFastThrow"]
-                 :main-opts  ["-m" "test-runner"]}
+                 :main-opts ["-m" "cognitect.test-runner"]}
 
   :build {:extra-paths ["build"]
           :jvm-opts    ^:replace ["-XX:-OmitStackTraceInFastThrow"]

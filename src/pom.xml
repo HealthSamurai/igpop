@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-                                        
+                                                    
+  
+  
+  
+  
+  
+  
   
   
   
@@ -20,7 +26,13 @@
   
   
   <modelVersion>4.0.0</modelVersion>
-                                        
+                                                    
+  
+  
+  
+  
+  
+  
   
   
   
@@ -40,7 +52,13 @@
   
   
   <groupId>healthsamurai</groupId>
-                                        
+                                                    
+  
+  
+  
+  
+  
+  
   
   
   
@@ -60,7 +78,13 @@
   
   
   <artifactId>igpop</artifactId>
-                                        
+                                                    
+  
+  
+  
+  
+  
+  
   
   
   
@@ -80,7 +104,13 @@
   
   
   <version>0.0.1</version>
-                                        
+                                                    
+  
+  
+  
+  
+  
+  
   
   
   
@@ -100,7 +130,13 @@
   
   
   <name>src</name>
-                                        
+                                                    
+  
+  
+  
+  
+  
+  
   
   
   
@@ -133,6 +169,16 @@
         
     <dependency>
             
+      <groupId>markdown-to-hiccup</groupId>
+            
+      <artifactId>markdown-to-hiccup</artifactId>
+            
+      <version>0.6.2</version>
+          
+    </dependency>
+        
+    <dependency>
+            
       <groupId>com.sun.xml.bind</groupId>
             
       <artifactId>jaxb-core</artifactId>
@@ -148,6 +194,16 @@
       <artifactId>ring-defaults</artifactId>
             
       <version>0.3.2</version>
+          
+    </dependency>
+        
+    <dependency>
+            
+      <groupId>markdown-clj</groupId>
+            
+      <artifactId>markdown-clj</artifactId>
+            
+      <version>1.10.0</version>
           
     </dependency>
         
@@ -203,6 +259,16 @@
         
     <dependency>
             
+      <groupId>org.clojure</groupId>
+            
+      <artifactId>data.csv</artifactId>
+            
+      <version>0.1.4</version>
+          
+    </dependency>
+        
+    <dependency>
+            
       <groupId>clj-commons</groupId>
             
       <artifactId>clj-yaml</artifactId>
@@ -228,6 +294,16 @@
       <artifactId>cheshire</artifactId>
             
       <version>5.8.1</version>
+          
+    </dependency>
+        
+    <dependency>
+            
+      <groupId>json-schema</groupId>
+            
+      <artifactId>json-schema</artifactId>
+            
+      <version>0.2.0-RC10</version>
           
     </dependency>
         
@@ -262,7 +338,13 @@
     </dependency>
       
   </dependencies>
-                                        
+                                                    
+  
+  
+  
+  
+  
+  
   
   
   
@@ -282,7 +364,13 @@
   
   
   <build>
-                                                                                
+                                                                                                        
+    
+    
+    
+    
+    
+    
     
     
     
@@ -302,7 +390,13 @@
     
     
     <sourceDirectory>src</sourceDirectory>
-                                                                              
+                                                                                                      
+  
+  
+  
+  
+  
+  
   
   
   
@@ -322,7 +416,13 @@
   
   
   </build>
-                                        
+                                                    
+  
+  
+  
+  
+  
+  
   
   
   
@@ -352,7 +452,13 @@
     </repository>
       
   </repositories>
-                                      
+                                                  
+
+
+
+
+
+
 
 
 

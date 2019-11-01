@@ -89,7 +89,7 @@
          :z-index 10
          :color "#d95640"}
         ]
-       ]
+     ]
       [:section
        {:border-left "1px solid #ddd"
         :margin-left "18px"}
@@ -171,8 +171,8 @@
              [:title (or (:title ctx) "ig.yaml:.title")]]
             [:body
              (into [:div.body (top-nav ctx)] content)
-             ;; [:script {:src "/assets/listener.js"}]
-             ;; [:script {:src "/assets/jquery-3.4.1.min.js"}]
-             ;; [:script {:src "/assets/menu-handler.js"}]
+             [:script {:src "/static/jquery-3.4.1.min.js"}]
+             [:script {:src "/static/collapse-structure.js"}]
+             [:script {:src "/static/lmenu-view.js"}]
              ]]))
 

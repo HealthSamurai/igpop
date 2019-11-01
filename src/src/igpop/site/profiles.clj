@@ -135,12 +135,15 @@
         (let [res-url (str "/profiles/" (name rt) "/basic")]
           [:a {:href res-url :class (when (current-page uri res-url) "active")} (name rt)])
         [:div
-         [:a (name rt)]
+         (let [res-url (str "/profiles/" (name rt) "/basic")]
+           [:a.item {:href res-url :class (when (current-page uri res-url) "active")}
+            (name rt)])
          (into [:section]
                (for [[nm pr] profiles]
+                 (if (not (= "basic" (name nm)))
                  (let [res-url (str "/profiles/" (name rt) "/" (name nm))]
-                   [:a {:href res-url :class (when (current-page uri res-url) "active")}
-                    (name nm)])))])])])
+                   [:a.nested {:href res-url :class (when (current-page uri res-url) "active")}
+                    (name nm)]))))])])])
 
 (def type-symbols
   {"Reference" [:span.fa.fa-arrow-right]
@@ -224,7 +227,7 @@
 (defn element-row [nm el]
   [:div.el-header
    [:span.link]
-   (when (has-children? el) 
+   (when (has-children? el)
      [:span.down-link])
    (type-icon nm el)
    [:div.el-line
@@ -238,7 +241,6 @@
         " "
         (:id vs)]
        )
-     
      ]]])
 
 (defn new-elements [elements]
@@ -276,8 +278,10 @@
              ;; [:br]
              ;; [:h3 "API"]
              ]
-            [:script {:src "/static/jquery-3.4.1.min.js"}]
-            [:script {:src "/static/collapse-structure.js"}])}))
+            ;;[:script {:src "/static/jquery-3.4.1.min.js"}]
+            ;;[:script {:src "/static/collapse-structure.js"}]
+            ;;[:script {:src "/static/lmenu-view.js"}]
+            )}))
 
 (defn profile-link [rt nm pr]
   [:a.db-item {:href (str "/profiles/" (name rt) "/" (name nm))}

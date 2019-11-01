@@ -1,6 +1,7 @@
 (ns igpop.core
   (:require [clj-yaml.core :as yaml]
             [clojure.java.io :as io]
+            [igpop.site.core :as site]
             [clojure.set])
   (:gen-class))
 
@@ -9,7 +10,8 @@
 (def commands
   {"help"     {:fn :help}
    "validate" {:fn :validate}
-   "build"    {:fn :build}})
+   "build"    {:fn :build}
+   "dev"      {:fn :dev}})
 
 (defmethod run
   :help
@@ -28,13 +30,27 @@
   [& args]
   (println "Build..." args))
 
+(defmethod run
+  :dev
+  [& args]
+  (println "Dev..." args)
+  (site/start (System/getProperty "user.dir") 8899))
+
 (defn -main [& args]
   (if-let [cmd (first args)]
-    (do
-      (println "Run " cmd)
-      (if-let [handler (get commands cmd)]
-        (do
-          (println ">>" handler)
-          (apply run args))
+    (if-let [handler (get commands cmd)]
+      (apply run args)
+      (do 
+        (println "No such command - " cmd)
         (run :help)))
     (run :help)))
+
+
+(comment
+
+  (System/getProperty "user.dir")
+
+  (-main "dev" "dir")
+
+
+  )
