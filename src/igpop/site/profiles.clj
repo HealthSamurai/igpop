@@ -122,31 +122,6 @@
 
 (def style-tag [:style (gc/css styles)])
 
-
-(defn current-page [uri res-url]
-  (= (str/replace uri #".html$" "")
-     (str/replace res-url #".html$" "")))
-
-(defn menu [ctx {uri :uri}]
-  [:div#main-menu
-   (for [[rt profiles] (->> (:profiles ctx)
-                            (sort-by first))]
-     [:div
-      (if (and (= 1 (count profiles))
-               (= :basic (first (keys profiles))))
-        (let [res-url (u/href ctx "profiles" (name rt) "basic" {:format "html"})]
-          [:a {:href res-url :class (when (current-page uri res-url) "active")} (name rt)])
-        [:div
-         (let [res-url (u/href ctx "profiles" (name rt) "basic" {:format "html"})]
-           [:a.item {:href res-url :class (when (current-page uri res-url) "active")}
-            (name rt)])
-         (into [:section]
-               (for [[nm pr] profiles]
-                 (if (not (= "basic" (name nm)))
-                   (let [res-url (u/href ctx "profiles" (name rt) (name nm) {:format "html"})]
-                     [:a.nested {:href res-url :class (when (current-page uri res-url) "active")}
-                      (name nm)]))))])])])
-
 (def type-symbols
   {"Reference" [:span.fa.fa-arrow-right]
    "date" [:span.fa.fa-calendar-day]
@@ -287,13 +262,7 @@
              (for [[id example] (:examples profile)]
                [:div
                 [:h5 id]
-                [:pre.example [:code (clj-yaml.core/generate-string example)]]])
-             ;; [:br]
-             ;; [:h3 "API"]
-             ]
-            ;;[:script {:src "/static/jquery-3.4.1.min.js"}]
-            ;;[:script {:src "/static/collapse-structure.js"}]
-            ;;[:script {:src "/static/lmenu-view.js"}]
+                [:pre.example [:code (clj-yaml.core/generate-string example)]]])]
             )}))
 
 (defn profile-link [ctx rt nm pr]
