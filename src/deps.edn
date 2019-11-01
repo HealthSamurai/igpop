@@ -14,6 +14,7 @@
          garden                         {:mvn/version "1.3.9"}
          json-schema                    {:mvn/version "0.2.0-RC10"}
 
+         org.clojure/data.csv {:mvn/version "0.1.4"}
          ;; support for java 11+
          org.clojure/core.rrb-vector {:mvn/version "0.0.14"}
 

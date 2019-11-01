@@ -1,4 +1,4 @@
-desc: |
+description: |
   This profile sets minimum expectations for the AllergyIntolerance resource to record,
   search and fetch allergies/adverse reactions associated with a patient.
   It identifies the mandatory core elements, extensions, vocabularies and value sets
@@ -7,10 +7,10 @@ desc: |
 
 elements:
   code:
-    req: true
+    required: true
     valueset: { id: 'allergy-substance' }
   clinicalStatus:
-    desc: active | inactive | resolved
+    description: active | inactive | resolved
     valueset:
       id: 'fhir:allergyintolerance-clinical'
       system: us-core:us-core-allergy-substance
@@ -26,10 +26,10 @@ elements:
           path: [inactive]
           definition: A reaction to the identified substance has been clinically reassessed by testing or re-exposure and is considered no longer to be present. Re-exposure could be accidental, unplanned, or outside of any clinical setting.	~resolved
   verificationStatus:
-    desc: unconfirmed | confirmed | refuted | entered-in-error
+    description: unconfirmed | confirmed | refuted | entered-in-error
     valueset: { id: 'fhir:allergyintolerance-verification' }
   patient:
-    req: true
+    required: true
     refers:
       - resourceType: Patient
         profile: us-core:Patient
@@ -37,6 +37,6 @@ api:
   search:
     params:
       patient:
-        req: true
+        required: true
     combo:
     - params: [patient,clinical-status]

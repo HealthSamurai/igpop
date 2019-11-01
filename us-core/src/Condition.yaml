@@ -1,17 +1,17 @@
-desc: |
+description: |
   This profile sets minimum expectations for the Condition resource to record,
   search and fetch a list of problems and health concerns associated with a patient.
   It identifies which core elements,
   extensions, vocabularies and value sets SHALL be present in the resource when using this profile.
 
-attrs:
+elements:
   clinicalStatus:
-    vs: {url: 'fhir:condition-clinical'}
+    valueset: {id: 'fhir:condition-clinical'}
   verificationStatus:
-    vs: {url: 'fhir:condition-ver-status' }
+    valueset: {id: 'fhir:condition-ver-status' }
   category:
     minItems: 1
-    vs:
+    valueset:
       id: us-core-condition-category
       system: http://terminology.hl7.org/CodeSystem/condition-category
       concepts:
@@ -25,10 +25,10 @@ attrs:
          display: Health Concern
          definition: Additional health concerns from other stakeholders which are outside the provider’s problem list.
   code:
-    req: true
-    vs: { id: us-core-problem } 
+    required: true
+    valueset: { id: us-core-problem } 
   subject:
-    req: true
+    required: true
     refers:
     - resourceType: Patient
       profile: us-core
@@ -37,4 +37,4 @@ api:
   search:
     params:
       patient:
-        req: true
+        required: true
