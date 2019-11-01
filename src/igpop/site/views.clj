@@ -156,6 +156,18 @@
     [:a {:href (u/href ctx "profiles")} "Profiles"]
     [:a {:href (u/href ctx "valuesets")} "ValueSets"]]])
 
+(defn menu [itms {uri :uri}]
+  (letfn [(current-page [uri res-url] (= uri res-url))]
+    [:div#main-menu
+     (for [{display :display href :href items :items} (sort-by first itms)]
+       (if (= (count items) 0)
+         [:div
+          [:a {:href href :class (when (current-page uri href) "active")} display]]
+         [:div
+          [:a.item {:href href :class (when (current-page uri href) "active")} display]
+          (into [:section] (for [{display :display href :href} items]
+                             [:a.nested {:href href :class (when (current-page uri href) "active")} display]))]))]))
+
 (defn layout [ctx & content]
   (hc/html [:html
             [:head

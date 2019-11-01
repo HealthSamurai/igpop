@@ -253,12 +253,21 @@
                   (new-elements ctx els))]))
        (into [:div.el-cnt])))
 
+(defn profiles-to-menu [{profiles :profiles}]
+  (->> profiles
+       (mapv (fn [[rt nm]]
+               {:display (name rt) :href (str "/profiles/" (name rt) "/basic")
+                :items (->> (keys nm)
+                            (filter #(not (= :basic %)))
+                            (map (fn [n]
+                                   {:display (name n) :href (str "/profiles/" (name rt) "/" (name n))})))}))))
+
 (defn profile [ctx {{rt :resource-type nm :profile} :route-params :as req}]
   (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])]
     {:status 200
      :body (views/layout ctx
             style-tag
-            (menu ctx req)
+            (views/menu (profiles-to-menu ctx) req)
             [:div#content
              [:h1 rt " " [:span.sub (str/lower-case rt) "-" nm]]
              [:div.summary (:description profile)]
