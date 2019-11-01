@@ -46,13 +46,19 @@
                [:resource-type] {:GET #'igpop.site.profiles/profile
                                  [:profile] {:GET #'igpop.site.profiles/profile}}}})
 
+(defn *dispatch [ctx {uri :uri meth :request-method :as req}]
+  (let [uri (str/replace uri #"\.html$" "")
+        req (assoc req :uri uri)]
+    (if-let [{handler :match params :params} (route-map.core/match [meth uri] #'routes)]
+      (handler ctx (assoc req :route-params params))
+      {:status 200 :body "Ok"})))
+
 (defn dispatch [ctx {uri :uri meth :request-method :as req}]
   (or
    (handle-static req)
-   (if-let [{handler :match params :params} (route-map.core/match [meth uri] #'routes)]
-     (do (igpop.loader/reload ctx)
-         (handler @ctx (assoc req :route-params params)))
-     {:status 200 :body "Ok"})))
+   (do
+     (igpop.loader/reload ctx)
+     (*dispatch @ctx req))))
 
 (defn mk-handler [home]
   (let [ctx (atom (igpop.loader/load-project home))]
@@ -64,16 +70,41 @@
     (println "Run server on http://localhost:" port)
     (org.httpkit.server/run-server h {:port port})))
 
-(defn build [home]
+(defn dump-page [ctx home pth & [idx]]
+  (let [{body :body} (*dispatch ctx {:request-method :get
+                                     :uri (str "/" (str/join "/" pth))})
+        output (apply io/file (into [home "build"]
+                                    (if idx (into pth ["index.html"]) pth )))]
+    (println "Build.." (str "/" (str/join "/" pth)) " => " (.getPath output))
+    (.mkdir (apply io/file (into [home "build"] (butlast pth))))
+    (spit (.getPath output) body)))
 
-  )
+(defn build [home base-url]
+  (let [ctx (-> (igpop.loader/load-project home)
+                (assoc :base-url base-url))]
+    (.mkdir (io/file home "build"))
+    (.mkdir (io/file home "build" "static"))
+    (doseq [f (.listFiles (io/file (io/resource "public")))]
+      (io/copy f (io/file home "build" "static" (.getName f))))
+
+    (.mkdir (io/file home "build" "profiles"))
+    (dump-page ctx home [] :index)
+    (dump-page ctx home ["profiles"] :index)
+    (doseq [[rt prs] (:profiles ctx)]
+      (doseq [[id pr] prs]
+        (dump-page ctx home [ "profiles" (name rt) (name id)])))))
 
 (comment
 
-  (def srv (start (.getAbsolutePath (io/file  "example")) 8899))
+  (def hm (.getAbsolutePath (io/file  "example")))
+  (def srv (start hm 8899))
+
+  (build hm "http://localhost/igpop/example/build")
 
   (srv)
 
   (handler {:uri "/" :request-method :get})
+
+  
 
   )

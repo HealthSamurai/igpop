@@ -24,28 +24,30 @@ elements:
     birthsex:
       type: code
       valueset: { id: birthsex }
-    race2:
-      description: US Core Race Extension
-      elements:
-        text: { required: true,  description: Race Text, type: string }
-        ombCategory:
-          collection: true
-          minItems: 1
-          type: Coding
-          valueset: { id: omb-race-category }
-        detailed:
-          collection: true
-          description: Extended race codes
-          type: Coding
-          valueset: { id: detailed-race }
+    # race2:
+    #   description: US Core Race Extension
+    #   elements:
+    #     text: { required: true,  description: Race Text, type: string }
+    #     ombCategory:
+    #       collection: true
+    #       minItems: 1
+    #       type: Coding
+    #       valueset: { id: omb-race-category }
+    #     detailed:
+    #       collection: true
+    #       description: Extended race codes
+    #       type: Coding
+    #       valueset: { id: detailed-race }
   identifier: # []
+    minItems: 1
     elements:
       system: { required: true }
       value:  { required: true, description: The value that is unique within the system }
   name:
     minItems: 1
     description: A name associated with the patient
-    rule: 'family.count() + given.count() >= 1'
+    rule:
+      r1: 'family.count() + given.count() >= 1'
     elements: { family: {}, given: {}}
   telecom:
     elements:

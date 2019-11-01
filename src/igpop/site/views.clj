@@ -1,7 +1,8 @@
 (ns igpop.site.views
   (:require [garden.core :as gc]
             [hiccup.core :as hc]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [igpop.site.utils :as u]))
 
 (def style
   (gc/css
@@ -151,9 +152,9 @@
     " "
     (or (:title ctx) "ig.yaml:.title")]
    [:div#top-nav
-    [:a {:href "/docs"} "Docs"]
-    [:a {:href "/profiles"} "Profiles"]
-    [:a {:href "/valuesets"} "ValueSets"]]])
+    [:a {:href (u/href ctx "docs")} "Docs"]
+    [:a {:href (u/href ctx "profiles")} "Profiles"]
+    [:a {:href (u/href ctx "valuesets")} "ValueSets"]]])
 
 (defn layout [ctx & content]
   (hc/html [:html

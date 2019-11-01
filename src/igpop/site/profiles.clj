@@ -3,7 +3,8 @@
    [igpop.site.views :as views]
    [clojure.string :as str]
    [garden.core :as gc]
-   [clj-yaml.core]))
+   [clj-yaml.core]
+   [igpop.site.utils :as u]))
 
 
 (defn read-yaml [pth]
@@ -132,18 +133,18 @@
      [:div
       (if (and (= 1 (count profiles))
                (= :basic (first (keys profiles))))
-        (let [res-url (str "/profiles/" (name rt) "/basic")]
+        (let [res-url (u/href ctx "profiles" (name rt) "basic" {:format "html"})]
           [:a {:href res-url :class (when (current-page uri res-url) "active")} (name rt)])
         [:div
-         (let [res-url (str "/profiles/" (name rt) "/basic")]
+         (let [res-url (u/href ctx "profiles" (name rt) "basic" {:format "html"})]
            [:a.item {:href res-url :class (when (current-page uri res-url) "active")}
             (name rt)])
          (into [:section]
                (for [[nm pr] profiles]
                  (if (not (= "basic" (name nm)))
-                 (let [res-url (str "/profiles/" (name rt) "/" (name nm))]
-                   [:a.nested {:href res-url :class (when (current-page uri res-url) "active")}
-                    (name nm)]))))])])])
+                   (let [res-url (u/href ctx "profiles" (name rt) (name nm) {:format "html"})]
+                     [:a.nested {:href res-url :class (when (current-page uri res-url) "active")}
+                      (name nm)]))))])])])
 
 (def type-symbols
   {"Reference" [:span.fa.fa-arrow-right]
@@ -224,7 +225,7 @@
                                (assoc acc tp (merge (or (get el (keyword tp)) {})
                                                     {:type tp}))) {}))))
 
-(defn element-row [nm el]
+(defn element-row [ctx nm el]
   [:div.el-header
    [:span.link]
    (when (has-children? el)
@@ -236,20 +237,20 @@
      (when-let [d (:description el)]
        [:span d " "])
      (when-let [vs (:valueset el)]
-       [:a.vs {:href (str "/valuesets/" (:id vs))}
+       [:a.vs {:href (u/href ctx "valuesets" (:id vs))}
         [:span.fa.fa-tag]
         " "
         (:id vs)]
        )
      ]]])
 
-(defn new-elements [elements]
+(defn new-elements [ctx elements]
   (->> elements
        (mapv (fn [[nm el]]
                [:div.el
-                (element-row nm el)
+                (element-row ctx nm el)
                 (when-let [els (get-children nm el)]
-                  (new-elements els))]))
+                  (new-elements ctx els))]))
        (into [:div.el-cnt])))
 
 (defn profile [ctx {{rt :resource-type nm :profile} :route-params :as req}]
@@ -265,7 +266,7 @@
              [:br]
              [:div.profile
               [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
-              (new-elements (:elements profile))]
+              (new-elements ctx (:elements profile))]
 
              [:br]
              [:br]
@@ -283,8 +284,8 @@
             ;;[:script {:src "/static/lmenu-view.js"}]
             )}))
 
-(defn profile-link [rt nm pr]
-  [:a.db-item {:href (str "/profiles/" (name rt) "/" (name nm))}
+(defn profile-link [ctx rt nm pr]
+  [:a.db-item {:href (u/href ctx "profiles" (name rt) (name nm) {:format "html"})}
    [:h5 (name rt) ":" (name nm)]
    [:div.desc (when (:description pr) (subs (:description pr) 0 (min (count (:description pr)) 55)))]])
 
@@ -298,7 +299,7 @@
                      (mapcat
                       (fn [[rt profiles]]
                         (->> profiles
-                             (mapv (fn [[nm pr]] (profile-link rt nm pr)))))))))})
+                             (mapv (fn [[nm pr]] (profile-link ctx rt nm pr)))))))))})
 
 
 
