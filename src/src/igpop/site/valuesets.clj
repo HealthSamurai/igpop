@@ -22,13 +22,20 @@
                                      [:div.column
                                       "???"]]) concepts)))
 
-(defn menu-vs [ctx {uri :uri}]
+(defn valuesets-to-menu [{valuesets :valuesets}]
+  (map (fn [itm]
+         {:display (name itm) :href (str "/valuesets/" (name itm))})
+       (keys valuesets)))
+
+(defn menu' [itms {uri :uri}]
   (letfn [(current-page [uri res-url] (= uri res-url))]
     [:div#main-menu
-     (for [vs (keys (:valuesets ctx))] 
+     (for [{display :display href :href items :items} (sort-by first itms)]
        [:div
-        (let [res-url (str "/valuesets/" (name vs))]
-          [:a {:href res-url :class (when (current-page uri res-url) "active")} (name vs)])])]))
+        [:a {:href href :class (when (current-page uri href) "active")} display]
+        (when (> (count items) 0)
+          (into [:section] (for [{display :display href :href} items]
+                             [:a {:href href :class (when (current-page uri href) "active")} display])))])]))
 
 (defn valuesets-dashboard [ctx req]
   {:status 200
@@ -42,7 +49,7 @@
         description (get vs :description)]
     {:status 200
      :body (views/layout ctx
-            (menu-vs ctx req)
+            (menu' (valuesets-to-menu ctx) req)
             [:div#content [:h1 "Valueset " vid]
              [:div.summary description]
              [:hr]
