@@ -11,6 +11,7 @@
    [ring.util.codec]
    [ring.util.response]
    [route-map.core]
+   [igpop.site.utils :as u]
    [clojure.java.io :as io]))
 
 (defn welcome [ctx req]
@@ -71,11 +72,17 @@
     (org.httpkit.server/run-server h {:port port})))
 
 (defn dump-page [ctx home pth & [idx]]
-  (let [{body :body} (*dispatch ctx {:request-method :get
-                                     :uri (str "/" (str/join "/" pth))})
+  (let [href (apply u/href {} pth)
+        {body :body} (*dispatch ctx {:request-method :get :uri href})
+        [pth opts] (if (map? (last pth)) [(butlast pth) (last pth)] [pth {}])
         output (apply io/file (into [home "build"]
-                                    (if idx (into pth ["index.html"]) pth )))]
-    (println "Build.." (str "/" (str/join "/" pth)) " => " (.getPath output))
+                                    (if idx
+                                      (into pth ["index.html"])
+                                      (if-let [fmt (:format opts)]
+                                        (into  (vec (butlast pth))
+                                               [(str (last pth) "." fmt)])
+                                        pth))))]
+    (println "Build.." href " => " (.getPath output))
     (.mkdir (apply io/file (into [home "build"] (butlast pth))))
     (spit (.getPath output) body)))
 
@@ -84,6 +91,7 @@
                 (assoc :base-url base-url))]
     (.mkdir (io/file home "build"))
     (.mkdir (io/file home "build" "static"))
+
     (doseq [f (.listFiles (io/file (io/resource "public")))]
       (io/copy f (io/file home "build" "static" (.getName f))))
 
@@ -92,11 +100,12 @@
     (dump-page ctx home ["profiles"] :index)
     (doseq [[rt prs] (:profiles ctx)]
       (doseq [[id pr] prs]
-        (dump-page ctx home [ "profiles" (name rt) (name id)])))))
+        (dump-page ctx home ["profiles" (name rt) (name id) {:format "html"}])))))
 
 (comment
 
   (def hm (.getAbsolutePath (io/file  "example")))
+
   (def srv (start hm 8899))
 
   (build hm "http://localhost/igpop/example/build")

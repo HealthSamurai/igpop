@@ -7,13 +7,10 @@
                      [(butlast pth) (last pth) ]
                      [pth {}])
         fmt (when-let [fmt (:format opts)]
-              (str "." fmt))]
+              (str "." fmt))
+        res (if-let [bu (:base-url ctx)]
+              (str (str/join "/" (into [bu] pth)) fmt)
+              (str "/" (str/join "/" pth) fmt))]
+    (println "href:" res)
+    res))
 
-    (if-let [bu (:base-url ctx)]
-      (str (str/join "/" (into [bu] pth)) fmt)
-      (str "/" (str/join "/" pth) fmt))))
-
-(href {} "a" "b" {:format "html"})
-(href {} "a" "b")
-
-(href {:base-url "http://local.host"} "a" "b")
