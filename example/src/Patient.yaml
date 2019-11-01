@@ -1,0 +1,64 @@
+description:
+  This profile sets minimum expectations for the Patient resource to record,
+  search and fetch basic demographics and other administrative information about
+  an individual patient. It identifies which core elements, extensions,
+  vocabularies and value sets SHALL be present in the resource when using this
+  profile.
+
+elements:
+  extension:
+    race:
+      description: US Core Race Extension
+      elements:
+        text: { required: true,  description: Race Text, type: string }
+        ombCategory:
+          collection: true
+          minItems: 1
+          type: Coding
+          valueset: { id: omb-race-category }
+        detailed:
+          collection: true
+          description: Extended race codes
+          type: Coding
+          valueset: { id: detailed-race }
+    birthsex:
+      type: code
+      valueset: { id: birthsex }
+    race2:
+      description: US Core Race Extension
+      elements:
+        text: { required: true,  description: Race Text, type: string }
+        ombCategory:
+          collection: true
+          minItems: 1
+          type: Coding
+          valueset: { id: omb-race-category }
+        detailed:
+          collection: true
+          description: Extended race codes
+          type: Coding
+          valueset: { id: detailed-race }
+  identifier: # []
+    elements:
+      system: { required: true }
+      value:  { required: true, description: The value that is unique within the system }
+  name:
+    minItems: 1
+    description: A name associated with the patient
+    rule: 'family.count() + given.count() >= 1'
+    elements: { family: {}, given: {}}
+  telecom:
+    elements:
+      value:  { required: true }
+      system: { required: true,  valueset: {id: 'fhir:contact-point-system' }}
+  gender: { valueset: { id: 'fhir:administrative-gender' } }
+  birthDate: {}
+  address:
+    elements:
+      line: {}
+      city: {}
+      postalCode: { description: US Zip Codes }
+      state: { valueset: { id: us-core-usps-state } }
+  communication:
+    elements:
+      language: { required: true,  valueset: {id: simple-language }}

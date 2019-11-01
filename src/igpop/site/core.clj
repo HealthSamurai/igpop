@@ -64,6 +64,10 @@
     (println "Run server on http://localhost:" port)
     (org.httpkit.server/run-server h {:port port})))
 
+(defn build [home]
+
+  )
+
 (comment
 
   (def srv (start (.getAbsolutePath (io/file  "example")) 8899))

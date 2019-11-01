@@ -1,0 +1,18 @@
+description: This profile sets minimum expectations for searching and fetching Diagnostic ...
+
+elements: 
+  status: {}
+  category: {vsr: diagnosticreport-category}
+  code: {vse: report-code}
+  subject:
+    refs: [ /Patient ]
+  encounter:
+    refs: [ /Encounter ]
+  effective:
+    desc: Time of the report or note
+    union: [dateTime, Period]
+  issued: {}
+  performer:
+    refs: [ /Practitioner /Organization]
+  media: {}
+  presentedForm: {}
