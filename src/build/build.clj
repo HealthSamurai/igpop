@@ -5,11 +5,10 @@
 (defn -main [& args]
   (uberjar/-main
    "-a" "all"
-   ;; "-p" "../ui/build"
    "--app-group-id" "healthsamurai"
    "--app-artifact-id" "igpop"
    "--app-version" "0.0.1"
-   "-m" "clojure.main"
+   "-m" "igpop.core"
    "--no-copy-source"))
 
 (comment

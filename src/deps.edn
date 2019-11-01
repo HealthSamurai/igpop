@@ -17,8 +17,6 @@
          org.clojure/data.csv {:mvn/version "0.1.4"}
          ;; support for java 11+
          org.clojure/core.rrb-vector {:mvn/version "0.0.14"}
-
-         markdown-to-hiccup {:mvn/version "0.6.2"}
          markdown-clj {:mvn/version "1.10.0"}}
 
  :aliases
