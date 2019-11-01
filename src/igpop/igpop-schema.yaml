@@ -1,0 +1,48 @@
+description: igpop profile
+
+elements:
+  description:
+    type: string
+  elements:
+    description: Key-value elements definition
+    map:
+      elements:
+        description:
+          type: string
+        collection:
+          description: Is element collection?
+          type: boolean
+        required:
+          description: Is element required?
+          type: boolean
+        minItems:
+          type: positiveInt
+        maxItems:
+          type: positiveInt
+        contains:
+          description: Pattern to check in collection
+          type: any 
+        match:
+          description: Pattern to check
+          type: any 
+        valueset:
+          description: ValueSet binding
+          elements:
+            id:
+              type: string
+              required: true
+              description: valuset id
+            concepts:
+              collection: true
+              elements:
+                code: {type: string, required: true}
+                description: {type: string}
+                definition: {type: string}
+        type:
+          type: string
+          valueset:
+            id: igpop-types
+            concepts:
+              - code: string
+        elements:
+          recursive: [elements, elements]

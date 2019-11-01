@@ -1,7 +1,0 @@
-{
-    "name": "igpop-fhir-4.0.0",
-    "version": "0.0.1-rc2",
-    "description": "FHIR meta for igpop",
-    "author": "niquola",
-    "license": "MIT"
-}
