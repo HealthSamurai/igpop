@@ -67,5 +67,10 @@
    (get-in project [:valuesets :dict1])
    {:concepts [{:code "male" :display "Male"}]})
 
+  (is (not (nil? (get-in project [:docs :pages :welcome]))))
+  (is (not (nil? (get-in project [:docs :menu]))))
+  (get-in project [:docs :pages])
+
+
   )
 
