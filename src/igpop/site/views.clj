@@ -183,15 +183,15 @@
                      :integrity "sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS"
                      :crossorigin "anonymous"}]
 
-             [:link {:rel "icon" :href "/static/icon.png"}] 
+             [:link {:rel "icon" :href (u/href ctx "static" "icon.png")}] 
              [:link {:href "//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" :rel "stylesheet"}]
              [:link {:href "//fonts.googleapis.com/css?family=Montserrat|Roboto&display=swap" :rel "stylesheet"}]
              [:style style]
              [:title (or (:title ctx) "ig.yaml:.title")]]
             [:body
              (into [:div.body (top-nav ctx)] content)
-             [:script {:src "/static/jquery-3.4.1.min.js"}]
-             [:script {:src "/static/collapse-structure.js"}]
-             [:script {:src "/static/lmenu-view.js"}]
+             [:script {:src (u/href ctx "static" "jquery-3.4.1.min.js")}]
+             [:script {:src (u/href ctx "static" "collapse-structure.js")}]
+             [:script {:src (u/href ctx "static" "lmenu-view.js")}]
              ]]))
 
