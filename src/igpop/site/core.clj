@@ -121,6 +121,7 @@
   (def srv (start hm 8899))
 
   (build hm "http://localhost/igpop/example/build")
+  (build hm "/igpop")
 
   (srv)
 

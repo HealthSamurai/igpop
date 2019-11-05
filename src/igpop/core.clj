@@ -28,7 +28,8 @@
 (defmethod run
   :build
   [& args]
-  (println "Build..." args))
+  (println "Build..." args)
+  (site/build (System/getProperty "user.dir") (first args)))
 
 (defmethod run
   :dev
