@@ -92,7 +92,7 @@
     (.mkdir (io/file home "build"))
     (.mkdir (io/file home "build" "static"))
 
-    (doseq [f (.listFiles (io/file (io/resource "public")))]
+    (doseq [f (.listFiles (io/file home "src" "public"))]
       (io/copy f (io/file home "build" "static" (.getName f))))
 
     (.mkdir (io/file home "build" "profiles"))
