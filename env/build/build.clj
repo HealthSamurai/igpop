@@ -5,6 +5,7 @@
 (defn -main [& args]
   (uberjar/-main
    "-a" "all"
+   "-p" "resources"
    "--app-group-id" "healthsamurai"
    "--app-artifact-id" "igpop"
    "--app-version" "0.0.1"
