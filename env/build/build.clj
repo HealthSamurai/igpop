@@ -1,8 +1,14 @@
 (ns build
   (:require [cambada.uberjar :as uberjar]))
 
-
 (defn -main [& args]
+  (let [dir (str (System/getProperty "user.dir") "/resources" "/public")]
+    (spit (clojure.java.io/file dir "static-resources") (clojure.string/join " " (for [f (->> dir
+                                                                                              clojure.java.io/file
+                                                                                              file-seq
+                                                                                              (filter #(not (.isDirectory %))))]
+                                                                                   (.getName f)))))
+
   (uberjar/-main
    "-a" "all"
    "-p" "resources"
@@ -14,5 +20,3 @@
 
 (comment
   (-main))
-
-

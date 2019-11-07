@@ -92,9 +92,6 @@
     (.mkdir (io/file home "build"))
     (.mkdir (io/file home "build" "static"))
 
-    (doseq [f (.listFiles (io/file home "src" "public"))]
-      (io/copy f (io/file home "build" "static" (.getName f))))
-
     (.mkdir (io/file home "build" "profiles"))
     (dump-page ctx home [] :index)
     (dump-page ctx home ["profiles"] :index)
@@ -112,6 +109,9 @@
     (doseq [[id _] (get-in ctx [:docs :pages])]
       (dump-page ctx home ["docs" (name id) {:format "html"}]))
 
+    (doseq [f (str/split (slurp (io/resource "public/static-resources")) #" ")]
+      (when-not (= "static-resources" f)
+        (io/copy (io/input-stream (io/resource (str "public/" f))) (io/file home "build" "static" f))))
     ))
 
 (comment
@@ -125,8 +125,4 @@
 
   (srv)
 
-  (handler {:uri "/" :request-method :get})
-
-  
-
-  )
+  (handler {:uri "/" :request-method :get}))
