@@ -1,6 +1,6 @@
 {
     "name": "igpop-fhir-4.0.0",
-    "version": "0.0.1-rc3",
+    "version": "0.0.1-rc4",
     "description": "FHIR meta for igpop",
     "author": "niquola",
     "license": "MIT"
