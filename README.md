@@ -1,12 +1,12 @@
 # igpop is Sugar FHIR Profiling
 
 [![Build Status](https://travis-ci.org/HealthSamurai/igpop.svg?branch=master)](https://travis-ci.org/HealthSamurai/igpop)
-
 [![npm version](http://img.shields.io/npm/v/igpop.svg?style=flat)](https://npmjs.org/package/igpop)
 
 
-* Telegram Chat:  https://t.me/igpop
-* Demo: [demo](https://healthsamurai.github.io/igpop/profiles/Patient/basic.html)
+* [Telegram Chat](https://t.me/igpop)
+* [Demo](https://healthsamurai.github.io/igpop/profiles/Patient/basic.html)
+* [Example](https://healthsamurai.github.io/igpop-example)
 
 ----
 
