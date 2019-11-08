@@ -1,7 +1,6 @@
 (ns igpop.loader-test
   (:require [igpop.loader :as sut]
             [clojure.test :refer :all]
-            [matcho.core :as match]
             [clojure.java.io :as io]
             [matcho.core :as matcho]))
 
@@ -45,22 +44,23 @@
 
   (matcho/match
    (:base project)
-   {:profiles {:Patient {:elements {:name {}}}}})
+   nil)
 
   (matcho/match
    (:source project)
    {:Patient {:basic {:elements {}}}})
 
   (matcho/match
-   (:profiles project)
-   {:Patient {:basic {:elements {:name {:type "HumanName"}}}
-              :lab-report {}}})
+   (:Patient (:profiles project))
+   {:lab-report {}
+    :basic {}})
 
   (get-in project [:profiles :Patient :basic])
   (get-in project [:source :Patient :basic :description])
   (get-in project [:valuesets :dict1])
 
   (keys project)
+
   (get-in project [:valuesets])
 
   (matcho/match
