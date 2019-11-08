@@ -13,7 +13,7 @@ script:
 before_deploy:
   - make build
   - cd example
-  - java -jar "../npm/igpop/bin/igpop.jar" build igpop.core
+  - java -jar "../npm/igpop/bin/igpop.jar" build "/igpop" igpop.core
 
 deploy:
   provider: pages
