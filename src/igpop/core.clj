@@ -29,7 +29,7 @@
   :build
   [& args]
   (println "Build..." args)
-  (site/build (System/getProperty "user.dir") (first args)))
+  (site/build (System/getProperty "user.dir") (second args)))
 
 (defmethod run
   :dev
@@ -41,11 +41,10 @@
   (if-let [cmd (first args)]
     (if-let [handler (get commands cmd)]
       (apply run args)
-      (do 
+      (do
         (println "No such command - " cmd)
         (run :help)))
     (run :help)))
-
 
 (comment
 

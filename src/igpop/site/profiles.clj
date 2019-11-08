@@ -80,7 +80,7 @@
                     :line-height "30px"
                     :border-left link-border
                     :margin-left "-1px"}
-       
+
        [:&:last-of-type {:border-left-color "transparent"}]]
       [:.el-line {:display "flex"
                   :flex-direction "row"

@@ -2,7 +2,6 @@
 
 const {spawn} = require('child_process');
 const {resolve} = require('path');
-
 const args = process.argv.slice(2);
 const binPath = resolve(__dirname, 'igpop.jar');
 const JAVA_OPTS = process.env['JAVA_OPTS'] || '';

@@ -110,7 +110,7 @@
       (dump-page ctx home ["docs" (name id) {:format "html"}]))
 
     (doseq [f (str/split (slurp (io/resource "public/static-resources")) #" ")]
-      (when-not (= "static-resources" f)
+      (when-not (or (= f "static-resources") (= f "static-resources\n"))
         (io/copy (io/input-stream (io/resource (str "public/" f))) (io/file home "build" "static" f))))
     ))
 
