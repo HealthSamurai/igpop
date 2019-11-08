@@ -1,19 +1,27 @@
 # igpop is Sugar FHIR Profiling
 
-DRY FHIR profiling for programming humans
+[![Build Status](https://travis-ci.org/HealthSamurai/igpop.svg?branch=master)](https://travis-ci.org/HealthSamurai/igpop)
+[![npm version](http://img.shields.io/npm/v/igpop.svg?style=flat)](https://npmjs.org/package/igpop)
+
+
+* [Telegram Chat](https://t.me/igpop)
+* [Demo](https://healthsamurai.github.io/igpop/profiles/Patient/basic.html)
+* [Example](https://healthsamurai.github.io/igpop-example)
+
+----
+
+DRY FHIR profiling for programming beings
 
 * 80/20 of profiling
 * convention over configuration
 * to be manually written
 * Data DSL - no grammars and parsers
-* inline extensions
-* inline valuesets
 
 ### Features
 
+* generate JSON Schema
 * generate FHIR StructureDefinition, ValueSets etc
 * generate IG static site
-* generate json schema
 * linter for profiles
 
 ## New Project
@@ -113,27 +121,11 @@ elements:
 
 ```
 
-## Constraint cardinality
-
-igpop distinguishes collections and singular elements.
-
-## Define ValueSet bindings
-
-## Constant checks
-
-## Slicing
-
-## Define extensions 
-
-# Development
-
 
 ```
 
 make repl
 make build
-
-
 
 
 ```
