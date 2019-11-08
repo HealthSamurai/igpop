@@ -47,5 +47,5 @@
             style-tag
             (views/menu (docs-to-menu ctx) req)
             [:div#content
-             [:pre (pr-str (dissoc doc :source))]
+             [:pre (pr-str (:title (dissoc doc :source)))]
              (markdown.core/md-to-html-string (:source doc))])}))
