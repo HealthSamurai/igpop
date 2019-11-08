@@ -5,7 +5,8 @@
 [![npm version](http://img.shields.io/npm/v/igpop.svg?style=flat)](https://npmjs.org/package/igpop)
 
 
-Telegram Chat:  https://t.me/igpop
+* Telegram Chat:  https://t.me/igpop
+* Demo: [demo](https://healthsamurai.github.io/igpop/profiles/Patient/basic.html)
 
 ----
 
@@ -120,27 +121,11 @@ elements:
 
 ```
 
-## Constraint cardinality
-
-igpop distinguishes collections and singular elements.
-
-## Define ValueSet bindings
-
-## Constant checks
-
-## Slicing
-
-## Define extensions 
-
-# Development
-
 
 ```
 
 make repl
 make build
-
-
 
 
 ```
