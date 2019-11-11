@@ -96,7 +96,9 @@
     (dump-page ctx home [] :index)
     (dump-page ctx home ["profiles"] :index)
     (doseq [[rt prs] (:profiles ctx)]
-      (doseq [[id pr] prs]
+      (doseq [[id pr] (if-not (some #(= % :basic) (keys prs))
+                        (assoc prs :basic {})
+                        prs)]
         (dump-page ctx home ["profiles" (name rt) (name id) {:format "html"}])))
 
     (.mkdir (io/file home "build" "valuesets"))
