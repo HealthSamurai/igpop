@@ -42,9 +42,9 @@
   (io/file project-path "ig.yaml")
   (io/file project-path "node_modules" "igpop-fhir-4.0.0")
 
-  (matcho/match
-   (:base project)
-   nil)
+  (comment (matcho/match
+           (:base project)
+           nil))
 
   (matcho/match
    (:source project)
