@@ -91,8 +91,8 @@
                 (assoc :base-url base-url))]
     (.mkdir (io/file home "build"))
     (.mkdir (io/file home "build" "static"))
-
     (.mkdir (io/file home "build" "profiles"))
+
     (dump-page ctx home [] :index)
     (dump-page ctx home ["profiles"] :index)
     (doseq [[rt prs] (:profiles ctx)]

@@ -178,7 +178,7 @@
     (when (.exists file) file)))
 
 (defn load-fhir [home fhir-version]
-  (if-let [fhir-dir (safe-file home "node_modules" (str "igpop-fhir-" fhir-version))]
+  (if-let [fhir-dir (safe-file home "node_modules" (str "igpop-fhir-" fhir-version) "src")]
     (->> (file-seq fhir-dir)
          (reduce (fn [acc f]
                    (let [nm (.getName f)]
@@ -193,8 +193,6 @@
                          (assoc-in acc [:profiles (keyword rt)] (read-yaml (.getPath f))))
                        ))) {}))
     (println "Could not find " (.getPath (io/file home "node_modules" (str "igpop-fhir-" fhir-version))))))
-
-
 
 (defn load-project [home]
   (let [manifest-file (io/file home "ig.yaml")]
