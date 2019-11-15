@@ -55,9 +55,31 @@
    {:lab-report {}
     :basic {}})
 
-  (map (get-in project [:profiles]))
+  (second (get-in project [:profiles :Patient :basic :elements]))
+
+  (defn get-concepts [{valuesets :valuesets :as ctx} valueset]
+    (when-let [vs (get-in valuesets [valueset :concepts])]
+      (mapv #(get % :code) vs)))
+
+  (defn attach-enum [acc eln vs ctx]
+    (if vs
+      (assoc-in acc [eln :enum] (get-concepts ctx vs))
+      acc))
+
+  (defn element-to-json-schema [acc [eln props] ctx]
+    (if (map? props)
+      (let [acc' (-> acc
+                     (assoc-in [eln :decription] (:description props))
+                     (assoc-in [eln :type] (:type props))
+                     (attach-enum eln (keyword (get-in props [:valueset :id])) ctx))]
+        (if (:elements props)
+          (assoc-in acc' [eln :properties] (reduce (fn [acc el] (element-to-json-schema acc el ctx)) acc (:elements props)))
+          acc'))))
+
+  (element-to-json-schema {} (second (get-in project [:profiles :Patient :basic :elements])) project)
+
   (get-in project [:source :Patient :basic :description])
-  (get-in project [:valuesets :dict1])
+  (get-in project [:profiles :Patient :basic :elements :gender :valueset :id])
 
   (keys project)
 
@@ -70,6 +92,4 @@
   (is (not (nil? (get-in project [:docs :pages :welcome]))))
   (is (not (nil? (get-in project [:docs :menu]))))
   (get-in project [:docs :pages])
-
-
-  )
+)

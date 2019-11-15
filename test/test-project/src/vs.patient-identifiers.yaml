@@ -1,0 +1,8 @@
+system: 'fhir'
+description: Patient identity systems  
+concepts:
+- code: myfhir:ssn
+  display: Social Security Number
+- code: myfhir:dl
+  display: Driver License
+  

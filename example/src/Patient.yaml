@@ -41,7 +41,7 @@ elements:
   identifier: # []
     minItems: 1
     elements:
-      system: { required: true }
+      system: { required: true}
       value:  { required: true, description: The value that is unique within the system }
   name:
     minItems: 1
