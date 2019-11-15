@@ -61,8 +61,6 @@
 
   (keys project)
 
-  (generate-json-schema (first (get project :profiles)))
-
   (keys project)
 
   (matcho/match
