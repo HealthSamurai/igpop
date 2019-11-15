@@ -55,13 +55,15 @@
    {:lab-report {}
     :basic {}})
 
-  (get-in project [:profiles :Patient :basic])
+  (map (get-in project [:profiles]))
   (get-in project [:source :Patient :basic :description])
   (get-in project [:valuesets :dict1])
 
   (keys project)
 
-  (get-in project [:valuesets])
+  (generate-json-schema (first (get project :profiles)))
+
+  (keys project)
 
   (matcho/match
    (get-in project [:valuesets :dict1])
@@ -73,4 +75,3 @@
 
 
   )
-
