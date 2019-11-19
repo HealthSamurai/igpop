@@ -86,6 +86,14 @@
     (.mkdir (apply io/file (into [home "build"] (butlast pth))))
     (spit (.getPath output) body)))
 
+(defmacro get-static []
+  (let [r (clojure.string/join " " (for [f (->> (str (System/getProperty "user.dir") "/resources" "/public")
+                                                clojure.java.io/file
+                                                file-seq
+                                                (filter #(not (.isDirectory %))))]
+                                     (.getName f)))]
+    `~r))
+
 (defn build [home base-url]
   (let [ctx (-> (igpop.loader/load-project home)
                 (assoc :base-url base-url))]
@@ -111,7 +119,7 @@
     (doseq [[id _] (get-in ctx [:docs :pages])]
       (dump-page ctx home ["docs" (name id) {:format "html"}]))
 
-    (doseq [f (str/split (slurp (io/resource "public/static-resources")) #" ")]
+    (doseq [f (str/split (get-static) #" ")]
       (when-not (or (= f "static-resources") (= f "static-resources\n"))
         (io/copy (io/input-stream (io/resource (str "public/" f))) (io/file home "build" "static" f))))
     ))

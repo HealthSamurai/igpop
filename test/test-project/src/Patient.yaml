@@ -37,7 +37,7 @@ elements:
     elements:
       value:  { required: true }
       system: { required: true,  valueset: {id: 'fhir:contact-point-system' }}
-  gender: { valueset: { id: 'fhir:administrative-gender' } }
+  gender: { valueset: { id: 'fhir:administrative-genders' } }
   birthDate: {}
   address:
     elements:
