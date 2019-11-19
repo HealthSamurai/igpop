@@ -18,7 +18,6 @@ function rollUpMenu(curItem = null) {
 function getElems(){
     let dropdownItems = document.getElementsByClassName("item");
     for (let i = 0; i < dropdownItems.length; i++){
-        console.log("start");
         if (findInCollection(dropdownItems[i].classList, "active")){
             dropdownItems[i].setAttribute("href", "javascript:void(0)");
             return(dropdownItems[i]);
@@ -44,4 +43,5 @@ $(".item").click(function (){
         $content.slideToggle(100, function () {});
     }
 });
+
 

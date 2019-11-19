@@ -13,8 +13,10 @@ function collapseExpandProfileItem(thisElem) {
 let dropdown = document.getElementsByClassName("el-header");
 for (let i = 0; i < dropdown.length; i++) {
     dropdown[i].addEventListener("click", function() {
-        if (findInCollection(this.nextSibling.classList, "el-cnt")){
-            collapseExpandProfileItem(this);
+        if (this.nextSibling != null){
+            if (findInCollection(this.nextSibling.classList, "el-cnt")){
+                collapseExpandProfileItem(this);
+            }
         }
     });
 }
