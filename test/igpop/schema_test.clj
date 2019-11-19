@@ -12,11 +12,9 @@
 
   (def project (loader/load-project project-path))
 
-  (reduce (fn [acc [eln el]] (assoc-in acc [eln :desc] (get el :description))) {} (get-in project [:profiles :Task :basic :elements]))
+  (comment (reduce (fn [acc [eln el]] (assoc-in acc [eln :desc] (get el :description))) {} (get-in project [:profiles :Task :basic :elements]))
 
-  (spit (io/file "/home/victor/Documents/Trash/Task.json") (generate-string (get-in (sut/generate-json-schema project) [:Task :basic]) {:pretty true}))
-
-  (sut/get-required (get-in project [:profiles :Task :basic :elements :input :elements]))
+           (sut/get-required (get-in project [:profiles :Task :basic :elements :input :elements])))
 
   (get-in project [:profiles :Task :basic :elements :input :elements :value])
 
