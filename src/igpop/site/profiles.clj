@@ -174,6 +174,7 @@
                                (:union el) [:span.fa.fa-question-circle]
                                (:elements el) [:span.fa.fa-folder]
                                :else "?")]))
+
 (defn required-span [el]
   (when (or (:required el)
             (and (:minItems el)
@@ -206,7 +207,7 @@
 (defn element-row [ctx nm el]
   [:div.el-header
    [:span.link]
-   (when (has-children? el)
+   (when (or (has-children? el) (= :extension nm))
      [:span.down-link])
    (type-icon nm el)
    [:div.el-line
