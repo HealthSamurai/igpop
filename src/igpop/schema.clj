@@ -25,11 +25,16 @@
         :else acc))
     acc))
 
+(defn attach-type [acc eln props]
+  (if-let [l (:union props)]
+    (assoc-in acc [eln :type] (vec l))
+    (assoc-in acc [eln :type] (:type props))))
+
 (defn element-to-json-schema [acc [eln props] ctx]
   (if (map? props)
     (let [acc' (-> acc
                    (assoc-in [eln :decription] (:description props))
-                   (assoc-in [eln :type] (:type props))
+                   (attach-type eln props)
                    (attach-enum eln (-> props
                                         (get-in [:valueset :id])) ctx))]
       (if (:elements props)
@@ -39,10 +44,12 @@
         acc'))))
 
 (defn generate-json-schema [{profiles :profiles :as ctx}]
-  (into {} (for [[rt prls] profiles]
-             (assoc {} rt
-                    (into {} (for [[prn props] prls]
-                               {prn (let [prl-sch {:$schema "http://json-schema.org/draft-07/schema#"
-                                                   :$id (str "baseurl" "/"(name rt) (name prn) ".json")}
-                                          els (get props :elements)]
-                                      (assoc-in prl-sch [:definitions :Task :properties] (into {} (map (fn [el] (element-to-json-schema {} el ctx)) els))))}))))))
+  (let [m {:$schema "http://json-schema.org/draft-07/schema#"
+           :$id (str "baseurl" "/" ".json")}]
+    (assoc m :definitions
+           (into {} (for [[rt prls] profiles]
+                      (assoc {} rt
+                             (into {} (for [[prn props] prls]
+                                        {prn (let [els (get props :elements)]
+                                               (assoc-in {} [:properties] (into {} (map (fn [el] (element-to-json-schema {} el ctx)) els))))}))))))))
+
