@@ -43,12 +43,7 @@
     [:&.complex :&.obj {:border-radius "3px"}]
     [:&.profile {:margin-left "-10px" :border-radius "3px"}]]
 
-   [:.activeS {:display "none"
-               ;;:-webkit-transform "translateY(-100%)"
-               ;;:transform "translateY(-100%)"
-               ;;:transition "transform 3000ms linear"
-               ;;:will-change "transform"
-               }]
+   [:.el-cnt.activeS {:max-height "0px"}]
 
    [:.table {:display "table"
              :border-collapse "collapse"
@@ -65,8 +60,14 @@
          link-border (str "1px solid " link-color)
          left-width 360]
      [:.el-cnt
-      {:color "rgb(33,37,41)"
-       :font-weight "400"}
+      {:overflow-y "hidden"
+       :color "rgb(33,37,41)"
+       :font-weight "400"
+       :max-height "1400px"
+       :-webkit-transition "max-height 0.5s ease-in-out"
+       :-moz-transition "max-height 0.5s ease-in-out"
+       :-o-transition "max-height 0.5s ease-in-out"
+       :transition "max-height 0.5s ease-in-out"}
 
       [:.required {:color "red" :opacity 0.7 :margin "0 0.2em"}]
       [:.coll {:color "#888"}]
@@ -90,7 +91,8 @@
                   :border-bottom "1px solid #f1f1f1"}
        [:&:hover {:background-color "#f5f7f9"}]]
 
-      [:.el {:border-left link-border}
+      [:.el {:border-left link-border
+             :overflow "visible"}
        [:&:last-of-type {:border-left-color "transparent"}
         [:.el-header  {:border-left-color "transparent"
                        :font-size "15px"

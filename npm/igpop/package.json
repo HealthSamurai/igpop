@@ -1,6 +1,6 @@
 {
     "name": "igpop",
-    "version": "0.0.2-SNAPSHOT2",
+    "version": "0.0.2-SNAPSHOT3",
     "description": "Sugar FHIR profiling for programming beings",
     "author": "niquola",
     "license": "MIT",
