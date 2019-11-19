@@ -64,10 +64,10 @@
        :color "rgb(33,37,41)"
        :font-weight "400"
        :max-height "1400px"
-       :-webkit-transition "max-height 0.5s ease-in-out"
-       :-moz-transition "max-height 0.5s ease-in-out"
-       :-o-transition "max-height 0.5s ease-in-out"
-       :transition "max-height 0.5s ease-in-out"}
+       :-webkit-transition "max-height 0.3s ease-in-out"
+       :-moz-transition "max-height 0.3s ease-in-out"
+       :-o-transition "max-height 0.3s ease-in-out"
+       :transition "max-height 0.3s ease-in-out"}
 
       [:.required {:color "red" :opacity 0.7 :margin "0 0.2em"}]
       [:.coll {:color "#888"}]
