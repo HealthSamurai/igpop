@@ -26,7 +26,7 @@
       :display "grid"
       :grid-template-areas (str/join "\n" ["\"header header header\" " "\"nav content ads\""])
       :grid-template-rows "60px 1fr"
-      :grid-template-columns "20% 1fr 15%"
+      :grid-template-columns "minmax(0, 20%) minmax(0, 1fr) minmax(0, 15%)"
       :grid-gap "0px"
       :height "100vh"
       :margin 0}
