@@ -24,20 +24,6 @@ elements:
     birthsex:
       type: code
       valueset: { id: birthsex }
-    # race2:
-    #   description: US Core Race Extension
-    #   elements:
-    #     text: { required: true,  description: Race Text, type: string }
-    #     ombCategory:
-    #       collection: true
-    #       minItems: 1
-    #       type: Coding
-    #       valueset: { id: omb-race-category }
-    #     detailed:
-    #       collection: true
-    #       description: Extended race codes
-    #       type: Coding
-    #       valueset: { id: detailed-race }
   identifier: # []
     minItems: 1
     elements:
