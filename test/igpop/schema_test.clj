@@ -15,7 +15,9 @@
   (comment
     (sut/generate-json-schema project)
 
-    (sut/get-required (get-in project [:profiles :Task :basic :elements :input :elements]))
+    (get-in project [:profiles :Task :basic :elements])
+
+    (spit (io/file "/home/victor/Documents/Trash/test-schema.json") (generate-string (sut/generate-schema project) {:pretty true}))
 
     )
 
