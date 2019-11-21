@@ -26,7 +26,7 @@
       :display "grid"
       :grid-template-areas (str/join "\n" ["\"header header header\" " "\"nav content ads\""])
       :grid-template-rows "60px 1fr"
-      :grid-template-columns "20% 1fr 15%"
+      :grid-template-columns "minmax(0, 20%) minmax(0, 1fr) minmax(0, 15%)"
       :grid-gap "0px"
       :height "100vh"
       :margin 0}
@@ -183,7 +183,7 @@
                      :integrity "sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS"
                      :crossorigin "anonymous"}]
 
-             [:link {:rel "icon" :href (u/href ctx "static" "icon.png")}] 
+             [:link {:rel "icon" :href (u/href ctx "static" "fire-solid.png")}] 
              [:link {:href "//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" :rel "stylesheet"}]
              [:link {:href "//fonts.googleapis.com/css?family=Montserrat|Roboto&display=swap" :rel "stylesheet"}]
              [:style style]
