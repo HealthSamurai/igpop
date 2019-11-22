@@ -5,23 +5,23 @@ desc: |
   value sets SHALL be present in the resource when using this profile.
 
 elements:
-  identifier[]:
+  identifier:
     minItems: 1
     desc: Must have an identifier (e.g. NPI)
     elements:
-      system: { req: true }
-      value: { req: true }
-  active: { req: true }
-  name: { req: true }
-  telecom[]:
-  address[]:
+      system: { required: true }
+      value: { required: true }
+  active: { required: true }
+  name: { required: true }
+  telecom:
+  address:
     elements:
       line: { maxItems: 4 }
       city: {}
       state: { valueset: {id: usps-state } }
       postalCode: { desc: 'US Zip Codes' }
       country: {}
-  endpoint[]: {}
+  endpoint: {}
 
 examples:
   org-1:
