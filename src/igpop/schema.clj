@@ -36,6 +36,10 @@
 
 (defn attach-type [acc eln props]
   (cond
+    (and (:type props) (:collection props))
+    (-> acc
+        (assoc-in [eln :items :type] (:type props))
+        (assoc-in [eln :type] "array"))
     (:union props)
     (assoc-in acc [eln :type] (vec (:union props)))
     (:type props)
@@ -66,8 +70,10 @@
     (assoc m :definitions
            (into {} (apply concat (for [[rt prls] profiles]
                                    (for [[prn props] prls]
-                                     (assoc {} (keyword (str (name rt) "-" (name prn))) (let [els (get props :elements)]
-                                                                                          (if-let [rqrd (get-required els)]
-                                                                                            (assoc {} :required rqrd :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))
-                                                                                            (assoc {} :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))))))))))))
+                                     (assoc {} (keyword (str (name rt) (when (not (= "basic" (name prn)))
+                                                                         (str "_" (name prn)))))
+                                            (let [els (get props :elements)]
+                                              (if-let [rqrd (get-required els)]
+                                                (assoc {} :required rqrd :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))
+                                                (assoc {} :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))))))))))))
 
