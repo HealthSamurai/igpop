@@ -1,0 +1,40 @@
+description: |
+  This profile sets minimum expectations for the Condition resource to record,
+  search and fetch a list of problems and health concerns associated with a patient.
+  It identifies which core elements,
+  extensions, vocabularies and value sets SHALL be present in the resource when using this profile.
+
+elements:
+  clinicalStatus:
+    valueset: {id: 'fhir:condition-clinical'}
+  verificationStatus:
+    valueset: {id: 'fhir:condition-ver-status' }
+  category:
+    minItems: 1
+    valueset:
+      id: us-core-condition-category
+      system: http://terminology.hl7.org/CodeSystem/condition-category
+      concepts:
+       - code: problem-list-item
+         displaY: Problem List
+         definition: Item	An item on a problem list that can be managed over time and can be expressed by a practitioner (e.g. physician, nurse), patient, or related person.
+       - code: encounter-diagnosis
+         display: Encounter
+         definition: Diagnosis	A point in time diagnosis (e.g. from a physician or nurse) in context of an encounter.
+       - code: health-concern
+         display: Health Concern
+         definition: Additional health concerns from other stakeholders which are outside the provider’s problem list.
+  code:
+    required: true
+    valueset: { id: us-core-problem } 
+  subject:
+    required: true
+    refers:
+    - resourceType: Patient
+      profile: us-core
+
+api:
+  search:
+    params:
+      patient:
+        required: true

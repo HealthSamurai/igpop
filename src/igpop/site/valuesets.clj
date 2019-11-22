@@ -12,7 +12,7 @@
           [:div.column
            [:div.th "Display"]]
           [:div.column
-           [:div.th "Definition"]]]] (map (fn [{code :code display :display :as cpt}]
+           [:div.th "Definition"]]]] (map (fn [{code :code display :display definition :definition :as cpt}]
                                     [:div.row
                                      [:div.column
                                       code]
@@ -21,7 +21,7 @@
                                      [:div.column
                                       display]
                                      [:div.column
-                                      "???"]]) concepts)))
+                                      definition]]) concepts)))
 
 (defn valuesets-to-menu [{valuesets :valuesets :as ctx}]
   (map (fn [itm]
