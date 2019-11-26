@@ -9,6 +9,10 @@
   (clj-yaml.core/parse-string
    (slurp pth)))
 
+(defn resource-content [ctx pth]
+  (let [base (-> (get-in ctx (into [:base :profiles] pth)))]
+    base))
+
 (defn enrich [ctx pth obj]
   (let [base (-> (get-in ctx (into [:base :profiles] pth)) (dissoc :elements))]
     (if-let [els (:elements obj)]
@@ -122,6 +126,18 @@
 (defn merge-in [m pth v]
   (update-in m pth (fn [x] (if x (merge x v) v))))
 
+(defn build-resources [ctx]
+  (->> ctx
+       :source
+       (reduce
+        (fn [acc [rt profiles]]
+          (reduce (fn [acc [id profile]]
+                    (assoc-in acc [rt id]
+                              (resource-content ctx [rt]))
+                    ) acc profiles)
+          ) {})
+       (assoc ctx :resources)))
+
 (defn build-profiles [ctx]
   (->> ctx
        :source
@@ -170,7 +186,7 @@
                                   (merge-in acc (:to insert) source))
                                 (do (println "TODO:" nm)
                                     acc))))) {}))]
-    (build-profiles (merge ctx user-data))))
+    (build-resources (build-profiles (merge ctx user-data)))))
 
 
 (defn safe-file [& pth]

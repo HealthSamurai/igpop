@@ -244,7 +244,8 @@
                                     :href (u/href ctx "profiles" (name rt)  (name n) {:format "html"})})))}))))
 
 (defn profile [ctx {{rt :resource-type nm :profile} :route-params :as req}]
-  (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])]
+  (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])
+        resource (get-in ctx [:resources (keyword rt) (keyword nm)])]
     {:status 200
      :body (views/layout ctx
             style-tag
@@ -257,7 +258,6 @@
              [:div.profile
               [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
               (new-elements ctx (:elements profile))]
-
              [:br]
              [:br]
              [:h3 "Examples"]
@@ -265,8 +265,16 @@
              (for [[id example] (:examples profile)]
                [:div
                 [:h5 id]
-                [:pre.example [:code (clj-yaml.core/generate-string example)]]])]
-            )}))
+                [:pre.example [:code (clj-yaml.core/generate-string example)]]])
+             [:br]
+             [:h3 "Resource Content"]
+             [:br]
+             [:div.summary (:description resource)]
+             [:hr]
+             [:br]
+             [:div.profile
+              [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
+              (new-elements ctx (:elements resource))]])}))
 
 (defn profile-link [ctx rt nm pr]
   [:a.db-item {:href (u/href ctx "profiles" (name rt) (name nm) {:format "html"})}

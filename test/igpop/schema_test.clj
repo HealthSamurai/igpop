@@ -17,7 +17,7 @@
 
     (get-in project [:profiles :Patient :basic :elements])
 
-    (spit (io/file "/home/victor/Documents/Trash/test-schema.json") (generate-string (sut/generate-schema project) {:pretty true}))
+    (spit (io/file "../test-schema.json") (generate-string (sut/generate-schema project) {:pretty true}))
 
     (sut/get-concepts project (get-in project [:profiles :AllergyIntolerance :basic :elements :clinicalStatus]))
     )
