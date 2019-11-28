@@ -15,8 +15,6 @@
   (comment
     (sut/generate-schema project)
 
-    (get-in project [:profiles :Patient :basic :elements :name :elements :given])
-
     (spit (io/file "../test-schema.json") (generate-string (sut/generate-schema project) {:pretty true}))
 
     (def simple-types (mapv #(keyword %)
@@ -42,7 +40,7 @@
 
     (spit (io/file "/home/victor/Documents/Trash/definitions(complex).json") (generate-string complex-types-definitions {:pretty true}))
 
-    (get-in project [:profiles :AllergyIntolerance :basic :elements])
+    (loader/inlined-valuesets (get-in project [:profiles]))
 
     (sut/get-concepts project (get-in project [:profiles :AllergyIntolerance :basic :elements]))
     )

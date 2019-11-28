@@ -13,6 +13,17 @@
   (let [base (-> (get-in ctx (into [:base :profiles] pth)))]
     base))
 
+(defn inlined-valuesets [{profiles :profiles valuesets :valuesets :as ctx}]
+  (assoc ctx :valuesets (merge valuesets (:valuesets (reduce (fn [acc [rt prls]]
+                                                                      (reduce (fn [acc [id {elements :elements :as pr}]]
+                                                                                (reduce (fn [acc [eln el]]
+                                                                                          (if (get-in el [:valueset :concepts])
+                                                                                            (let [vs (:valueset el)
+                                                                                                  vs-cnt (select-keys vs (for [[k v] vs :when (not (= k :id))]
+                                                                                                                           k))]
+                                                                                              (assoc-in acc [:valuesets (keyword (:id vs))] vs-cnt))
+                                                                                            acc)) acc elements)) acc prls)) {} profiles)))))
+
 (defn enrich [ctx pth obj]
   (let [base (-> (get-in ctx (into [:base :profiles] pth)) (dissoc :elements))]
     (if-let [els (:elements obj)]
@@ -103,13 +114,12 @@
          (mapv (fn [rows]
                  (zipmap ks (mapv str/trim rows)))))))
 
-
 (defn read-md-meta [content]
   (if (str/starts-with? content "---")
     (let [lines (str/split-lines content)]
       (loop [[l & ls] (rest lines)
              meta-lines []]
-        (cond 
+        (cond
           (nil? l) [{:error "Expected second --- to close metadata"} content]
           (str/starts-with? l "---")
           [(clj-yaml.core/parse-string (str/join "\n" meta-lines)) (str/join "\n" ls)]
@@ -145,10 +155,10 @@
         (fn [acc [rt profiles]]
           (reduce (fn [acc [id profile]]
                     (assoc-in acc [rt id]
-                              (enrich ctx [rt] profile))
-                    ) acc profiles)
+                              (enrich ctx [rt] profile))) acc profiles)
           ) {})
-       (assoc ctx :profiles)))
+       (assoc ctx :profiles)
+       (inlined-valuesets)))
 
 (defn load-defs [ctx pth]
   (let [manifest (read-yaml (str pth "/ig.yaml"))
@@ -187,7 +197,6 @@
                                 (do (println "TODO:" nm)
                                     acc))))) {}))]
     (build-resources (build-profiles (merge ctx user-data)))))
-
 
 (defn safe-file [& pth]
   (let [file (apply io/file pth)]
