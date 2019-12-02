@@ -219,6 +219,11 @@
                        ))) {}))
     (println "Could not find " (.getPath (io/file home "node_modules" (str "igpop-fhir-" fhir-version))))))
 
+(defn load-definitions [home fhir-version]
+  (if-let [fhir-types (safe-file home "node_modules" (str "igpop-fhir-" fhir-version) "fhir-types-definition.yaml")]
+    (read-yaml fhir-types)
+    (println "Could not find " (.getPath (io/file home "node_modules" (str "igpop-fhir-" fhir-version "fhir-types-definition.yaml"))))))
+
 (defn load-project [home]
   (let [manifest-file (io/file home "ig.yaml")]
     (when-not (.exists manifest-file)
@@ -226,7 +231,8 @@
 
     (let [manifest (read-yaml (.getPath manifest-file))
           fhir (when-let [fv (:fhir manifest)] (load-fhir home fv))
-          manifest' (assoc manifest :base fhir :home home)]
+          definitions (when-let [fv (:fhir manifest)] (load-definitions home fv))
+          manifest' (assoc manifest :base fhir :home home :definitions definitions)]
       (merge
        manifest'
        (load-defs manifest' home)))))
