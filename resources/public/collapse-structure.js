@@ -7,7 +7,9 @@ function findInCollection(collection, item){
 
 function collapseExpandProfileItem(thisElem) {
     thisElem.firstChild.nextSibling.classList.toggle("down-link");
-    thisElem.nextSibling.classList.toggle("activeS");
+    //thisElem.classList.toggle("activeS");
+    $content = $(thisElem).next();
+    $content.slideToggle(100, function () {});
 }
 
 let dropdown = document.getElementsByClassName("el-header");
