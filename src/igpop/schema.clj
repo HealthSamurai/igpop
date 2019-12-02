@@ -95,6 +95,14 @@
             (assoc-in [eln :properties] (reduce (fn [acc el] (element-to-schema acc el ctx)) acc (:elements props))))
         acc'))))
 
+(defn profile-to-schema [rt prn props ctx]
+  (assoc {} (keyword (str (name rt) (when (not (= "basic" (name prn)))
+                                      (str "_" (name prn)))))
+         (let [els (get props :elements)]
+           (if-let [rqrd (get-required els)]
+             (assoc {} :required rqrd :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))
+             (assoc {} :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))))))
+
 (defn generate-schema [{profiles :profiles :as ctx}]
   (let [m {:$schema "http://json-schema.org/draft-07/schema#"
            :$id (str "baseurl" "/" ".json")}]
