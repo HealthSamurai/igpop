@@ -15,7 +15,7 @@
   (comment
     (sut/generate-schema project)
 
-    (spit (io/file "../test-schema.json") (generate-string (sut/generate-schema project) {:pretty true}))
+    (spit (io/file (str (System/getProperty "user.dir") "/test-schema.json")) (generate-string (sut/generate-schema project) {:pretty true}))
 
     (def simple-types (mapv #(keyword %)
                             (clojure.string/split "base64Binary boolean canonical code date dateTime decimal id instant integer markdown oid positiveInt string time unsignedInt uri url uuid" #" ")))
