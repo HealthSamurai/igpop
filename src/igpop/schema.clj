@@ -34,29 +34,60 @@
     (assoc-in acc [eln :enum] concepts)
     acc))
 
-(defn attach-type [acc eln props]
-  (cond
-    (and (:type props) (:collection props))
-    (-> acc
-        (assoc-in [eln :items :type] (:type props))
-        (assoc-in [eln :type] "array"))
-    (:union props)
-    (assoc-in acc [eln :type] (vec (:union props)))
-    (:type props)
-    (assoc-in acc [eln :type] (:type props))
-    (:collection props)
-    (assoc-in acc [eln :type] "array")))
+(defn fhir-type-definition [type {definitions :definitions :as ctx}]
+  (when-let [def (get definitions (keyword type))]
+    def))
 
-(defn attach-descriptions [acc eln props]
+(defn make-ref [type]
+  (str "#/definitions/" type))
+
+(defn attach-type [acc eln props ctx]
+  (let [fhir-def (fhir-type-definition (:type props) ctx)]
+    (cond
+      (and (:type props) (:collection props))
+      (-> acc
+          (cond-> fhir-def
+            (assoc-in [eln :items :$ref] (make-ref (:type props)))
+            (not fhir-def)
+            (assoc-in [eln :items :type] (:type props)))
+          (assoc-in [eln :type] "array"))
+      (:union props)
+      (assoc-in acc [eln :anyOf] (mapv #(if (fhir-type-definition % ctx)
+                                          {:$ref (make-ref %)}
+                                          {:type %}) (vec (:union props))))
+      (:type props)
+      (if fhir-def
+        (assoc-in acc [eln :$ref] (make-ref (:type props)))
+        (assoc-in acc [eln :type] (:type props)))
+      (:collection props)
+      (assoc-in acc [eln :type] "array"))))
+
+(defn attach-description [acc eln props]
   (if-let [desc (:description props)]
-    (assoc-in acc [eln :decription] desc)
+    (assoc-in acc [eln :description] desc)
     acc))
+
+(defn type-defintion [props]
+  (when-let [t (keyword (:type props))]
+    (let [t (if (= t :array)
+              (-> props
+                  (get-in [:items :type])
+                  keyword)
+              t)
+          required (:required props)
+          properties (:properties props)]
+      (-> {}
+          (attach-description t props)
+          (cond-> required
+            (assoc-in [t :required] required))
+          (attach-required t props)
+          (assoc-in [t :properties] properties)))))
 
 (defn element-to-schema [acc [eln props] ctx]
   (if (map? props)
     (let [acc' (-> acc
-                   (attach-descriptions eln props)
-                   (attach-type eln props)
+                   (attach-description eln props)
+                   (attach-type eln props ctx)
                    (attach-enum eln props ctx))]
       (if (:elements props)
         (-> acc'
