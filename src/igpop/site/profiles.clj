@@ -43,7 +43,7 @@
     [:&.complex :&.obj {:border-radius "3px"}]
     [:&.profile {:margin-left "-10px" :border-radius "3px"}]]
 
-   [:.el-cnt.activeS {:max-height "0px"}]
+   ;;[:.el-cnt.activeS {:height "0px"}]
 
    [:.table {:display "table"
              :border-collapse "collapse"
@@ -60,14 +60,15 @@
          link-border (str "1px solid " link-color)
          left-width 360]
      [:.el-cnt
-      {:overflow-y "hidden"
+      {;;:overflow-y "hidden"
        :color "rgb(33,37,41)"
        :font-weight "400"
-       :max-height "1400px"
-       :-webkit-transition "max-height 0.3s ease-in-out"
-       :-moz-transition "max-height 0.3s ease-in-out"
-       :-o-transition "max-height 0.3s ease-in-out"
-       :transition "max-height 0.3s ease-in-out"}
+       ;;:max-height "1400px"
+       ;;:-webkit-transition "height 0.3s ease-in-out"
+       ;;:-moz-transition "height 0.3s ease-in-out"
+       ;;:-o-transition "height 0.3s ease-in-out"
+       ;;:transition "height 0.3s ease-in-out"
+       }
 
       [:.required {:color "red" :opacity 0.7 :margin "0 0.2em"}]
       [:.coll {:color "#888"}]
