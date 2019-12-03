@@ -14,7 +14,7 @@
                                                               (assoc :id (name-that-profile rt prn))
                                                               (assoc :path (name-that-profile rt prn)))])))
 
-(defn generate-structure [{diff-profiles :diff-profiles profiles :profiles :as ctx}]
+(defn generate-structure [{profiles :profiles :as ctx}]
   (let [m {:resourceType "Bundle"
            :id "resources"
            :meta {:lastUpdated (java.util.Date.)}
