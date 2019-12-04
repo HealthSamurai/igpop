@@ -38,29 +38,34 @@
   (when-let [def (get definitions (keyword type))]
     def))
 
-(defn make-ref [type]
-  (str "#/definitions/" type))
+(defn make-ref [type prid]
+  (str "#/definitions/" prid "/" type))
 
-(defn attach-type [acc eln props ctx]
-  (let [fhir-def (fhir-type-definition (:type props) ctx)]
-    (cond
-      (and (:type props) (:collection props))
-      (-> acc
-          (cond-> fhir-def
-            (assoc-in [eln :items :$ref] (make-ref (:type props)))
-            (not fhir-def)
-            (assoc-in [eln :items :type] (:type props)))
-          (assoc-in [eln :type] "array"))
-      (:union props)
-      (assoc-in acc [eln :anyOf] (mapv #(if (fhir-type-definition % ctx)
-                                          {:$ref (make-ref %)}
-                                          {:type %}) (vec (:union props))))
-      (:type props)
-      (if fhir-def
-        (assoc-in acc [eln :$ref] (make-ref (:type props)))
-        (assoc-in acc [eln :type] (:type props)))
-      (:collection props)
-      (assoc-in acc [eln :type] "array"))))
+(defn attach-card-restrictions [acc eln props]
+  (cond
+    (and (:maxItems props) (:minItems props))
+    (-> acc
+        (assoc-in [eln :maxItems] (:maxItems props))
+        (assoc-in [eln :minItems] (:minItems props)))
+    (:maxItems props)
+    (assoc-in acc [eln :maxItems] (:maxItems props))
+    (:minItems props)
+    (assoc-in acc [eln :minItems] (:minItems props))))
+
+(defn attach-type [acc eln props]
+  (cond
+    (and (:type props) (:collection props))
+    (-> acc
+        (assoc-in [eln :items :type] (:type props))
+        (assoc-in [eln :type] "array")
+        (attach-card-restrictions eln props))
+    (:union props)
+    (assoc-in acc [eln :type] (vec (:union props)))
+    (:type props)
+    (assoc-in acc [eln :type] (:type props))
+    (:collection props)
+    (attach-card-restrictions (assoc-in acc [eln :type] "array") eln props)
+    ))
 
 (defn attach-description [acc eln props]
   (if-let [desc (:description props)]
@@ -83,11 +88,14 @@
           (attach-required t props)
           (assoc-in [t :properties] properties)))))
 
+(defn make-prid [rt prn]
+  (str (name rt) (when-not (= :basic prn) (str "-" (name prn)))))
+
 (defn element-to-schema [acc [eln props] ctx]
   (if (map? props)
     (let [acc' (-> acc
                    (attach-description eln props)
-                   (attach-type eln props ctx)
+                   (attach-type eln props)
                    (attach-enum eln props ctx))]
       (if (:elements props)
         (-> acc'

@@ -13,34 +13,19 @@
   (def project (loader/load-project project-path))
 
   (comment
-    (sut/generate-schema project)
+    (:address (:properties (:Organization (:definitions (sut/generate-schema project)))))
 
-    (spit (io/file "../test-schema.json") (generate-string (sut/generate-schema project) {:pretty true}))
+    (get-in project [:profiles :Organization :basic :elements :address :elements :line :maxItems])
 
-    (def simple-types (mapv #(keyword %)
-                            (clojure.string/split "base64Binary boolean canonical code date dateTime decimal id instant integer markdown oid positiveInt string time unsignedInt uri url uuid" #" ")))
+    (sut/type-defintion (:name (:properties (:Patient (:definitions (sut/generate-schema project))))))
 
-    (def complex-types (mapv #(keyword %) (clojure.string/split "Address Age Annotation Attachment CodeableConcept Coding ContactPoint Count Distance Duration HumanName Identifier Money Period Quantity Range Ratio Reference SampledData Signature Timing ContactDetail Contributor DataRequirement Expression ParameterDefinition RelatedArtifact TriggerDefinition UsageContext Dosage Meta Reference Extension Narrative" #" ")))
-
-    (def simple-types-definitions (assoc {} :definitions (let [types (-> "/home/victor/Documents/Diploma/JSON schema validation/lib/fhir-schemas/fhir.schema.json"
-                                                                         io/file
-                                                                         slurp
-                                                                         (parse-string true)
-                                                                         (get-in [:definitions]))]
-                                                           (select-keys types (for [[k v] types :when (some #(= k %) simple-types)] k)))))
-
-    (def complex-types-definitions (assoc {} :definitions (let [types (-> "/home/victor/Documents/Diploma/JSON schema validation/lib/fhir-schemas/fhir.schema.json"
-                                                                         io/file
-                                                                         slurp
-                                                                         (parse-string true)
-                                                                         (get-in [:definitions]))]
-                                                           (select-keys types (for [[k v] types :when (some #(= k %) complex-types)] k)))))
-
-    (spit (io/file "/home/victor/Documents/Trash/definitions(simple).json") (generate-string simple-types-definitions {:pretty true}))
-
-    (spit (io/file "/home/victor/Documents/Trash/definitions(complex).json") (generate-string complex-types-definitions {:pretty true}))
+    (spit (io/file (.getPath (io/resource "test-project")) "../test-schema.json") (generate-string (sut/generate-schema project) {:pretty true}))
 
     (loader/inlined-valuesets (get-in project [:profiles]))
+
+    (sut/fhir-type-definition "HumanName" project)
+
+    (sut/profile-to-schema :Patient :basic (get-in project [:profiles :Patient :basic]) project)
 
     (sut/get-concepts project (get-in project [:profiles :AllergyIntolerance :basic :elements]))
     )
