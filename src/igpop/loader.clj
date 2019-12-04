@@ -9,10 +9,6 @@
   (clj-yaml.core/parse-string
    (slurp pth)))
 
-(defn resource-content [ctx pth]
-  (let [base (-> (get-in ctx (into [:base :profiles] pth)))]
-    base))
-
 (defn inlined-valuesets [{profiles :profiles valuesets :valuesets :as ctx}]
   (assoc ctx :valuesets (merge valuesets (:valuesets (reduce (fn [acc [rt prls]]
                                                                       (reduce (fn [acc [id {elements :elements :as pr}]]
@@ -136,28 +132,20 @@
 (defn merge-in [m pth v]
   (update-in m pth (fn [x] (if x (merge x v) v))))
 
-(defn build-resources [ctx]
+(defn build-profiles [ctx mode]
   (->> ctx
        :source
        (reduce
         (fn [acc [rt profiles]]
           (reduce (fn [acc [id profile]]
                     (assoc-in acc [rt id]
-                              (resource-content ctx [rt]))
-                    ) acc profiles)
+                              (cond
+                                (= mode "profiles") (enrich ctx [rt] profile)
+                                (= mode "resources") (-> (get-in ctx (into [:base :profiles] [rt])))
+                                (= mode "diff-profiles") profile)
+                               )) acc profiles)
           ) {})
-       (assoc ctx :resources)))
-
-(defn build-profiles [ctx]
-  (->> ctx
-       :source
-       (reduce
-        (fn [acc [rt profiles]]
-          (reduce (fn [acc [id profile]]
-                    (assoc-in acc [rt id]
-                              (enrich ctx [rt] profile))) acc profiles)
-          ) {})
-       (assoc ctx :profiles)
+       (assoc ctx (keyword mode))
        (inlined-valuesets)))
 
 (defn load-defs [ctx pth]
@@ -196,7 +184,7 @@
                                   (merge-in acc (:to insert) source))
                                 (do (println "TODO:" nm)
                                     acc))))) {}))]
-    (build-resources (build-profiles (merge ctx user-data)))))
+    (build-profiles (build-profiles (build-profiles (merge ctx user-data) "profiles") "resources") "diff-profiles")))
 
 (defn safe-file [& pth]
   (let [file (apply io/file pth)]

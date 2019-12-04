@@ -6,7 +6,7 @@
 
 * [Telegram Chat](https://t.me/igpop)
 * [Demo](https://healthsamurai.github.io/igpop/profiles/Patient/basic.html)
-* [Example](https://healthsamurai.github.io/igpop-example)
+* [Example](https://github.com/HealthSamurai/igpop-example)
 
 ----
 

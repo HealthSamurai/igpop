@@ -15,7 +15,7 @@
   (comment
     (:address (:properties (:Organization (:definitions (sut/generate-schema project)))))
 
-    (get-in project [:profiles :Organization :basic :elements :address :elements :line :maxItems])
+    (spit (io/file (str (System/getProperty "user.dir") "/test-schema.json")) (generate-string (sut/generate-schema project) {:pretty true}))
 
     (sut/type-defintion (:name (:properties (:Patient (:definitions (sut/generate-schema project))))))
 
