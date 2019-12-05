@@ -141,7 +141,7 @@ and
 
 Open browser on localhost:8899.
 
-###Building static pages
+### Building static pages
 
 Build jar file:
 ```
