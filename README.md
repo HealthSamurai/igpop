@@ -121,11 +121,35 @@ elements:
 
 ```
 
+## Development notes
 
+This section is for people doing development on this package.
+
+### Local development
+Run repl in project's home directory:
+```
+make repl
+```
+Then connect to repl, eval ``` ./src/igpop/site/core.clj ``` file and it's lines: 
+```
+(def hm (.getAbsolutePath (io/file  "example")))
+```
+and
+```
+(def srv (start hm 8899))
 ```
 
-make repl
+Open browser on localhost:8899.
+
+###Building static pages
+
+Build jar file:
+```
 make build
+```
+Build static pages:
 
-
+```
+cd example
+java -jar "../npm/igpop/bin/igpop.jar" build "/igpop" igpop.core
 ```
