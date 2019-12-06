@@ -8,7 +8,10 @@
 * [Demo](https://healthsamurai.github.io/igpop/profiles/Patient/basic.html)
 * [Example](https://github.com/HealthSamurai/igpop-example)
 
+
 ----
+
+[Specification](./igpop.md)
 
 DRY FHIR profiling for programming beings
 
@@ -23,6 +26,7 @@ DRY FHIR profiling for programming beings
 * generate FHIR StructureDefinition, ValueSets etc
 * generate IG static site
 * linter for profiles
+
 
 ## New Project
 
