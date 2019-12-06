@@ -113,6 +113,7 @@ elements:
         slices:
           type: Map
           key: {type: string, description: 'Slice Name'}
+          description: Define named slices for collection
           value:
             elements:
                ref: 'elements.elements'
@@ -121,43 +122,65 @@ elements:
 
 ```
 
-## Restricting
+## Profiling
 
-1. Cardinality
+### Cardinality
 
-FHIR: 1..1 for 0..1 - IGPOP: required: true
-FHIR: 1..* - IGPOP: minItems: 1
-FHIR: 0..10 - IGPOP: maxItems: 10
+igpop differentiates collections and singular elements.
+For singular elements like Patient.birthDate you have to use
+`required` (min = 1) and `disabled` (max = 0) boolean flags insteand of FHIR `min/max`
 
 ```yaml
-# Patient
 elements:
-  birthDate: {required: true}
-  name: {minItems: 1, maxItems: 10}
+  birthDate: { required: true }
+  animal: { disabled: true }
+
+# FHIR
+
+- path: Patient.birthDate
+  max: 1
+- path: Patient.animal
+  max: 0
 
 ```
 
-collections and singular values
-
-
-
-2. Ruling out element 
-
-FHIR: set max cardinality to 0 - IGPOP: disable: true
+For collections you use `minItems`, `maxItems` and `disabled`
 
 ```yaml
-# Patient
 elements:
-  animal: {disabled: true}
+  name: { minItems: 1, maxItems: 10 }
+  communication: { disabled: true }
+
+# FHIR
+
+- path: Patient.name
+  min: 1
+  max: 10
+- path: Patient.communication
+  max: 0
 
 ```
 
-3. Restricting the contents of an element to a single fixed value 
-FHIR: fixedValue - IGPOP: constant: ...
+###  Restricting the contents of an element
+
+igpop uses 'constant' keyword to define fixed values
 
 ```yaml
 elements:
   code: { constant: "female"}
+  coding:
+    constant:
+       code: code-1
+       system: sys-1
+
+# FHIR
+
+- path: RT.code
+  fixedCode: 'female'
+- path: RT.coding
+  fixedCoding: 
+    code: code-1
+    system: sys-1
 
 ```
 
