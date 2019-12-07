@@ -1,4 +1,5 @@
-(ns igpop.schema)
+(ns igpop.schema
+  (:require [flatland.ordered.map :refer :all]))
 
 (defn get-concepts [{valuesets :valuesets :as ctx} props]
   (if-let [vs (get props :valueset)]
@@ -34,62 +35,42 @@
     (assoc-in acc [eln :enum] concepts)
     acc))
 
-(defn fhir-type-definition [type {definitions :definitions :as ctx}]
-  (when-let [def (get definitions (keyword type))]
-    def))
-
-(defn make-ref [type prid]
-  (str "#/definitions/" prid "/" type))
+(defn cast-to-ordered-map [m eln]
+  (update-in m [eln] ordered-map))
 
 (defn attach-card-restrictions [acc eln props]
-  (cond
-    (and (:maxItems props) (:minItems props))
-    (-> acc
-        (assoc-in [eln :maxItems] (:maxItems props))
-        (assoc-in [eln :minItems] (:minItems props)))
-    (:maxItems props)
-    (assoc-in acc [eln :maxItems] (:maxItems props))
-    (:minItems props)
-    (assoc-in acc [eln :minItems] (:minItems props))))
+  (let [with-restrictions (cond
+                            (and (:maxItems props) (:minItems props))
+                            (-> acc
+                                (assoc-in [eln :maxItems] (:maxItems props))
+                                (assoc-in [eln :minItems] (:minItems props)))
+                            (:maxItems props)
+                            (assoc-in acc [eln :maxItems] (:maxItems props))
+                            (:minItems props)
+                            (assoc-in acc [eln :minItems] (:minItems props))
+                            :else
+                            acc)]
+    (cast-to-ordered-map with-restrictions eln)))
 
 (defn attach-type [acc eln props]
-  (cond
-    (and (:type props) (:collection props))
-    (-> acc
-        (assoc-in [eln :items :type] (:type props))
-        (assoc-in [eln :type] "array")
-        (attach-card-restrictions eln props))
-    (:union props)
-    (assoc-in acc [eln :type] (vec (:union props)))
-    (:type props)
-    (assoc-in acc [eln :type] (:type props))
-    (:collection props)
-    (attach-card-restrictions (assoc-in acc [eln :type] "array") eln props)
-    ))
+  (let [with-type (cond
+                    (and (:type props) (:collection props))
+                    (-> acc
+                        (assoc-in [eln :items :type] (:type props))
+                        (assoc-in [eln :type] "array")
+                        (attach-card-restrictions eln props))
+                    (:union props)
+                    (assoc-in acc [eln :type] (vec (:union props)))
+                    (:type props)
+                    (assoc-in acc [eln :type] (:type props))
+                    (:collection props)
+                    (attach-card-restrictions (assoc-in acc [eln :type] "array") eln props))]
+    (cast-to-ordered-map with-type eln)))
 
 (defn attach-description [acc eln props]
   (if-let [desc (:description props)]
-    (assoc-in acc [eln :description] desc)
+    (cast-to-ordered-map (assoc-in acc [eln :description] desc) eln)
     acc))
-
-(defn type-defintion [props]
-  (when-let [t (keyword (:type props))]
-    (let [t (if (= t :array)
-              (-> props
-                  (get-in [:items :type])
-                  keyword)
-              t)
-          required (:required props)
-          properties (:properties props)]
-      (-> {}
-          (attach-description t props)
-          (cond-> required
-            (assoc-in [t :required] required))
-          (attach-required t props)
-          (assoc-in [t :properties] properties)))))
-
-(defn make-prid [rt prn]
-  (str (name rt) (when-not (= :basic prn) (str "-" (name prn)))))
 
 (defn element-to-schema [acc [eln props] ctx]
   (if (map? props)
@@ -104,23 +85,74 @@
         acc'))))
 
 (defn profile-to-schema [rt prn props ctx]
-  (assoc {} (keyword (str (name rt) (when (not (= "basic" (name prn)))
+  (assoc (ordered-map {}) (keyword (str (name rt) (when (not (= "basic" (name prn)))
                                       (str "_" (name prn)))))
-         (let [els (get props :elements)]
-           (if-let [rqrd (get-required els)]
-             (assoc {} :required rqrd :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))
-             (assoc {} :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))))))
+         (let [els (get props :elements)
+               properties (assoc (ordered-map {}) :properties (ordered-map (into {} (map (fn [el] (element-to-schema (ordered-map {}) el ctx)) els))))]
+           (if-let [required-elements (get-required els)]
+             (assoc properties :required required-elements)))))
 
+(defn make-prid [rt prn]
+  (str (name rt) (when-not (= :basic prn) (str "-" (name prn)))))
+
+(defn attach-prid [prid type]
+  (keyword (str prid "-" (name type))))
+
+(defn get-fhir-complex-def [type {{complex :complex} :definitions :as ctx}]
+  (when-let [def (get complex (keyword type))]
+    def))
+
+(defn get-fhir-primitive-def [type {{primitive :primitive} :definitions :as ctx}]
+  (when-let [def (get primitive (keyword type))]
+    def))
+
+(defn make-ref [type prid]
+  (str "#/definitions/" prid "/" type))
+
+(defn enrich-element-def [element-def fhir-def]
+  (merge fhir-def element-def))
+
+(defn extract-type-def [props {{complex :complex} :definitions :as ctx} prid]
+  (let [t (if (= (keyword (:type props)) :array)
+            (-> props
+                (get-in [:items :type])
+                keyword)
+            (keyword (:type props)))
+        required (:required props)
+        properties (:properties props)]
+    (when (contains? complex t)
+      (let [t' (attach-prid prid t)]
+        (assoc {} t' (dissoc props :items))))))
+
+(defn extract-simple-types [props ctx]
+  (letfn [(get-simple [acc prop ctx]
+            (if (:properties prop)
+              (reduce (fn [acc el]  (get-simple acc el ctx)) acc prop)
+              (if-let [t-def (get-fhir-primitive-def (:type prop) ctx)]
+                (assoc acc (-> prop
+                               :type
+                               keyword) t-def)
+                acc)))]
+    (map (fn [prop]
+           (get-simple {} (val prop) ctx)) props)))
+
+(defn shape-up-def [rt prn props ctx]
+  (reduce (fn [acc el]
+            (if-let [def (first (extract-type-def (val el) ctx))]
+              (assoc-in acc [:definitions (key def)] (val def))
+              acc)) {} props))
+
+;;deprecated
 (defn generate-schema [{profiles :profiles :as ctx}]
   (let [m {:$schema "http://json-schema.org/draft-07/schema#"
            :$id (str "baseurl" "/" ".json")}]
     (assoc m :definitions
            (into {} (apply concat (for [[rt prls] profiles]
-                                   (for [[prn props] prls]
-                                     (assoc {} (keyword (str (name rt) (when (not (= "basic" (name prn)))
-                                                                         (str "_" (name prn)))))
-                                            (let [els (get props :elements)]
-                                              (if-let [rqrd (get-required els)]
-                                                (assoc {} :required rqrd :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))
-                                                (assoc {} :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))))))))))))
+                                    (for [[prn props] prls]
+                                      (assoc {} (keyword (str (name rt) (when (not (= "basic" (name prn)))
+                                                                          (str "_" (name prn)))))
+                                             (let [els (get props :elements)]
+                                               (if-let [rqrd (get-required els)]
+                                                 (assoc {} :required rqrd :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))
+                                                 (assoc {} :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))))))))))))
 
