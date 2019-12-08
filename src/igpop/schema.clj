@@ -96,7 +96,7 @@
   (str (name rt) (when-not (= :basic prn) (str "-" (name prn)))))
 
 (defn attach-prid [prid type]
-  (keyword (str prid "-" (name type))))
+  (keyword (str (name prid) "-" (name type))))
 
 (defn get-fhir-complex-def [type {{complex :complex} :definitions :as ctx}]
   (when-let [def (get complex (keyword type))]
@@ -109,10 +109,25 @@
 (defn make-ref [type prid]
   (str "#/definitions/" prid "/" type))
 
-(defn enrich-element-def [element-def fhir-def]
-  (merge fhir-def element-def))
+(defn enrich-element-def [element-def {{complex :complex} :definitions :as ctx}]
+  (let [name-with-prid (-> element-def
+                           keys
+                           first)
+        name-without-prid (-> element-def
+                              keys
+                              first
+                              name
+                              (clojure.string/split #"-")
+                              last
+                              keyword)
+        fhir-def (get complex name-without-prid)]
+    (println (keys fhir-def))
+    (->
+     (ordered-map {})
+     (assoc-in [name-with-prid] (merge (dissoc fhir-def :properties) (dissoc (get element-def name-with-prid) :properties)))
+     (assoc-in [name-with-prid :properties] (merge (:properties fhir-def) (:properties (get element-def name-with-prid)))))))
 
-(defn extract-type-def [props {{complex :complex} :definitions :as ctx} prid]
+(defn extract-element-def [props {{complex :complex} :definitions :as ctx} prid]
   (let [t (if (= (keyword (:type props)) :array)
             (-> props
                 (get-in [:items :type])
@@ -122,7 +137,9 @@
         properties (:properties props)]
     (when (contains? complex t)
       (let [t' (attach-prid prid t)]
-        (assoc {} t' (dissoc props :items))))))
+        (assoc {} t' (-> props
+                         (dissoc :items)
+                         (dissoc :type)))))))
 
 (defn extract-simple-types [props ctx]
   (letfn [(get-simple [acc prop ctx]
@@ -136,9 +153,9 @@
     (map (fn [prop]
            (get-simple {} (val prop) ctx)) props)))
 
-(defn shape-up-def [rt prn props ctx]
+(defn shape-up-definitions [rt prn props ctx]
   (reduce (fn [acc el]
-            (if-let [def (first (extract-type-def (val el) ctx))]
+            (if-let [def (first (extract-element-def (val el) ctx))]
               (assoc-in acc [:definitions (key def)] (val def))
               acc)) {} props))
 
@@ -155,4 +172,3 @@
                                                (if-let [rqrd (get-required els)]
                                                  (assoc {} :required rqrd :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))
                                                  (assoc {} :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))))))))))))
-
