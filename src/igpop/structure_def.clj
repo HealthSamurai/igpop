@@ -13,7 +13,6 @@
                                          (assoc :element [(-> {}
                                                               (assoc :id (name-that-profile rt prn))
                                                               (assoc :path (name-that-profile rt prn)))])))
-
 (defn generate-structure [{profiles :profiles :as ctx}]
   (let [m {:resourceType "Bundle"
            :id "resources"
@@ -28,3 +27,7 @@
                                                                (assoc :resourceType "StructureDefinition")
                                                                (assoc :snapshot (generate-snapshot))
                                                                (assoc :differential (generate-differential rt prn))))))))))))
+
+
+(defn to-sd [igpop]
+  {:snapshot {:element [{:path "Patient.name"}]}})
