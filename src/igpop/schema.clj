@@ -109,37 +109,37 @@
 (defn make-ref [type prid]
   (str "#/definitions/" prid "/" type))
 
-(defn enrich-element-def [element-def {{complex :complex} :definitions :as ctx}]
+(defn enrich-element-def [element-def ctx]
   (let [name-with-prid (-> element-def
                            keys
                            first)
-        name-without-prid (-> element-def
-                              keys
-                              first
+        name-without-prid (-> name-with-prid
                               name
                               (clojure.string/split #"-")
                               last
                               keyword)
-        fhir-def (get complex name-without-prid)]
-    (println (keys fhir-def))
+        fhir-def (get-fhir-complex-def name-without-prid ctx)]
     (->
      (ordered-map {})
      (assoc-in [name-with-prid] (merge (dissoc fhir-def :properties) (dissoc (get element-def name-with-prid) :properties)))
      (assoc-in [name-with-prid :properties] (merge (:properties fhir-def) (:properties (get element-def name-with-prid)))))))
 
-(defn extract-element-def [props {{complex :complex} :definitions :as ctx} prid]
+(defn extract-element-def [props ctx prid]
   (let [t (if (= (keyword (:type props)) :array)
             (-> props
                 (get-in [:items :type])
                 keyword)
             (keyword (:type props)))
-        required (:required props)
+        fhir-def (get-fhir-complex-def t ctx)
         properties (:properties props)]
-    (when (contains? complex t)
+    (cond
+      (and properties fhir-def)
       (let [t' (attach-prid prid t)]
         (assoc {} t' (-> props
                          (dissoc :items)
-                         (dissoc :type)))))))
+                         (dissoc :type))))
+      fhir-def
+      (assoc {} t fhir-def))))
 
 (defn extract-simple-types [props ctx]
   (letfn [(get-simple [acc prop ctx]
@@ -155,8 +155,11 @@
 
 (defn shape-up-definitions [rt prn props ctx]
   (reduce (fn [acc el]
-            (if-let [def (first (extract-element-def (val el) ctx))]
-              (assoc-in acc [:definitions (key def)] (val def))
+            (if-let [def (extract-element-def (val el) ctx (make-prid rt prn))]
+              (let [enriched-def (enrich-element-def def ctx)
+                    k (first (keys enriched-def))
+                    v (get enriched-def k)]
+                (assoc-in acc [:definitions k] v))
               acc)) {} props))
 
 ;;deprecated
