@@ -35,7 +35,11 @@
   :dev
   [& args]
   (println "Dev..." args)
-  (site/start (System/getProperty "user.dir") 8899))
+  (if-let [port (-> args
+                    butlast
+                    second)]
+    (site/start (System/getProperty "user.dir") (Integer. port))
+    (site/start (System/getProperty "user.dir") 8899)))
 
 (defn -main [& args]
   (if-let [cmd (first args)]
