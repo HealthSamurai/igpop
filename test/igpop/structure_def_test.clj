@@ -16,10 +16,10 @@
               :elements
               {:family {:type "string" :isCollection true :minItem 1 :maxItem 10}}}}}})
 
-  (testing "collection cardinality"
-    (matcho/match
-     (sdef/to-sd profile)
-     {:snapshot [{:path "Patient.name" :min 1}]}))
+  (comment (testing "collection cardinality"
+             (matcho/match
+              (sdef/to-sd profile)
+              {:snapshot [{:path "Patient.name" :min 1}]})))
 
 
 
