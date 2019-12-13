@@ -11,24 +11,19 @@
                                                   (assoc :id (str parent-name "." (name el)))))
 
 (defn get-path
-  [prefix key v]
-  (do
-    (if (or (clojure.string/includes? prefix "DiagnosticReport") (clojure.string/includes? prefix "DiagnosticReport")) (do (clojure.pprint/pprint v) (println "/n")));;"prefix is    " prefix "  key is     " key ))
-    (str prefix "." key)))
+  [prefix key]
+  (str prefix "." (name key)))
 
 (defn flatten-profile
   [map prefix]
-   ;;(dof
-     ;;(println prefix)
-     ;;(if (clojure.string/includes? prefix "Practitioner") (56))
      (reduce
       (fn [acc [k v]]
         (if (map? v)
           (if (contains? v :elements)
-            (merge (merge acc (ordered-map {(get-path prefix (name k) acc) (dissoc v :elements)})) (flatten-profile (:elements v) (get-path prefix (name k) acc)) )
-            (merge acc (ordered-map {(get-path prefix (name k) acc) v})))
-          (merge acc (ordered-map {(get-path prefix (name k) acc) v}))))
-        (ordered-map []) map));;)
+            (merge (merge acc (ordered-map {(get-path prefix k) (dissoc v :elements)})) (flatten-profile (:elements v) (get-path prefix k)) )
+            (merge acc (ordered-map {(get-path prefix k) v})))
+          (merge acc (ordered-map {(get-path prefix k) v}))))
+        (ordered-map []) map))
 
 (defn generate-differential [rt prn props] (-> {}
                                                (assoc :element [(into (ordered-map []) (flatten-profile (:elements props) (name rt)))])))
