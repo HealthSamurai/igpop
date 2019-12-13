@@ -5,3 +5,4 @@ pom.xml
 .nrepl-port
 test-schema.json
 test-structure-def.json
+src/igpop/test.clj
