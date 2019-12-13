@@ -50,3 +50,6 @@
                                                                (assoc :type (name rt))
                                                                (assoc :snapshot (generate-snapshot))
                                                                (assoc :differential (generate-differential rt prn props))))))))))))
+
+(defn to-sd [igpop]
+  {:snapshot {:element [{:path "Patient.name"}]}})

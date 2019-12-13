@@ -9,7 +9,7 @@
   (clj-yaml.core/parse-string
    (slurp pth)))
 
-(defn inlined-valuesets [{profiles :profiles valuesets :valuesets :as ctx}]
+(defn get-inlined-valuesets [{profiles :profiles valuesets :valuesets :as ctx}]
   (assoc ctx :valuesets (merge valuesets (:valuesets (reduce (fn [acc [rt prls]]
                                                                       (reduce (fn [acc [id {elements :elements :as pr}]]
                                                                                 (reduce (fn [acc [eln el]]
@@ -146,7 +146,7 @@
                                )) acc profiles)
           ) {})
        (assoc ctx (keyword mode))
-       (inlined-valuesets)))
+       (get-inlined-valuesets)))
 
 (defn load-defs [ctx pth]
   (let [manifest (read-yaml (str pth "/ig.yaml"))

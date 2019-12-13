@@ -6,7 +6,6 @@
    [markdown.core :as md]
    [igpop.site.utils :as u]))
 
-
 (defn current-page [uri res-url]
   (= uri res-url))
 
@@ -22,7 +21,17 @@
      {:display (or (:title doc) (name doc-id)) :href (u/href ctx "docs" (name doc-id) {:format "html"})}) pages))
 
 (def styles
-  [:body])
+  [[:.content :thead
+    {:color "#5b6975"
+     :border-bottom "2px solid #E6ECF1"}]
+   [:.content :thead :tr :th
+    {:padding "8px"}]
+   [:.content :tbody :tr
+    {:border-bottom "2px solid #E6ECF1"}]
+   [:.content :tbody :td
+    {:padding "8px"}]
+   [:.content :table
+    {:margin "20px 0px"}]])
 
 (def style-tag [:style (gc/css styles)])
 

@@ -8,9 +8,24 @@
 
 (deftest test-structure-gen
 
-  (def project-path (.getPath (io/resource "test-project")))
+  (def profile
+    {:Patient
+     {:elements
+      {:name {:type "HumanName"
+              :minItem 1
+              :elements
+              {:family {:type "string" :isCollection true :minItem 1 :maxItem 10}}}}}})
 
-  (def project (loader/load-project project-path))
+  (comment (testing "collection cardinality"
+             (matcho/match
+              (sdef/to-sd profile)
+              {:snapshot [{:path "Patient.name" :min 1}]})))
+
+
+
+  ;; (def project-path (.getPath (io/resource "test-project")))
+
+  ;; (def project (loader/load-project project-path))
 
   (comment
 
