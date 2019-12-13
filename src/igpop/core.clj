@@ -39,7 +39,6 @@
   :dev
   [& args]
   (println "Dev..." args)
-  (some #(= % "-p") ["igpop" "dev" "-p"])
   (let [i (.indexOf args "-p")
         port (last (butlast args))]
     (cond
