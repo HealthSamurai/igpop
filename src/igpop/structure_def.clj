@@ -31,7 +31,7 @@
         (ordered-map []) map));;)
 
 (defn generate-differential [rt prn props] (-> {}
-                                               (assoc :element [(into {} (flatten-profile (:elements props) (name rt)))])))
+                                               (assoc :element [(into (ordered-map []) (flatten-profile (:elements props) (name rt)))])))
 
 (defn generate-structure [{diffs :diff-profiles profiles :profiles :as ctx}]
   (let [m {:resourceType "Bundle"
