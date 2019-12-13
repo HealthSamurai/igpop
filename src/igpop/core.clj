@@ -11,7 +11,8 @@
   {"help"     {:fn :help}
    "validate" {:fn :validate}
    "build"    {:fn :build}
-   "dev"      {:fn :dev}})
+   "dev"      {:fn :dev
+               :desc "-p to setup a port (default is 8899)"}})
 
 (defmethod run
   :help
@@ -35,11 +36,16 @@
   :dev
   [& args]
   (println "Dev..." args)
-  (if-let [port (-> args
-                    butlast
-                    second)]
-    (site/start (System/getProperty "user.dir") (Integer. port))
-    (site/start (System/getProperty "user.dir") 8899)))
+  (some #(= % "-p") ["igpop" "dev" "-p"])
+  (let [i (.indexOf args "-p")
+        port (last (butlast args))]
+    (cond
+      (and (> i 0) (not (= "-p" port)))
+      (site/start (System/getProperty "user.dir") (Integer. port))
+      (and (< i 0) (= "dev" port))
+      (site/start (System/getProperty "user.dir") 8899)
+      :else
+      (run :help))))
 
 (defn -main [& args]
   (if-let [cmd (first args)]
