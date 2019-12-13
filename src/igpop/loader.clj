@@ -141,7 +141,7 @@
                     (assoc-in acc [rt id]
                               (cond
                                 (= mode "profiles") (enrich ctx [rt] profile)
-                                (= mode "resources") (-> (get-in ctx (into [:base :profiles] [rt])))
+                                (= mode "resources") (get-in ctx (into [:base :profiles] [rt]))
                                 (= mode "diff-profiles") profile)
                                )) acc profiles)
           ) {})
@@ -184,7 +184,7 @@
                                   (merge-in acc (:to insert) source))
                                 (do (println "TODO:" nm)
                                     acc))))) {}))]
-    (build-profiles (build-profiles (build-profiles (merge ctx user-data) "profiles") "resources") "diff-profiles")))
+    (build-profiles (build-profiles (build-profiles (merge ctx user-data) "resources") "profiles") "diff-profiles")))
 
 (defn safe-file [& pth]
   (let [file (apply io/file pth)]

@@ -13,7 +13,12 @@
   (def project (loader/load-project project-path))
 
   (comment
-    (sdef/generate-structure project)
+
+    (println project)
+
+    (spit (io/file (str (System/getProperty "user.dir") "/show-project.json")) (generate-string project {:pretty true}))
+
+    (println (sdef/generate-structure project))
 
     (get-in project [:profiles :Patient :basic :elements :name :elements :given])
 
