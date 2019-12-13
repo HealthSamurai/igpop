@@ -8,9 +8,12 @@
 (defmulti run (fn [nm & args] (keyword nm)))
 
 (def commands
-  {"help"     {:fn :help}
-   "validate" {:fn :validate}
-   "build"    {:fn :build}
+  {"help"     {:fn :help
+               :desc "very concise usage guide"}
+   "validate" {:fn :validate
+               :desc "todo"}
+   "build"    {:fn :build
+               :desc "USAGE: igpop build {your_baseurl} EXAMPLE: igpop build /igpop"}
    "dev"      {:fn :dev
                :desc "-p to setup a port (default is 8899)"}})
 
