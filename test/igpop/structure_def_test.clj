@@ -23,9 +23,9 @@
 
 
 
-  ;; (def project-path (.getPath (io/resource "test-project")))
+  (def project-path (.getPath (io/resource "test-project")))
 
-  ;; (def project (loader/load-project project-path))
+  (def project (loader/load-project project-path))
 
   (comment
 
