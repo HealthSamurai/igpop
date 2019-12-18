@@ -25,16 +25,23 @@
           (merge acc (ordered-map {(get-path prefix k) v}))))
         (ordered-map []) map))
 
-(defn required-check [v] {:required (str "detected-required value is " v)})
+(defn cardinality [k v] (cond
+                             (= k :required) (if (= true v) {:min 1})
+                             (= k :disabled) (if (= true v) {:max 0})
+                             (= k :minItems) {:min v}
+                             (= k :maxItems) {:max v}))
 
-(def agenda {:required required-check})
+(def agenda {:required cardinality
+             :disabled cardinality
+             :minItems cardinality
+             :maxItems cardinality})
 
 (defn elements-to-sd
   [els]
   (map (fn [[el-key v]]
          (reduce
           (fn [acc [prop-key v]]
-              (into acc (if (contains? agenda prop-key) ((get agenda prop-key) v))))
+              (into acc (if (contains? agenda prop-key) ((get agenda prop-key) prop-key v))))
             (ordered-map {:id (name el-key) :path (name el-key)}) v))
          els))
 
