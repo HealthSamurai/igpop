@@ -16,19 +16,24 @@
               :elements
               {:family {:type "string" :isCollection true :minItem 1 :maxItem 10}}}}}})
 
-  (testing "collection cardinality"
-    (matcho/match
-     (sdef/to-sd profile)
-     {:snapshot [{:path "Patient.name" :min 1}]}))
+  (comment (testing "collection cardinality"
+             (matcho/match
+              (sdef/to-sd profile)
+              {:snapshot [{:path "Patient.name" :min 1}]})))
 
 
 
-  ;; (def project-path (.getPath (io/resource "test-project")))
+  (def project-path (.getPath (io/resource "test-project")))
 
-  ;; (def project (loader/load-project project-path))
+  (def project (loader/load-project project-path))
 
   (comment
-    (sdef/generate-structure project)
+
+    (println project)
+
+    (spit (io/file (str (System/getProperty "user.dir") "/show-project.json")) (generate-string project {:pretty true}))
+
+    (println (sdef/generate-structure project))
 
     (get-in project [:profiles :Patient :basic :elements :name :elements :given])
 

@@ -141,7 +141,7 @@
                     (assoc-in acc [rt id]
                               (cond
                                 (= mode "profiles") (enrich ctx [rt] profile)
-                                (= mode "resources") (-> (get-in ctx (into [:base :profiles] [rt])))
+                                (= mode "resources") (get-in ctx (into [:base :profiles] [rt]))
                                 (= mode "diff-profiles") profile)
                                )) acc profiles)
           ) {})
@@ -184,14 +184,14 @@
                                   (merge-in acc (:to insert) source))
                                 (do (println "TODO:" nm)
                                     acc))))) {}))]
-    (build-profiles (build-profiles (build-profiles (merge ctx user-data) "profiles") "resources") "diff-profiles")))
+    (build-profiles (build-profiles (build-profiles (merge ctx user-data) "resources") "profiles") "diff-profiles")))
 
 (defn safe-file [& pth]
   (let [file (apply io/file pth)]
     (when (.exists file) file)))
 
 (defn load-fhir [home fhir-version]
-  (if-let [fhir-dir (safe-file home "node_modules" (str "igpop-fhir-" fhir-version) "src")]
+  (if-let [fhir-dir (safe-file home (str "igpop-fhir-" fhir-version) "src")]
     (->> (file-seq fhir-dir)
          (reduce (fn [acc f]
                    (let [nm (.getName f)]
@@ -205,12 +205,12 @@
                        (let [rt (str/replace nm #"\.yaml$" "")]
                          (assoc-in acc [:profiles (keyword rt)] (read-yaml (.getPath f))))
                        ))) {}))
-    (println "Could not find " (.getPath (io/file home "node_modules" (str "igpop-fhir-" fhir-version))))))
+    (println "Could not find " (.getPath (io/file home (str "igpop-fhir-" fhir-version))))))
 
 (defn load-definitions [home fhir-version]
-  (if-let [fhir-types (safe-file home "node_modules" (str "igpop-fhir-" fhir-version) "fhir-types-definition.yaml")]
+  (if-let [fhir-types (safe-file home (str "igpop-fhir-" fhir-version) "fhir-types-definition.yaml")]
     (read-yaml fhir-types)
-    (println "Could not find " (.getPath (io/file home "node_modules" (str "igpop-fhir-" fhir-version "fhir-types-definition.yaml"))))))
+    (println "Could not find " (.getPath (io/file home (str "igpop-fhir-" fhir-version "fhir-types-definition.yaml"))))))
 
 (defn load-project [home]
   (let [manifest-file (io/file home "ig.yaml")]
