@@ -25,8 +25,21 @@
           (merge acc (ordered-map {(get-path prefix k) v}))))
         (ordered-map []) map))
 
+(defn required-check [v] {:required (str "detected-required value is " v)})
+
+(def agenda {:required required-check})
+
+(defn elements-to-sd
+  [els]
+  (map (fn [[el-key v]]
+         (reduce
+          (fn [acc [prop-key v]]
+              (into acc (if (contains? agenda prop-key) ((get agenda prop-key) v))))
+            (ordered-map {:id (name el-key) :path (name el-key)}) v))
+         els))
+
 (defn generate-differential [rt prn props] (-> {}
-                                               (assoc :element [(into (ordered-map []) (flatten-profile (:elements props) (name rt)))])))
+                                               (assoc :element (elements-to-sd (into (ordered-map []) (flatten-profile (:elements props) (name rt)))))))
 
 (defn generate-structure [{diffs :diff-profiles profiles :profiles :as ctx}]
   (let [m {:resourceType "Bundle"
