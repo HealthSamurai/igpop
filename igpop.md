@@ -138,7 +138,7 @@ elements:
 # FHIR
 
 - path: Patient.birthDate
-  max: 1
+  min: 1
 - path: Patient.animal
   max: 0
 
