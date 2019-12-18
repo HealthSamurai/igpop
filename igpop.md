@@ -213,15 +213,21 @@ elements:
 FHIR:
 ```yaml
 ---
-path: Observation.value[x]
-slicing:
-  discriminator:
-  - type: type
-    path: "$this"
-  ordered: false
-  rules: closed
-type:
-- code: Quantity
+- path: Observation.value[x]
+  slicing:
+    discriminator:
+    - type: type
+      path: "$this"
+    ordered: false
+    rules: closed
+  type:
+  - code: Quantity
+  - code: string
+- path: Observation.valueCodeableConcept
+  binding: {valuset: 'http://....'}
+  ...
+- path: Observation.valueString
+  ...
 
 ```
 
@@ -232,7 +238,12 @@ IGPOP:
 # Observation
 elements:
   value:
-    Quantity: {}
+    required: true
+    union: [string CodeableConcept Quantity]
+    string: {required: true}
+    CodeableConcept: 
+      required: true
+      valueset {id: 'vs'}
 
 ```
 6. Reference to profile
