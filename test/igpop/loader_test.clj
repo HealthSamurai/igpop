@@ -39,8 +39,10 @@
 
   (def project (sut/load-project project-path))
 
+  ;;(println (sut/build-profiles {} "resources"))
+
   (io/file project-path "ig.yaml")
-  (io/file project-path "node_modules" "igpop-fhir-4.0.0")
+  (io/file project-path "igpop-fhir-4.0.0")
 
   (comment (matcho/match
            (:base project)

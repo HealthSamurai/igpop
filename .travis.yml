@@ -1,6 +1,5 @@
 language: clojure
 before_install: echo $HOME
-
 install:
   - curl -O https://download.clojure.org/install/linux-install-1.10.1.469.sh
   - chmod +x linux-install-1.10.1.469.sh
@@ -16,9 +15,20 @@ before_deploy:
   - java -jar "../npm/igpop/bin/igpop.jar" build "/igpop" igpop.core
 
 deploy:
-  provider: pages
-  skip_cleanup: true
-  github_token: $GITHUB_TOKEN
-  local_dir: example/build
-  on:
-    branch: master
+  - provider: pages
+    skip_cleanup: true
+    github_token: $GITHUB_TOKEN
+    local_dir: example/build
+    on:
+      branch: master
+  - provider: releases
+    api_key:
+      secure: dRE41xxwDSmwTC8JcMjdQwCC0fg3wnRLzaTdLJZiSFcwwNXQjVMns+0tHbncDInfBcx0mcqubzNHdS2FML0WtmL4XxEuwLSnG6H7BkU/332ue1GN283/IGju3P1T8UhwrzaHS/4zQj7PvLg0+dTjSwCP7BsJPd4YOYjYqiz5pp+4Pf0Hw0Y/0hEN26RLIHh1wjWDYnn8rDiZFG8D1fdXh+pwOuf7E9eGK3P66VpLp2q1Z5+SCCo0EvWs29r7oPM7xTrqGtWcVukzx7LJs3j0udxZzOrZmX/lvk5pvSSK9detrOSlS0c4d3li2EGkMW5rfRufmu7lBlz1dh0L9esY6weUuJKYCp2RPd9FDo3RN3JEjqoN1Db46+fSVycdIxbYz7zTTrZaWid/cMBHl1Wbo+eB3p5kAOoEUNfXa0dLoe3i0Awb6e8zmjF5XXbfN68aeC8MLD91rZLOV11MHcdPyg/giS+fUk4ApLjRBSj6bF75TIrwaZ6NRgfrN+vZYQrfDFw/+az6MYmklkxDnl7rxNJcR1iaTbDtj/W1AKSnI8gfynLJKpiaytmH7iA2HzG9yqGbSfRgephaPaF+cfKsheMGP7M00+JbquuxoU2Jtwww4WuA0/zWTumhSSdsxjIPsM8JGE+OVKdrEHVRCdTgqkw+Jj6SGv/wjjtQxw3tjgI=
+    file_glob: true
+    file: 
+     - 'target/igpop.jar'
+     - 'target/igpop-0.0.1-standalone.jar'
+    skip_cleanup: true
+    on:
+      tags: true
+      repo: HealthSamurai/igpop

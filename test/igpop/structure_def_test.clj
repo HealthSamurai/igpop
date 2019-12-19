@@ -21,14 +21,51 @@
               (sdef/to-sd profile)
               {:snapshot [{:path "Patient.name" :min 1}]})))
 
+  (def plain-elements-in
+    {:CarePlan.subject {}
+     :CarePlan.text {}})
+
+  (testing "elements-to-sd func"
+    (matcho/match
+     (sdef/elements-to-sd plain-elements-in)
+                          [{:id "CarePlan.subject",
+                            :path "CarePlan.subject"},
+                           {:id "CarePlan.text",
+                            :path "CarePlan.text"}]))
+
+  (testing "cardinality required"
+    (matcho/match
+     (sdef/cardinality :required true)
+     {:min 1}))
+
+  (testing "cardinality disabled"
+    (matcho/match
+     (sdef/cardinality :disabled true)
+     {:max 0}))
+
+  (testing "cardinality minItems"
+    (matcho/match
+     (sdef/cardinality :minItems 5)
+     {:min 5}))
+
+  (testing "cardinality maxItems"
+    (matcho/match
+     (sdef/cardinality :maxItems 14)
+     {:max 14}))
 
 
-  ;; (def project-path (.getPath (io/resource "test-project")))
 
-  ;; (def project (loader/load-project project-path))
+  (def project-path (.getPath (io/resource "test-project")))
+
+  (def project (loader/load-project project-path))
 
   (comment
-    (sdef/generate-structure project)
+
+    (println project)
+
+    (spit (io/file (str (System/getProperty "user.dir") "/show-project.json")) (generate-string project {:pretty true}))
+
+    (println (sdef/generate-structure project))
 
     (get-in project [:profiles :Patient :basic :elements :name :elements :given])
 
