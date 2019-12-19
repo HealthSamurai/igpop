@@ -38,12 +38,12 @@
 
 (defn elements-to-sd
   [els]
-  (map (fn [[el-key v]]
+  (map (fn [[el-key props]]
          (reduce
-          (fn [acc [prop-key v]]
-              (into acc (if (contains? agenda prop-key) ((get agenda prop-key) prop-key v))))
-            (ordered-map {:id (name el-key) :path (name el-key)}) v))
-         els))
+          (fn [acc [rule-key rule-func]]
+            (into acc (if (contains? props rule-key) (rule-func rule-key (get props rule-key)))))
+          (ordered-map {:id (name el-key) :path (name el-key)}) agenda))
+       els))
 
 (defn generate-differential [rt prn props] (-> {}
                                                (assoc :element (elements-to-sd (into (ordered-map []) (flatten-profile (:elements props) (name rt)))))))
