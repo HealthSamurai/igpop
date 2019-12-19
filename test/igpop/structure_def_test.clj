@@ -53,7 +53,15 @@
      (sdef/cardinality :maxItems 14)
      {:max 14}))
 
+  (testing "mustSupport default"
+    (matcho/match
+     (sdef/mustSupport)
+     {:mustSupport true}))
 
+  (testing "mustSupport from profile"
+    (matcho/match
+     (sdef/mustSupport false)
+     {:mustSupport false}))
 
   (def project-path (.getPath (io/resource "test-project")))
 
