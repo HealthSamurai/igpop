@@ -65,7 +65,9 @@
                     (assoc-in acc [eln :type] (:type props))
                     (:collection props)
                     (attach-card-restrictions (assoc-in acc [eln :type] "array") eln props))]
-    (cast-to-ordered-map with-type eln)))
+    (if with-type
+      (cast-to-ordered-map with-type eln)
+      acc)))
 
 (defn attach-description [acc eln props]
   (if-let [desc (:description props)]
@@ -124,6 +126,34 @@
      (assoc-in [name-with-prid] (merge (dissoc fhir-def :properties) (dissoc (get element-def name-with-prid) :properties)))
      (assoc-in [name-with-prid :properties] (merge (:properties fhir-def) (:properties (get element-def name-with-prid)))))))
 
+(defn cut-fhir-type [pth]
+  (-> pth
+      (clojure.string/split #"/")
+      last
+      keyword))
+
+(defn extract-refs [acc [eln props]]
+  (let [acc (if-let [reference (get props :$ref)]
+              (conj acc (cut-fhir-type reference))
+              acc)]
+    (if (:properties props)
+      (reduce (fn [acc el]
+                (extract-refs acc el)) acc (:properties props))
+      acc)))
+
+(defn get-refered-def [props ctx]
+  (let [refered-types (reverse (set (extract-refs [] (first (seq props)))))]
+    (mapv (fn [el]
+            (if-let [def (get-fhir-complex-def el ctx)]
+              (assoc (ordered-map {}) el def)
+              (assoc (ordered-map {}) el (get-fhir-primitive-def el ctx)))) refered-types))
+  #_(when-let [r (get props :$ref)]
+    (let [ref (keyword (last (-> r
+                             (clojure.string/split #"/"))))]
+      (if-let [def (get-fhir-complex-def ref ctx)]
+        def
+        (get-fhir-primitive-def ref ctx)))))
+
 (defn extract-element-def [props ctx prid]
   (let [t (if (= (keyword (:type props)) :array)
             (-> props
@@ -144,7 +174,7 @@
 (defn extract-simple-types [props ctx]
   (letfn [(get-simple [acc prop ctx]
             (if (:properties prop)
-              (reduce (fn [acc el]  (get-simple acc el ctx)) acc prop)
+              (reduce (fn [acc el] (get-simple acc el ctx)) acc prop)
               (if-let [t-def (get-fhir-primitive-def (:type prop) ctx)]
                 (assoc acc (-> prop
                                :type
@@ -159,8 +189,8 @@
               (let [enriched-def (enrich-element-def def ctx)
                     k (first (keys enriched-def))
                     v (get enriched-def k)]
-                (assoc-in acc [:definitions k] v))
-              acc)) {} props))
+                (vec (concat acc (conj (get-refered-def {k v} ctx) {k v}))))
+              acc)) [] props))
 
 ;;deprecated
 (defn generate-schema [{profiles :profiles :as ctx}]
