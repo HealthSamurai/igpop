@@ -25,6 +25,10 @@
           (merge acc (ordered-map {(get-path prefix k) v}))))
         (ordered-map []) map))
 
+(defn mustSupport
+  ([] {:mustSupport true})
+  ([v] {:mustSupport v}))
+
 (defn cardinality [k v] (cond
                              (= k :required) (if (= true v) {:min 1})
                              (= k :disabled) (if (= true v) {:max 0})
@@ -34,14 +38,20 @@
 (def agenda {:required cardinality
              :disabled cardinality
              :minItems cardinality
-             :maxItems cardinality})
+             :maxItems cardinality
+             :mustSupport mustSupport})
+
+(def default-agenda {:mustSupport mustSupport})
 
 (defn elements-to-sd
   [els]
   (map (fn [[el-key props]]
          (reduce
           (fn [acc [rule-key rule-func]]
-            (into acc (if (contains? props rule-key) (rule-func rule-key (get props rule-key)))))
+            (into acc
+                  (if (contains? props rule-key)
+                    (rule-func rule-key (get props rule-key))
+                    (if (contains? default-agenda rule-key) (rule-func)))))
           (ordered-map {:id (name el-key) :path (name el-key)}) agenda))
        els))
 
