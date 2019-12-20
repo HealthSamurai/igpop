@@ -4,6 +4,9 @@ This log documents significant changes for each release.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- References to manifest elements ```{{project.title}}```
+- File name and ids ```{{project.id}}-{{lowercase(rt)}}```
+- Blockquotes for markdown docs 
 
 ## [0.0.1] - 2019-12-16
 ### Added
