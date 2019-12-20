@@ -40,7 +40,7 @@
   [& args]
   (println "Dev..." args)
   (let [i (.indexOf args "-p")
-        port (last (butlast args))]
+        port (last args)]
     (cond
       (and (> i 0) (not (= "-p" port)))
       (site/start (System/getProperty "user.dir") (Integer. port))
