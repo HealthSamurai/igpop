@@ -2,7 +2,7 @@
   (:require [igpop.site.views :as views]
             [igpop.site.utils :as u]))
 
-(defn render-table [{concepts :concepts system :system :as vs}]
+(defn render-table [{concepts :concepts system-common :system :as vs}]
   (conj [:div.table
          [:div.row.th.first-line
           [:div.column
@@ -12,12 +12,14 @@
           [:div.column
            [:div.th "Display"]]
           [:div.column
-           [:div.th "Definition"]]]] (map (fn [{code :code display :display definition :definition :as cpt}]
+           [:div.th "Definition"]]]] (map (fn [{code :code system :system display :display definition :definition :as cpt}]
                                     [:div.row
                                      [:div.column
                                       code]
                                      [:div.column
-                                      system]
+                                      (if system
+                                        system
+                                        system-common)]
                                      [:div.column
                                       display]
                                      [:div.column

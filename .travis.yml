@@ -13,6 +13,8 @@ before_deploy:
   - make build
   - cd example
   - java -jar "../npm/igpop/bin/igpop.jar" build "/igpop" igpop.core
+  - cd ../target
+  - (echo '#!/bin/sh' && echo 'exec java -jar $0 "$@"' && cat igpop.jar) > igpop
 
 deploy:
   - provider: pages
@@ -28,6 +30,7 @@ deploy:
     file: 
      - 'target/igpop.jar'
      - 'target/igpop-0.0.1-standalone.jar'
+     - 'target/igpop'
     skip_cleanup: true
     on:
       tags: true

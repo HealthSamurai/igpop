@@ -25,8 +25,38 @@
           (merge acc (ordered-map {(get-path prefix k) v}))))
         (ordered-map []) map))
 
+(defn mustSupport
+  ([] {:mustSupport true})
+  ([v] {:mustSupport v}))
+
+(defn cardinality [k v] (cond
+                             (= k :required) (if (= true v) {:min 1})
+                             (= k :disabled) (if (= true v) {:max 0})
+                             (= k :minItems) {:min v}
+                             (= k :maxItems) {:max v}))
+
+(def agenda {:required cardinality
+             :disabled cardinality
+             :minItems cardinality
+             :maxItems cardinality
+             :mustSupport mustSupport})
+
+(def default-agenda {:mustSupport mustSupport})
+
+(defn elements-to-sd
+  [els]
+  (map (fn [[el-key props]]
+         (reduce
+          (fn [acc [rule-key rule-func]]
+            (into acc
+                  (if (contains? props rule-key)
+                    (rule-func rule-key (get props rule-key))
+                    (if (contains? default-agenda rule-key) (rule-func)))))
+          (ordered-map {:id (name el-key) :path (name el-key)}) agenda))
+       els))
+
 (defn generate-differential [rt prn props] (-> {}
-                                               (assoc :element [(into (ordered-map []) (flatten-profile (:elements props) (name rt)))])))
+                                               (assoc :element (elements-to-sd (into (ordered-map []) (flatten-profile (:elements props) (name rt)))))))
 
 (defn generate-structure [{diffs :diff-profiles profiles :profiles :as ctx}]
   (let [m {:resourceType "Bundle"
@@ -47,8 +77,9 @@
                                                                (assoc :differential (generate-differential rt prn props))))))))))))
 
 
-;; ----------------------------------------------------------------------------------------
+;; ----------------------------- PLAYGROUND ----------------------------
 
+;; TODO: move this to `ns` macro
 (require '[clojure.string :as s])
 
 (set! *warn-on-reflection* true)
@@ -113,6 +144,7 @@
     (:description item)     (process-description)
     (nil? (:severity item)) (assoc :severity "error")
     ;; TODO: which atrributes we need to process here?
+    ;; TODO: make more generic  dispatch (instead of `cond->`)
     ))
 
 (defn process-constraints [item]
@@ -202,7 +234,7 @@
   (let [union-types (:union item)
         union-defined (select-keys item (mapv keyword union-types))
         new-path (conj path item-name)]
-    (vec (cons {:type (mapv (fn [t] {:code t}) union-types)
+    (vec (cons {:type (mapv (fn [t] {:code t}) union-types) ;; TODO: Move this map into something separate.
                 :path (poly-name-to-path-x new-path)
                 :slicing {:discriminator {:type "type"}
                           :path "$this"
@@ -210,13 +242,7 @@
                           :rules "closed"}}
                (mapv (partial poly-value-item new-path) union-defined)))))
 
-;; ;; (assert (=
-         ;; (igpop-polymorphic->sd-polymorphic
-         ;;  {:path [:Observation]}
-         ;;  (key (first igpop-polymorphic-type))
-         ;;  (val (first igpop-polymorphic-type)))
-;; ;;          sd-polymorphic-types))
-
+;; TODO: make more generic  dispatch (instead of `cond->`)
 (defn ig-item->sd-item [ctx item-name item]
   "Convert `ig-pop-item` to `structure-definition-item`"
   (cond-> item
@@ -227,6 +253,10 @@
     (:constraints item)        (process-constraints)))
 
 ;; ---------------------------------------------------------------------
+
+;; TODO: make more generic  dispatch (instead of `cond->`)
+;; We need to define some system of item characteristics
+;; to distiguish them before processing  (which is `union` item / or `default`)
 
 (defn to-sd-elements
   "Walk on elements converts items to structure definitions

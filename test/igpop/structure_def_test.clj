@@ -116,6 +116,49 @@
      (sdef/to-sd polymorphic-type)
      {:snapshot [{} {} {:binding {:valueset {:id "vs"}}}]}))
 
+  ;; --------------------------------------------------------------------------------------
+
+  (def plain-elements-in
+    {:CarePlan.subject {}
+     :CarePlan.text {}})
+
+  (testing "elements-to-sd func"
+    (matcho/match
+     (sdef/elements-to-sd plain-elements-in)
+                          [{:id "CarePlan.subject",
+                            :path "CarePlan.subject"},
+                           {:id "CarePlan.text",
+                            :path "CarePlan.text"}]))
+
+  (testing "cardinality required"
+    (matcho/match
+     (sdef/cardinality :required true)
+     {:min 1}))
+
+  (testing "cardinality disabled"
+    (matcho/match
+     (sdef/cardinality :disabled true)
+     {:max 0}))
+
+  (testing "cardinality minItems"
+    (matcho/match
+     (sdef/cardinality :minItems 5)
+     {:min 5}))
+
+  (testing "cardinality maxItems"
+    (matcho/match
+     (sdef/cardinality :maxItems 14)
+     {:max 14}))
+
+  (testing "mustSupport default"
+    (matcho/match
+     (sdef/mustSupport)
+     {:mustSupport true}))
+
+  (testing "mustSupport from profile"
+    (matcho/match
+     (sdef/mustSupport false)
+     {:mustSupport false}))
 
   (def project-path (.getPath (io/resource "test-project")))
 
