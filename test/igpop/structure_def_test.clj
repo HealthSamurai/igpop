@@ -160,6 +160,16 @@
      (sdef/mustSupport false)
      {:mustSupport false}))
 
+  (def constraint-example
+    '({:ele-1 {:description "All FHIR elements"}}
+      {:ext-1 {:expression "Must have either" :severity "init"}}))
+
+  (testing "fhirpath rules"
+    (matcho/match
+     (sdef/fhirpath-rule :constraints constraint-example)
+     {:constraints [{:key "ele-1", :severity "error", :human "All FHIR elements"}
+      {:key "ext-1", :severity "init", :expression "Must have either"}]}))
+
   (def project-path (.getPath (io/resource "test-project")))
 
   (def project (loader/load-project project-path))

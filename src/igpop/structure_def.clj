@@ -25,8 +25,27 @@
           (merge acc (ordered-map {(get-path prefix k) v}))))
         (ordered-map []) map))
 
+(def constraint-struct '(:requirements :severity :human :expression :xpath :source))
+
+(defn fhirpath-rule
+  [k coll]
+  {k (mapv
+      (fn [item]
+        (let [k (first (keys item))
+              v (first (vals item))]
+          (reduce
+           (fn [acc k]
+             (into acc
+                   (if (contains? v k)
+                     {k (get v k)}
+                     (cond
+                       (= k :severity) {k "error"}
+                       (= k :human) (if-let [str (get v :description)] {k str})))))
+           (ordered-map {:key (name k)}) constraint-struct)))
+      coll)})
+
 (defn mustSupport
-  ([] {:mustSupport true})
+  ([] (mustSupport true))
   ([v] {:mustSupport v}))
 
 (defn cardinality [k v] (cond
@@ -39,6 +58,7 @@
              :disabled cardinality
              :minItems cardinality
              :maxItems cardinality
+             :constraints fhirpath-rule
              :mustSupport mustSupport})
 
 (def default-agenda {:mustSupport mustSupport})
