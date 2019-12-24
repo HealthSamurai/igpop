@@ -188,7 +188,7 @@ elements:
 
 FHIR:
 ```yaml
-constraints:
+constraint:
 - severity: error
   key: us-core-8
   expression: "family.exists() or given.exists()"
