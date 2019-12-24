@@ -1,0 +1,50 @@
+{
+	"name": "lsp-sample",
+	"description": "A language server example",
+	"author": "Microsoft Corporation",
+	"license": "MIT",
+	"version": "1.0.0",
+	"repository": {
+		"type": "git",
+		"url": ""
+	},
+	"publisher": "vscode-samples",
+	"categories": [],
+	"engines": {
+		"vscode": "^1.33.0"
+	},
+	"activationEvents": [
+		"*"
+	],
+	"main": "./extension.js",
+	"dependencies": {
+		"vscode-languageclient": "^5.2.1"
+	},
+	"contributes": {
+		"commands": [
+			{
+				"command": "extension.helloWorld",
+				"title": "Hello World"
+			}
+		],
+		"languages": [
+			{
+				"id": "igpop",
+				"aliases": [
+					"igpop"
+				],
+				"extensions": [
+					".igpop"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "igpop",
+				"scopeName": "source.igpop",
+				"path": "./syntaxes/igpop.tmLanguage.json"
+			}
+		]
+	}
+}
