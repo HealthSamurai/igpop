@@ -1,7 +1,8 @@
 (ns json-rpc.tcp
   (:require [promesa.core :as p]
             [json-rpc.procedure]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [cheshire.core])
   (:import
    [java.nio.channels
     AsynchronousServerSocketChannel
@@ -101,7 +102,7 @@
     (.read channel buf nil
            (reify CompletionHandler
              (completed [this cnt _]
-               (println "Completed" cnt)
+               #_(println "Completed" cnt)
                (when (= -1 cnt)
                  (println "Disconnected " channel)
                  (swap! conns disj channel))
@@ -152,164 +153,6 @@
     (.close ^AsynchronousSocketChannel sock)
     (println "ok")))
 
-(defmethod
-  json-rpc.procedure/proc
-  :initialize
-  [msg]
-  (println "Init msg" msg)
-  {:result 
-   {:capabilities {:textDocumentSync {:openClose true
-                                      ;; Change notifications are sent to the server. See TextDocumentSyncKind.None, TextDocumentSyncKind.Full
-                                      ;; and TextDocumentSyncKind.Incremental. If omitted it defaults to TextDocumentSyncKind.None.
-                                      ;; number;
-                                      ;; None = 0;
-	                                    ;; Full = 1;
-	                                    ;; Incremental = 2;
-                                      :change 1
-                                      ;; If present will save notifications are sent to the server. If omitted the notification should not be
-                                      ;; sent.
-                                      ;; boolean;
-                                      :willSave true
-                                      ;; If present will save wait until requests are sent to the server. If omitted the request should not be
-                                      ;; sent.
-                                      :willSaveWaitUntil false
-                                      ;; If present save notifications are sent to the server. If omitted the notification should not be
-                                      ;; sent.
-                                      ;;SaveOptions
-                                      :save  {}}
-                   :hoverProvider true
-                   :completionProvider {:triggerCharacters ["\n"]}
-                   :signatureHelpProvider {:triggerCharacters ["."]}
-                   ;; :definitionProvider true
-                   ;; :implementationProvider true
-                   ;; :referencesProvider true
-                   ;; :documentHighlightProvider true
-                   ;; :documentSymbolProvider true
-
-                   ;; :documentRangeFormattingProvider true
-                   ;; The server provides document formatting on typing.
-                                        ;:documentOnTypeFormattingProvider DocumentOnTypeFormattingOptions;
-                   ;; The server provides rename support. RenameOptions may only be
-                   ;; specified if the client states that it supports
-                   ;; `prepareSupport` in its initial `initialize` request.
-                   ;; :renameProvider true ;;boolean | RenameOptions;
-                   ;; The server provides document link support.
-                   ;;:documentLinkProvider ;;DocumentLinkOptions;
-                   ;; The server provides color provider support.
-                   ;; :colorProvider true  ;;| ColorProviderOptions | (ColorProviderOptions & TextDocumentRegistrationOptions & StaticRegistrationOptions);
-                   ;; The server provides folding provider support.
-                   ;; Since 3.10.0
-                   ;; :foldingRangeProvider true ;;| FoldingRangeProviderOptions | (FoldingRangeProviderOptions & TextDocumentRegistrationOptions & StaticRegistrationOptions);
-                   ;; The server provides go to declaration support.
-                   ;; :declarationProvider true ;; | (TextDocumentRegistrationOptions & StaticRegistrationOptions);
-	                 ;; The server provides execute command support.
-	                 ;; :executeCommandProvider ExecuteCommandOptions;
-	                 ;; Workspace specific server capabilities
-
-                   :workspace {
-		                           ;;The server supports workspace folder.
-		                           :workspaceFolders {
-			                                            ;;* The server has support for workspace folders
-			                                            :supported true
-			                                            ;; Whether the server wants to receive workspace folder
-			                                            ;; change notifications.
-                                        ;
-			                                            ;; If a strings is provided the string is treated as a ID
-			                                            ;; under which the notification is registered on the client
-			                                            ;; side. The ID can be used to unregister for these events
-			                                            ;; using the `client/unregisterCapability` request.
-			                                            :changeNotifications true ;;: string | boolean;
-		                                              }
-	                             }
-                   }
-
-    }})
-
-(defmethod
-  json-rpc.procedure/proc
-  :initialized
-  [msg]
-  (println (:method msg) msg)
-  {:response {}})
-
-(defmethod
-  json-rpc.procedure/proc
-  :workspace/didChangeConfiguration
-  [msg]
-  (println (:method msg) msg)
-  {:response {}})
-
-
-(defmethod
-  json-rpc.procedure/proc
-  :textDocument/didOpen
-  [msg]
-  (println (:method msg) msg)
-  {:response {}})
-
-(defmethod
-  json-rpc.procedure/proc
-  :textDocument/documentSymbol
-  [msg]
-  (println (:method msg) msg)
-  {:response {}})
-
-(defmethod
-  json-rpc.procedure/proc
-  :textDocument/documentColor
-  [msg]
-  (println (:method msg) msg)
-  {:response {}})
-
-(defmethod
-  json-rpc.procedure/proc
-  :textDocument/foldingRange
-  [msg]
-  (println (:method msg) msg)
-  {:response {}})
-
-(defmethod
-  json-rpc.procedure/proc
-  :textDocument/colorPresentation
-  [msg]
-  (println (:method msg) msg)
-  {:response {}})
-
-(defmethod
-  json-rpc.procedure/proc
-  :textDocument/didChange
-  [msg]
-  (println (:method msg) msg)
-  {:response {}})
-
-
-(defmethod
-  json-rpc.procedure/proc
-  :textDocument/willSave
-  [msg]
-  (println (:method msg) msg)
-  {:response {}})
-
-(defmethod
-  json-rpc.procedure/proc
-  :textDocument/didSave
-  [msg]
-  (println (:method msg) msg)
-  {:response {}})
-
-(defmethod
-  json-rpc.procedure/proc
-  :workspace/didChangeWatchedFiles
-  [msg]
-  (println (:method msg) msg)
-  {:response {}})
-
-(defmethod
-  json-rpc.procedure/proc
-  :textDocument/hover
-  [msg]
-  (println (:method msg) msg)
-  {:response {}})
 
 
 (comment
@@ -327,7 +170,6 @@
   (.isConnected cl)
 
   (client-send cl (for [i (range 100)] {:a i}))
-
 
   )
 
