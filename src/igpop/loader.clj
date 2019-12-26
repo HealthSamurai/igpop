@@ -6,8 +6,7 @@
    [clojure.string :as str]))
 
 (defn read-yaml [pth]
-  (clj-yaml.core/parse-string
-   (slurp pth)))
+  (clj-yaml.core/parse-string (slurp pth)))
 
 (defn get-inlined-valuesets [{profiles :profiles valuesets :valuesets :as ctx}]
   (assoc ctx :valuesets (merge valuesets (:valuesets (reduce (fn [acc [rt prls]]

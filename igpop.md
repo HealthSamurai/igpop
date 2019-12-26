@@ -78,10 +78,10 @@ elements:
         type:  { type: code, description: Element type }
         description: { type: string, description: 'Element description'}
         elements: { ref: elements.elements, description: 'Nested elements'}
-        required: { type: boolean }
+        required: { type: boolean, for: singular}
         disabled: { type: boolean }
         collection: { type: boolean }
-        minItems: { type: integer }
+        minItems: { type: integer, for: collection}
         maxItems: { type: integer }
         mustSupport: {type: boolen, default: true}
         valueset:
