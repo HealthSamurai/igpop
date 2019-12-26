@@ -1,6 +1,5 @@
 (ns json-rpc.tcp
   (:require [promesa.core :as p]
-            [json-rpc.procedure]
             [clojure.string :as str]
             [cheshire.core])
   (:import
