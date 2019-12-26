@@ -1,6 +1,8 @@
 (ns igpop.parser-test
   (:require [igpop.parser :as sut]
             [clojure.test :refer :all]
+            [clj-yaml.core]
+            [zprint.core :as zp]
             [clojure.string :as str]
             [matcho.core :as matcho]))
 
@@ -28,46 +30,88 @@ elements:
     :value [{:type :kv
              :key :name
              :block {:from {:ln 0 :pos 0}
-                     :to {:ln 0 :pos 11}}
+                     :to   {:ln 0 :pos 12}}
              :value {:type :str
                      :value "nicola"
                      :block {:from {:ln 0 :pos 5}
-                             :to {:ln 0 :pos 11}}}}
+                             :to {:ln 0 :pos 12}}}}
             {:type :kv
              :key :given
+             :block {:from {:ln 1 :pos 0}
+                     :to   {:ln 1 :pos 12}}
              :value {:type :str
                      :value "hello"
                      :block {:from {:ln 1 :pos 6}
-                             :to {:ln 1 :pos 11}}}}]})
+                             :to {:ln 1 :pos 12}}}}]})
 
 
-  ;; (matcho/match
-  ;;  (sut/parse "name: nicola\n\ngiven: hello")
-  ;;  {:type :map
-  ;;   :block {:from {:ln 0 :pos 0}
-  ;;           :to {:ln 2 :pos 12}}
-  ;;   :value {:name {:type :str
-  ;;                  :value "nicola"
-  ;;                  :block {:from {:ln 0 :pos 5}
-  ;;                          :to {:ln 0 :pos 11}}}
-  ;;           :given {:type :str
-  ;;                   :value "hello"
-  ;;                   :block {:from {:ln 2 :pos 6}
-  ;;                           :to {:ln 2 :pos 11}}}}})
+  (matcho/match
+   (sut/parse "name: nicola\n\ngiven: hello")
+   {:type :map
+    :block {:from {:ln 0 :pos 0}
+            :to {:ln 2 :pos 12}}
+    :value [{:type :kv
+             :block {:from {:ln 0 :pos 0}
+                     :to {:ln 0 :pos 12}}
+             :value {:type :str
+                    :value "nicola"
+                    :block {:from {:ln 0 :pos 5}
+                            :to {:ln 0 :pos 12}}}}
+            {:type :kv
+             :block {:from {:ln 2 :pos 0}
+                     :to   {:ln 2 :pos 12}}
+             :value {:type :str
+                     :value "hello"
+                     :block {:from {:ln 2 :pos 6}
+                             :to {:ln 2 :pos 12}}}}]})
 
 
-  ;; (matcho/match
-  ;;  (sut/parse "elements:\n  name: nicola\n  given: hello")
-  ;;  {:type :map
-  ;;   :block {:from {:ln 0 :pos 0}
-  ;;           :to {:ln 2 :pos 14}}
-  ;;   :value {:elements {:type :map
-  ;;                      :value {:name {:type :str
-  ;;                                     :block {:from {:ln 1 :pos 7}
-  ;;                                             :to {:ln 1 :pos 13}}}
-  ;;                              :given {:type :str
-  ;;                                      :block {:from {:ln 2 :pos 8}
-  ;;                                              :to {:ln 2 :pos 13}}}}}}})
+  (matcho/match
+   (sut/parse "elements:\n  name: nicola\n  given: hello")
+   {:block {:from {:ln 0, :pos 0}, :to {:ln 2, :pos 14}},
+    :type :map,
+    :value
+    [{:block {:from {:ln 0, :pos 0}, :to {:ln 2, :pos 14}},
+      :key :elements,
+      :type :kv,
+      :value
+      {:block {:from {:ln 1, :pos 2}, :to {:ln 2, :pos 14}},
+       :type :map,
+       :value
+       [{:block {:from {:ln 1, :pos 2}, :to {:ln 1, :pos 14}},
+         :key :name,
+         :type :kv,
+         :value {:block {:from {:ln 1, :pos 7}, :to {:ln 1, :pos 14}},
+                 :type :str,
+                 :value "nicola"}}
+        {:block {:from {:ln 2, :pos 2}, :to {:ln 2, :pos 14}},
+         :key :given,
+         :type :kv,
+         :value {:block {:from {:ln 2, :pos 8}, :to {:ln 2, :pos 14}},
+                 :type :str,
+                 :value "hello"}}]}}]})
+
+  (matcho/match
+   (sut/parse "eleme" {:start :map})
+   {:block {:from {:ln 0, :pos 0}, :to {:ln 0, :pos 5}},
+    :type :map,
+    :value [{:type :kv
+             :key "eleme"
+             :block {:from {:ln 0, :pos 0}, :to {:ln 0, :pos 5}}
+             :invalid true}]}
+   )
+
+
+  (zp/zprint
+   (sut/parse "elements:\n  nam" {:start :map}))
+
+  ;; TODO: important for suggest
+  (zp/zprint
+   (sut/parse "elements:\n  name:\n    " {}))
+
+
+  (zp/zprint
+   (sut/parse "elements:\n  name:\n    minIt" {}))
 
 
   ;; (sut/parse "name: Nikolai\ngiv\nfamily: Ryzhikov")

@@ -88,8 +88,13 @@
   (let [buf (ByteBuffer/allocateDirect 10000)
         on-message (fn [msg]
                      (println "* " (:method msg))
-                     (let [res (cond-> (handler msg)
-                                 (:id msg) (assoc :id (:id msg)))]
+                     (let [res (try
+                                 (cond-> (handler msg)
+                                   (:id msg) (assoc :id (:id msg)))
+                                 (catch Exception err
+                                   (println "ERROR:" err)
+                                   {:error {:code -32603
+                                            :message (.getMessage err)}}))]
                        (when (:id msg)
                          (let [json-res (cheshire.core/generate-string res)
                                res-bytes (.getBytes json-res StandardCharsets/UTF_8)]

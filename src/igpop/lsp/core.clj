@@ -1,8 +1,11 @@
 (ns igpop.lsp.core
-  (:require [json-rpc.core :refer [proc]]))
+  (:require
+   [igpop.parser]
+   [zprint.core]
+   [igpop.lsp.suggest]
+   [json-rpc.core :refer [proc]]))
 
 
-(def files-content (atom {}))
 
 
 (defmethod
@@ -79,14 +82,19 @@
     }})
 
 
+(def ast-state (atom {}))
+
 (defmethod
   proc
   :textDocument/didChange
   [ctx {params :params :as msg}]
   (println (:method msg) msg)
   (let [uri (get-in params [:textDocument :uri])
-        newText (:text (last (:contentChanges params)))]
-    (swap! files-content #(assoc % uri newText)))
+        newText (:text (last (:contentChanges params)))
+        ast (igpop.parser/parse newText {})]
+    ;; (println "Change:")
+    ;; (zprint.core/zprint ast)
+    (reset! ast-state ast))
   nil)
 
 
@@ -97,27 +105,21 @@
 ;;           :context {:triggerKind 2, :triggerCharacter}}}
 
 
-(defn get-items
-  [text content uri]
-  (println "!!!!!!!!!!!!!!!!!!!!!")
-  (clojure.pprint/pprint text)
-  (println "!!!!!!!!!!!!!!!!!!!!!")
-  [{:label "i'm-completion-item"
-    :kind 14
-    :detail "Patient element choose"}
-   {:label "another-completion"
-    :detail "Some description here"}])
-
 (defmethod
   proc
   :textDocument/completion
-  [ctx {params :params :as msg}]
-  (println (:method msg) msg)
-  (let [uri (get-in params [:textDocument :uri])
-        position (:position params)
-        content (get @files-content uri)
-        items (get-items content position uri)]
-    {:result items}))
+  [ctx {{pos :position} :params :as msg}]
+  (println (:method msg) pos)
+  (let [ast @ast-state
+        opts (igpop.lsp.suggest/suggest ctx :Patient ast {:ln (:line pos) :pos (:character pos)})]
+    {:result
+     (if opts
+       (->> opts
+            (mapv (fn [opt]
+                    {:label (name opt) 
+                     :kind 14
+                     :detail (name opt)})))
+       [])}))
 
 ;; (defmethod
 ;;   proc
@@ -214,6 +216,7 @@
   (json-rpc.core/stop ctx)
 
 
+  (zprint.core/zprint @ast-state)
 
   )
 
