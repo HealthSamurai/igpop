@@ -84,6 +84,13 @@
       (when (.hasRemaining buf)
         (recur buf)))))
 
+(defn send-message [^AsynchronousSocketChannel channel res]
+  (let [json-res (cheshire.core/generate-string res)
+        res-bytes (.getBytes json-res StandardCharsets/UTF_8)]
+    (println "Resp" res)
+    (.write channel (ByteBuffer/wrap (.getBytes (format "Content-Length: %s\r\n\r\n" (count res-bytes)))))
+    (.write channel (ByteBuffer/wrap res-bytes))))
+
 (defn read-channel [handler ^AsynchronousSocketChannel channel conns]
   (let [buf (ByteBuffer/allocateDirect 10000)
         on-message (fn [msg]

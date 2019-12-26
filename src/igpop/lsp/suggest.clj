@@ -1,6 +1,6 @@
 (ns igpop.lsp.suggest)
 
-(def sg 
+(def sg
   {[:Patient] [:elements :description :api]
    [:Patient :elements] [:name :birthDate :identifier]
    [:Patient :elements :name] [:elements :minItems :maxItems]})
@@ -15,15 +15,14 @@
          (<= ln tln))))
 
 (defn pos-to-path [{tp :type val :value :as ast} coord]
-  (println "tp: " tp)
+  ;; (println "tp: " tp)
   (cond
     (= :map tp)
     (->> val
          (reduce (fn [acc {block :block :as kv}]
                    (if (in-block? block coord)
-                     (do (println "!" (:key kv))
-                       (let [res (pos-to-path (:value kv) coord)]
-                         (into [(:key kv)] (or res []))))
+                     (let [res (pos-to-path (:value kv) coord)]
+                       (into [(:key kv)] (or res [])))
                      acc))
                  nil))
     :else nil))

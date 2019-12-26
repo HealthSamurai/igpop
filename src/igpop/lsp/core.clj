@@ -82,7 +82,23 @@
     }})
 
 
-(def ast-state (atom {}))
+(def doc-state (atom {}))
+
+(defn validate [ctx doc]
+  (Thread/sleep 300)
+  (println "VALIDATE!!!")
+  (try 
+    (let [conn (first @(:conns (:lsp ctx)))]
+      (json-rpc.tcp/send-message
+       conn
+       {:method "textDocument/publishDiagnostics"
+        :params {:uri (get-in doc [:params :textDocument :uri])
+                 :diagnostics [{:range {:start {:line 1 :character 0}
+                                        :end {:line 1 :character 5}}
+                                :message "Ups:()"}]}}))
+    (catch Exception err
+      (println "Error in validate" err))))
+
 
 (defmethod
   proc
@@ -94,7 +110,8 @@
         ast (igpop.parser/parse newText {})]
     ;; (println "Change:")
     ;; (zprint.core/zprint ast)
-    (reset! ast-state ast))
+    (reset! doc-state (assoc msg :ast ast))
+    (future (validate ctx @doc-state)))
   nil)
 
 
@@ -105,12 +122,13 @@
 ;;           :context {:triggerKind 2, :triggerCharacter}}}
 
 
+
 (defmethod
   proc
   :textDocument/completion
   [ctx {{pos :position} :params :as msg}]
   (println (:method msg) pos)
-  (let [ast @ast-state
+  (let [ast (:ast @doc-state)
         opts (igpop.lsp.suggest/suggest ctx :Patient ast {:ln (:line pos) :pos (:character pos)})]
     {:result
      (if opts
@@ -216,7 +234,22 @@
   (json-rpc.core/stop ctx)
 
 
-  (zprint.core/zprint @ast-state)
+  (zprint.core/zprint @doc-state)
+
+  (def conn (first @(:conns (:lsp @ctx))))
+
+  (json-rpc.tcp/send-message
+   conn
+   {:method "textDocument/publishDiagnostics"
+    :params {:uri "file:///Users/niquola/igpop/example/test.igpop"
+             :diagnostics [{:range {:start {:line 1 :character 0}
+                                    :end {:line 1 :character 5}}
+                            :message "Ups:()"}]}})
+  (json-rpc.tcp/send-message
+   conn
+   {:method "textDocument/publishDiagnostics"
+    :params {:uri "file:///Users/niquola/igpop/example/test.igpop"
+             :diagnostics []}})
 
   )
 

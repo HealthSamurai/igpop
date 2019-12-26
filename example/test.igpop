@@ -1,0 +1,4 @@
+elements:
+  xxx: 1
+  name: 
+    maxItems: 10
