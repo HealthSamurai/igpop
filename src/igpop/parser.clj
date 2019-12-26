@@ -26,8 +26,7 @@
       (re-find key-regex  txt) :map
       :else :unknown)))
 
-(defn parse-collection [lines opts]
-  (println  "parse-collection is not impl."))
+
 
 (defn parse-inline [{ln :ln txt :text pos :pos :as l}]
   {:type :str
@@ -75,13 +74,18 @@
          :block {:from start :to end}})))
   )
 
+
 (defn collect-block-lines
   "collect lines untill next start and return rest of lines"
   [lns]
-  (loop [[ln' & lns'] lns
+  (loop [[ln' & lns' :as all-lns'] lns
          block-lines []]
-    (if (or (nil? ln') (= 0 (:ident ln')))
+    (cond
+      (nil? ln')
       [block-lines lns']
+      (= 0 (:ident ln'))
+      [block-lines all-lns']
+      :else
       (recur lns' (conj block-lines (update ln' :ident #(max 0 (- % 2))))))))
 
 (defn parse-entries [acc lines opts]
@@ -112,6 +116,50 @@
 (defn parse-map [acc lines opts]
   (let [entries (parse-entries acc lines opts)]
     {:type :map
+     :block {:from (get-in (first entries) [:block :from])
+             :to (get-in (last entries) [:block :to])}
+     :value entries}))
+
+(defn parse-collection [acc lines opts]
+  (let [entries (loop [acc acc
+                       [{txt :text :as ln} & lns] lines
+                       entries []]
+                  (if (nil? ln)
+                    entries
+                    (if (str/blank? txt)
+                      {:type :coll-entry
+                       :block {:from {:ln (:ln ln) :pos (:pos ln)} 
+                               :to {:ln (:ln ln) :pos (:pos ln)}}
+                       :value {:type :newline}}
+                      (let [[kk k] (re-find #"(^-\s*)" txt)
+                            kk-len (count kk)
+                            rest-text (subs txt kk-len)
+                            first-line {:text rest-text
+                                        :ln (:ln ln)
+                                        :ident 0
+                                        :pos (+ (:pos ln) (dec kk-len))}
+                            [entry-lines lns'] (collect-block-lines lns)
+                            value (cond
+                                    (and (not (empty? entry-lines)))
+                                    (parse-block acc
+                                                 (if-not (str/blank? rest-text)
+                                                   (into [first-line] entry-lines)
+                                                   entry-lines)
+                                                 opts)
+
+                                    (and (not (str/blank? rest-text)) (empty? entry-lines))
+                                    (parse-inline first-line)
+
+                                    :else
+                                    {:type :unknown :lines entry-lines :text rest-text})]
+
+                        (recur acc lns' (conj entries
+                                             {:type :coll-entry
+                                              :block {:from {:ln (:ln ln) :pos (:pos ln)} 
+                                                      :to   (get-in value [:block :to])}
+                                              :value value}))))))]
+
+    {:type :coll
      :block {:from (get-in (first entries) [:block :from])
              :to (get-in (last entries) [:block :to])}
      :value entries}))

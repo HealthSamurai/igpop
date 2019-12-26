@@ -205,5 +205,83 @@ elements:
               :value "Ryzhikov"}}]}
    )
 
+
+
+  (matcho/match
+   (sut/parse "- 1\n- 2" {})
+   {:type :coll
+    :block {:from {:ln 0 :pos 0}
+            :to {:ln 1 :pos 2}}
+    :value
+    [{:type :coll-entry,
+      :block {:from {:ln 0 :pos 0}
+              :to   {:ln 0 :pos 2}}
+      :value {:block {:from {:ln 0, :pos 1},
+                      :to {:ln 0, :pos 2}},
+              :type :str,
+              :value "1"}}
+     {:type :coll-entry,
+      :block {:from {:ln 1 :pos 0}
+              :to {:ln 1 :pos 2}}
+      :value {:block {:from {:ln 1, :pos 1},
+                      :to {:ln 1, :pos 2}},
+              :type :str,
+              :value "2"}}]})
+
+
+  (matcho/match
+   (sut/parse "- a: a\n  b: b\n- a: a\n  b: b" {})
+   {:block {:from {:ln 0, :pos 0}, :to {:ln 3, :pos 6}},
+    :type :coll,
+    :value
+    [{:block {:from {:ln 0, :pos 0}, :to {:ln 1, :pos 6}},
+      :type :coll-entry,
+      :value
+      {:block {:from {:ln 0, :pos 1}, :to {:ln 1, :pos 6}},
+       :type :map,
+       :value
+       [{:block {:from {:ln 0, :pos 1}, :to {:ln 0, :pos 5}},
+         :key :a,
+         :kind :inline,
+         :type :kv,
+         :value {:block {:from {:ln 0, :pos 3}, :to {:ln 0, :pos 5}},
+                 :type :str,
+                 :value "a"}}
+        {:block {:from {:ln 1, :pos 2}, :to {:ln 1, :pos 6}},
+         :key :b,
+         :kind :inline,
+         :type :kv,
+         :value {:block {:from {:ln 1, :pos 4}, :to {:ln 1, :pos 6}},
+                 :type :str,
+                 :value "b"}}]}}
+     {:block {:from {:ln 2, :pos 0}, :to {:ln 3, :pos 6}},
+      :type :coll-entry,
+      :value
+      {:block {:from {:ln 2, :pos 1}, :to {:ln 3, :pos 6}},
+       :type :map,
+       :value
+       [{:block {:from {:ln 2, :pos 1}, :to {:ln 2, :pos 5}},
+         :key :a,
+         :kind :inline,
+         :type :kv,
+         :value {:block {:from {:ln 2, :pos 3}, :to {:ln 2, :pos 5}},
+                 :type :str,
+                 :value "a"}}
+        {:block {:from {:ln 3, :pos 2}, :to {:ln 3, :pos 6}},
+         :key :b,
+         :kind :inline,
+         :type :kv,
+         :value {:block {:from {:ln 3, :pos 4}, :to {:ln 3, :pos 6}},
+                 :type :str,
+                 :value "b"}}]}}]})
+
+
+
+
+  (zp/zprint
+   (sut/parse (slurp "test/igpop/parser/basic.yaml")))
+
   )
+
+
 
