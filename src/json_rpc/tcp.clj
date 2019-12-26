@@ -85,11 +85,11 @@
       (when (.hasRemaining buf)
         (recur buf)))))
 
-(defn read-channel [^AsynchronousSocketChannel channel conns]
+(defn read-channel [handler ^AsynchronousSocketChannel channel conns]
   (let [buf (ByteBuffer/allocateDirect 10000)
         on-message (fn [msg]
                      (println "* " (:method msg))
-                     (let [res (cond-> (json-rpc.procedure/proc msg)
+                     (let [res (cond-> (handler msg)
                                  (:id msg) (assoc :id (:id msg)))]
                        (when (:id msg)
                          (let [json-res (cheshire.core/generate-string res)
@@ -117,7 +117,7 @@
                  (do (.close channel)
                      (println "! Failed (read):" e))))))))
 
-(defn handler [listener on-message conns]
+(defn handler [listener ctx conns]
   (reify CompletionHandler
     (failed [this e _]
       (if (instance? AsynchronousCloseException e)
@@ -127,18 +127,21 @@
       (println "Incomming connection " sc)
       (swap! conns conj sc)
       (.accept ^AsynchronousServerSocketChannel listener nil  this)
-      (read-channel sc conns))))
+      (read-channel (:handler @ctx) sc conns))))
 
 (defn start [ctx]
-  (let [assc (AsynchronousServerSocketChannel/open)
-        port 7345
+  (let [port (:port @ctx)
+        _ (assert port (str ":port required, got " @ctx))
+        assc (AsynchronousServerSocketChannel/open)
         sa  (InetSocketAddress. port)
         listener (.bind assc sa)
-        on-message (or (:on-message @ctx) println)
         conns (atom #{})]
     (println "tcp server started at  " port)
-    (.accept listener nil (handler listener on-message conns))
-    (swap! ctx (fn [ctx] (update ctx :lsp assoc :sock assc :conns conns))))
+    (.accept listener nil (handler listener ctx conns))
+    (swap! ctx (fn [ctx]
+                 (-> 
+                  (update ctx :lsp assoc :sock assc :conns conns)
+                  (assoc :_sefl ctx)))))
   ctx)
 
 
@@ -158,18 +161,7 @@
 (comment
   (stop ctx)
 
-  (def ctx (start (atom {:lsp {:port 7345}})))
-
-  ctx
-
-  (def cl (client "localhost" 7777))
-
-  (.close cl)
-
-  (.isOpen cl)
-  (.isConnected cl)
-
-  (client-send cl (for [i (range 100)] {:a i}))
+  (def ctx (start (atom {:port 7345 :handler println})))
 
   )
 
