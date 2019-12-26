@@ -10,13 +10,14 @@
             ltrim-s (str/replace ln #"^\s*" "")
             ident (- len (count ltrim-s))]
         {:ln i
+         ;; decremented on nested block parse
          :ident ident
+         ;; immutable position
          :pos ident
          :text ltrim-s})))))
 
 (def key-regex #"(^[-_a-zA-Z0-9]+):")
 (re-find key-regex "aaa: 1")
-
 
 (defn block-type [[{txt :text :as ln} & lns]]
   (when txt
@@ -26,83 +27,100 @@
       :else :unknown)))
 
 (defn parse-collection [lines opts]
-  {:type :coll})
+  (println  "parse-collection is not impl."))
 
 (defn parse-inline [{ln :ln txt :text pos :pos :as l}]
   {:type :str
    :value (str/trim txt)
    :block {:from {:ln ln :pos pos}
-           :to {:ln ln :pos (+ pos (count txt))}}})
+           :to   {:ln ln :pos (+ pos (count txt))}}})
 
 (declare parse-block)
 
-(defn parse-map [lines opts]
-  (let [value (loop [[{txt :text :as ln} & lns] lines
-                      value []
-                      cur-val nil]
-                 (if (nil? ln)
-                   (if cur-val
-                     (conj value (let [lines (:lines cur-val)
-                                       val (if-not (empty? lines)
-                                             (parse-block lines opts)
-                                             {:type :null})]
-                                   (-> (dissoc cur-val :lines)
-                                       (assoc :value val)
-                                       (assoc-in [:block :to] (get-in val [:block :to])))))
-                     value)
-                   (if-not (= 0 (:ident ln))
-                     ;; TODO: check acc
-                     (if (>= (:ident ln) 2)
-                       (recur lns value (update cur-val :lines conj (update ln :ident #(- % 2))))
-                       (recur lns value cur-val))
-                     (if (str/blank? (str/trim txt))
-                       (recur lns value cur-val)
-                       (let [ value' (if cur-val
-                                         (conj value (let [lines (:lines cur-val)
-                                                           val (parse-block lines opts)]
-                                                       (-> (dissoc cur-val :lines)
-                                                           (assoc :value val)
-                                                           (assoc-in [:block :to] (get-in val [:block :to])))))
-                                         value)]
-                         (if-let [[kk k] (re-find key-regex txt)]
-                           (let [kk-len (count kk)
-                                 k (keyword k)
-                                 lrest (subs txt kk-len)
-                                 from {:ln (:ln ln) :pos (:pos ln)}]
-                             (if-not (str/blank? lrest)
-                               (recur lns
-                                      (conj value' {:type :kv
-                                                    :block {:from from
-                                                            :to {:ln (:ln ln) :pos (+ (:pos ln) (count (:text ln)))}}
-                                                    :key k
-                                                    :value (parse-inline {:text lrest :ln (:ln ln) :ident 0 :pos (+ (:pos ln) kk-len)})})
-                                      nil)
-                               (let [cur-val' {:type :kv
-                                               :key k
-                                               :block {:from from}
-                                               :lines []}]
-                                 (recur lns value' cur-val'))))
-                           (recur lns (conj value' {:type :kv
-                                                    :block {:from {:ln (:ln ln) :pos (:pos ln)}
-                                                            :to {:ln (:ln ln) :pos (+ (:pos ln) (count txt))}}
-                                                    :invalid true
-                                                    :key (str/trim txt)})
-                                  nil)))))))]
-    {:type :map
-     :block {:from (get-in (first value) [:block :from])
-             :to  (get-in (last value) [:block :to])}
-     :value value}))
+(defn parse-entry [{txt :text ident :ident ln :ln pos :pos :as line}]
+  (when-not  (= 0 ident)
+    (println "ERROR:" (str "Expected only ident = 0; got " line)))
+  (let [start {:ln ln :pos pos}
+        end   {:ln ln :pos (+ pos (count txt))}]
+    (if (or (str/blank? txt) (not (= 0 ident)))
+      {:type :kv
+       :kind :newline
+       :block {:from start :to end}}
+      (if-let [[kk k] (re-find key-regex txt)]
+        (let [kk-len (count kk)
+              k (keyword k)
+              lrest (subs txt kk-len)]
+          (if (str/blank? lrest)
+            {:type :kv
+             :kind :block
+             :key k
+             :block {:from start :to end}}
+            (if (re-matches #"^\s*\|\s*$" lrest)
+              {:type :kv
+               :kind :text-multiline
+               :key k
+               :block {:from start}}
+              (let [value (parse-inline {:text lrest
+                                         :ln ln
+                                         :ident 0
+                                         :pos (+ pos kk-len)})]
+                {:type :kv
+                 :kind :inline
+                 :key k
+                 :block {:from start :to (get-in value [:block :to])}
+                 :value value}))))
+        {:type :kv
+         :kind :key-start
+         :key txt
+         :block {:from start :to end}})))
+  )
 
-(defn parse-block [lines opts]
-  (if (= :map (:start opts))
-    (parse-map lines (dissoc opts :start))
-    (let [type (block-type lines)]
-      (cond
-        (= :coll type) (parse-collection lines opts)
-        (= :map type) (parse-map lines opts)
-        :else (parse-map lines opts)))))
+(defn collect-block-lines
+  "collect lines untill next start and return rest of lines"
+  [lns]
+  (loop [[ln' & lns'] lns
+         block-lines []]
+    (if (or (nil? ln') (= 0 (:ident ln')))
+      [block-lines lns']
+      (recur lns' (conj block-lines (update ln' :ident #(max 0 (- % 2))))))))
+
+(defn parse-entries [acc lines opts]
+  (loop [acc acc, [ln & lns] lines, entries []]
+    (if (nil? ln)
+      entries
+      (let [{kind :kind :as entry} (parse-entry ln)]
+        (cond
+          ;; inline brench
+          (contains? #{:inline :newline :key-start} kind)
+          (recur acc lns (conj entries entry))
+
+          ;; if block element - collect related lines and parse
+          (= kind :block)
+          (let [[block-lines lns'] (collect-block-lines lns)
+                value (when-not (empty? block-lines) (parse-block acc block-lines opts))
+                entry' (if value
+                         (-> (assoc entry :value value)
+                             (assoc-in [:block :to] (get-in value [:block :to])))
+                         (assoc entry :kind :inline))]
+            (recur acc lns' (conj entries entry')))
+
+          :else
+          (do 
+            (println "ERROR:" (str "Unknown entry" entry))
+            (recur acc lns entries)))))))
+
+(defn parse-map [acc lines opts]
+  (let [entries (parse-entries acc lines opts)]
+    {:type :map
+     :block {:from (get-in (first entries) [:block :from])
+             :to (get-in (last entries) [:block :to])}
+     :value entries}))
+
+
+(defn parse-block [acc lines opts]
+  (let [type (block-type lines)]
+    (if (= :coll type) (parse-collection acc lines opts)
+        (parse-map acc lines opts))))
 
 (defn parse [s & [opts]]
-  (parse-block (parse-lines s) opts))
-
-
+  (parse-block {} (parse-lines s) opts))

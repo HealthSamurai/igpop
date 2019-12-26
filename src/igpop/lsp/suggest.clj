@@ -28,6 +28,7 @@
     :else nil))
 
 (defn *suggest [ctx pth]
+  (println "Suggest for " pth)
   (get sg pth))
 
 (defn suggest [ctx rt ast pos]

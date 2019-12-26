@@ -22,6 +22,44 @@ elements:
     {:ln 4, :ident 2, :text "given: 2"}]
    )
 
+  (testing "parse-entry"
+
+
+    (matcho/match
+     (sut/parse-entry {:ln 4 :pos 0 :ident 0 :text "key: value"})
+     {:type :kv
+      :kind :inline
+      :value {:type :str
+              :value "value"}})
+
+    (matcho/match
+     (sut/parse-entry {:ln 4 :pos 0 :ident 0 :text ""})
+     {:type :kv
+      :kind :newline})
+
+
+    (matcho/match
+     (sut/parse-entry {:ln 4 :pos 0 :ident 0 :text "key"})
+     {:type :kv
+      :key "key"
+      :kind :key-start})
+
+    (matcho/match
+     (sut/parse-entry {:ln 4 :pos 0 :ident 0 :text "key:"})
+     {:type :kv
+      :key :key
+      :kind :block})
+
+    (matcho/match
+     (sut/parse-entry {:ln 4 :pos 0 :ident 0 :text "key: |"})
+     {:type :kv
+      :key :key
+      :kind :text-multiline})
+
+
+    )
+
+  (println "\n\n")
   (matcho/match
    (sut/parse "name: nicola\ngiven: hello")
    {:type :map
@@ -57,6 +95,8 @@ elements:
                     :value "nicola"
                     :block {:from {:ln 0 :pos 5}
                             :to {:ln 0 :pos 12}}}}
+            {:type :kv
+             :kind :newline}
             {:type :kv
              :block {:from {:ln 2 :pos 0}
                      :to   {:ln 2 :pos 12}}
@@ -97,41 +137,73 @@ elements:
     :type :map,
     :value [{:type :kv
              :key "eleme"
-             :block {:from {:ln 0, :pos 0}, :to {:ln 0, :pos 5}}
-             :invalid true}]}
-   )
+             :block {:from {:ln 0, :pos 0}, :to {:ln 0, :pos 5}}}]})
 
 
-  (zp/zprint
-   (sut/parse "elements:\n  nam" {:start :map}))
+  (matcho/match
+   (sut/parse "elements:\n  nam" {:start :map})
+   {:block {:from {:ln 0, :pos 0}, :to {:ln 1, :pos 5}},
+    :type :map,
+    :value
+    [{:block {:from {:ln 0, :pos 0}, :to {:ln 1, :pos 5}},
+      :key :elements,
+      :kind :block,
+      :type :kv,
+      :value
+      {:block {:from {:ln 1, :pos 2}, :to {:ln 1, :pos 5}},
+       :type :map,
+       :value [{:block {:from {:ln 1, :pos 2}, :to {:ln 1, :pos 5}},
+                :key "nam",
+                :kind :key-start,
+                :type :kv}]}}]})
 
   ;; TODO: important for suggest
-  (zp/zprint
-   (sut/parse "elements:\n  name:\n    " {}))
+  (matcho/match
+   (sut/parse "elements:\n  name:\n    " {})
+   {:block {:from {:ln 0, :pos 0}, :to {}},
+    :type :map,
+    :value
+    [{:block {:from {:ln 0, :pos 0}, :to {}},
+      :key :elements,
+      :type :kv,
+      :value
+      {:block {:from {:ln 1, :pos 2}, :to {}},
+       :type :map,
+       :value [{:block {:from {:ln 1, :pos 2}, :to {:ln number? :pos number?}},
+                :key :name,
+                :type :kv,
+                :value {:type :map
+                        :value [{:kind :newline}]}}]}}]})
 
 
   (zp/zprint
    (sut/parse "elements:\n  name:\n    minIt" {}))
 
 
-  ;; (sut/parse "name: Nikolai\ngiv\nfamily: Ryzhikov")
-
-  #_(matcho/match
-   (sut/parse "-1\n-2")
-   {:type :coll
-    :block {:start {:l 0 :p 0}
-            :end {:l 1 :p 3}}
-    :value [{:type :int
-             :value 1
-             :block {:start {:l 0 :p 2}
-                     :end {:l 0 :p 3}}}
-            {:type :int
-             :value 2
-             :block {:start {:l 1 :p 2}
-                     :end {:l 1 :p 3}}}]})
-
-  
-
+  (matcho/match
+   (sut/parse "name: Nikolai\ngiv\nfamily: Ryzhikov")
+   {:block {:from {:ln 0, :pos 0}, :to {:ln 2, :pos 16}},
+    :type :map,
+    :value
+    [{:block {:from {:ln 0, :pos 0}, :to {:ln 0, :pos 13}},
+      :key :name,
+      :kind :inline,
+      :type :kv,
+      :value {:block {:from {:ln 0, :pos 5}, :to {:ln 0, :pos 13}},
+              :type :str,
+              :value "Nikolai"}}
+     {:block {:from {:ln 1, :pos 0}, :to {:ln 1, :pos 3}},
+      :key "giv",
+      :kind :key-start,
+      :type :kv}
+     {:block {:from {:ln 2, :pos 0}, :to {:ln 2, :pos 16}},
+      :key :family,
+      :kind :inline,
+      :type :kv,
+      :value {:block {:from {:ln 2, :pos 7}, :to {:ln 2, :pos 16}},
+              :type :str,
+              :value "Ryzhikov"}}]}
+   )
 
   )
 

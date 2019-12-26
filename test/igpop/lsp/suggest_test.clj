@@ -41,6 +41,10 @@
   (zp/zprint
    (sut/pos-to-path ast {:ln 1 :pos 3}))
 
+  ;; suggest
+  ;;   ctx
+  ;; path [[:Patient :elements :name] "re"]
+  ;;   value {:Patient {:elements {:name {:minItems 0}}}} 
 
   (zp/zprint
    (sut/suggest {} :Patient ast {:ln 1 :pos 3}))

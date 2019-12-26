@@ -1,4 +1,4 @@
 elements:
-  xxx: 1
-  name: 
-    maxItems: 10
+  name:
+    maxItems: 1
+    
