@@ -85,29 +85,36 @@
 (def doc-state (atom {}))
 
 (defn validate [ctx doc]
-  (Thread/sleep 300)
-  (println "VALIDATE!!!")
-  (try 
-    (let [conn (first @(:conns (:lsp ctx)))]
-      (json-rpc.tcp/send-message
-       conn
-       {:method "textDocument/publishDiagnostics"
-        :params {:uri (get-in doc [:params :textDocument :uri])
-                 :diagnostics [{:range {:start {:line 1 :character 0}
-                                        :end {:line 1 :character 5}}
-                                :message "Ups:()"}]}}))
-    (catch Exception err
-      (println "Error in validate" err))))
+  (Thread/sleep 10)
+  (let [ast (:ast doc)
+        errors (igpop.parser/errors ast)]
+    (println "ERRORS:" errors)
+    (try 
+      (let [conn (first @(:conns (:lsp ctx)))]
+        (json-rpc.tcp/send-message
+         conn
+         {:method "textDocument/publishDiagnostics"
+          :params {:uri (get-in doc [:params :textDocument :uri])
+                   :diagnostics
+                   (->> errors
+                        (mapv (fn [{{from :from to :to} :block msg :message}]
+                                {:range {:start {:line (:ln from) :character (:pos from)}
+                                         :end {:line (:ln to) :character (:pos to)}}
+                                 :message msg})))}}))
+      (catch Exception err
+        (println "Error in validate" err)))))
 
 
 (defmethod
   proc
   :textDocument/didChange
   [ctx {params :params :as msg}]
-  (println (:method msg) msg)
+  (println ">>" (:method msg) (get-in msg [:params :uri]))
   (let [uri (get-in params [:textDocument :uri])
         newText (:text (last (:contentChanges params)))
         ast (igpop.parser/parse newText {})]
+    (spit "/tmp/ast"
+          (zprint.core/zprint-str ast))
     ;; (println "Change:")
     ;; (zprint.core/zprint ast)
     (reset! doc-state (assoc msg :ast ast))

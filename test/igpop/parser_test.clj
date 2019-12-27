@@ -231,6 +231,7 @@ elements:
 
   (matcho/match
    (sut/parse "- a: a\n  b: b\n- a: a\n  b: b" {})
+
    {:block {:from {:ln 0, :pos 0}, :to {:ln 3, :pos 6}},
     :type :coll,
     :value
@@ -278,8 +279,85 @@ elements:
 
 
 
-  (zp/zprint
-   (sut/parse (slurp "test/igpop/parser/basic.yaml")))
+  (let [s (slurp "test/igpop/parser/basic.yaml")]
+    (time (sut/parse s))
+    #_(zp/zprint (sut/parse s)))
+
+  (matcho/match
+   (sut/parse "aaa")
+   {:type :map
+    :value [{:type :kv
+             :kind :key-start
+             :error "Expected key closed by ':'"}]})
+
+  (matcho/match
+   (sut/errors
+    {:type :map
+     :value [{:type :kv
+              :kind :key-start
+              :block {:from "from" :to "to"}
+              :error "Expected key closed by ':'"}]}))
+
+
+
+
+  (matcho/match
+   (sut/errors
+    {:block {:from {:ln 0, :pos 0}, :to {:ln 6, :pos 7}},
+     :type :map,
+     :value
+     [{:block {:from {:ln 0, :pos 0}, :to {:ln 5, :pos 8}},
+       :key :elements,
+       :kind :block,
+       :type :kv,
+       :value
+       {:block {:from {:ln 1, :pos 2}, :to {:ln 5, :pos 8}},
+        :type :map,
+        :value
+        [{:block {:from {:ln 1, :pos 2}, :to {:ln 1, :pos 6}},
+          :error "Expected key closed by ':'",
+          :key "upso",
+          :kind :key-start,
+          :type :kv}
+         {:block {:from {:ln 2, :pos 2}, :to {:ln 4, :pos 12}},
+          :key :name,
+          :kind :block,
+          :type :kv,
+          :value
+          {:block {:from {:ln 3, :pos 4}, :to {:ln 4, :pos 12}},
+           :type :map,
+           :value
+           [{:block {:from {:ln 3, :pos 4}, :to {:ln 3, :pos 15}},
+             :key :maxItems,
+             :kind :inline,
+             :type :kv,
+             :value {:block {:from {:ln 3, :pos 13},
+                             :to {:ln 3, :pos 15}},
+                     :type :str,
+                     :value "1"}}
+            {:block {:from {:ln 4, :pos 4}, :to {:ln 4, :pos 12}},
+             :error "Expected key closed by ':'",
+             :key "minItems",
+             :kind :key-start,
+             :type :kv}]}}
+         {:block {:from {:ln 5, :pos 2}, :to {:ln 5, :pos 8}},
+          :error "Expected key closed by ':'",
+          :key "badkey",
+          :kind :key-start,
+          :type :kv}]}}
+      {:block {:from {:ln 6, :pos 0}, :to {:ln 6, :pos 7}},
+       :key :badkey,
+       :kind :inline,
+       :type :kv}]})
+   [{:block {:from {:ln 1, :pos 2}, :to {:ln 1, :pos 6}},
+     :message "Expected key closed by ':'"}
+    {:block {:from {:ln 4, :pos 4}, :to {:ln 4, :pos 12}},
+     :message "Expected key closed by ':'"}
+    {:block {:from {:ln 5, :pos 2}, :to {:ln 5, :pos 8}},
+     :message "Expected key closed by ':'"}]
+   )
+
+
 
   )
 

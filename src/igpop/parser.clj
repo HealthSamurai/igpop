@@ -1,6 +1,13 @@
 (ns igpop.parser
   (:require [clojure.string :as str]))
 
+;; TODO:
+;; inline + obj + coll
+;; comments
+;; multiline txt
+;; collect value
+;; collect parse errors
+
 (defn parse-lines [s]
   (->>
    (str/split-lines s)
@@ -70,9 +77,9 @@
                  :value value}))))
         {:type :kv
          :kind :key-start
+         :error "Expected key closed by ':'"
          :key txt
-         :block {:from start :to end}})))
-  )
+         :block {:from start :to end}}))))
 
 
 (defn collect-block-lines
@@ -88,15 +95,20 @@
       :else
       (recur lns' (conj block-lines (update ln' :ident #(max 0 (- % 2))))))))
 
+
 (defn parse-entries [acc lines opts]
-  (loop [acc acc, [ln & lns] lines, entries []]
+  (loop [acc acc, [ln & lns] lines, entries [], ks #{}]
     (if (nil? ln)
       entries
-      (let [{kind :kind :as entry} (parse-entry ln)]
+      (let [{k :key kind :kind :as entry} (parse-entry ln)
+            entry (if (and k (contains? ks k))
+                    (assoc entry :error (str "Duplicate key " (name k)))
+                    entry)
+            ks (if (:key entry) (conj ks (:key entry)) ks)]
         (cond
           ;; inline brench
           (contains? #{:inline :newline :key-start} kind)
-          (recur acc lns (conj entries entry))
+          (recur acc lns (conj entries entry) ks)
 
           ;; if block element - collect related lines and parse
           (= kind :block)
@@ -106,12 +118,12 @@
                          (-> (assoc entry :value value)
                              (assoc-in [:block :to] (get-in value [:block :to])))
                          (assoc entry :kind :inline))]
-            (recur acc lns' (conj entries entry')))
+            (recur acc lns' (conj entries entry') ks))
 
           :else
           (do 
             (println "ERROR:" (str "Unknown entry" entry))
-            (recur acc lns entries)))))))
+            (recur acc lns entries ks)))))))
 
 (defn parse-map [acc lines opts]
   (let [entries (parse-entries acc lines opts)]
@@ -127,10 +139,11 @@
                   (if (nil? ln)
                     entries
                     (if (str/blank? txt)
-                      {:type :coll-entry
-                       :block {:from {:ln (:ln ln) :pos (:pos ln)} 
-                               :to {:ln (:ln ln) :pos (:pos ln)}}
-                       :value {:type :newline}}
+                      (recur acc lns (conj entries
+                                           {:type :coll-entry
+                                            :block {:from {:ln (:ln ln) :pos (:pos ln)} 
+                                                    :to {:ln (:ln ln) :pos (:pos ln)}}
+                                            :value {:type :newline}}))
                       (let [[kk k] (re-find #"(^-\s*)" txt)
                             kk-len (count kk)
                             rest-text (subs txt kk-len)
@@ -172,3 +185,15 @@
 
 (defn parse [s & [opts]]
   (parse-block {} (parse-lines s) opts))
+
+
+(defn collect-errors [errs {val :value tp :type err :error block :block :as ast}]
+  (let [errs (if err (conj errs {:message err :block block}) errs)
+        val (when val (if (and (sequential? val) (not (string? val)))
+                        val [val]))]
+    (if val
+      (reduce collect-errors errs val)
+      errs)))
+
+(defn errors [ast]
+  (collect-errors [] ast))
