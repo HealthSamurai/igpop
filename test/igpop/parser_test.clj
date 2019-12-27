@@ -187,8 +187,8 @@ elements:
                         :value [{:kind :newline}]}}]}}]})
 
 
-  (zp/zprint
-   (sut/parse "elements:\n  name:\n    minIt" {}))
+  ;; (zp/zprint
+  ;;  (sut/parse "elements:\n  name:\n    minIt" {}))
 
 
   (matcho/match
@@ -229,15 +229,14 @@ elements:
               :to   {:ln 0 :pos 2}}
       :value {:block {:from {:ln 0, :pos 1},
                       :to {:ln 0, :pos 2}},
-              :type :str,
-              :value "1"}}
+              :value 1}}
      {:type :coll-entry,
       :block {:from {:ln 1 :pos 0}
               :to {:ln 1 :pos 2}}
       :value {:block {:from {:ln 1, :pos 1},
                       :to {:ln 1, :pos 2}},
-              :type :str,
-              :value "2"}}]})
+              :type :int
+              :value 2}}]})
 
 
   (matcho/match
@@ -290,9 +289,6 @@ elements:
 
 
 
-  (let [s (slurp "test/igpop/parser/basic.yaml")]
-    (time (sut/parse s))
-    #_(zp/zprint (sut/parse s)))
 
   (matcho/match
    (sut/parse "aaa")
@@ -384,28 +380,66 @@ elements:
     (sut/parse-inline {:text "{}" :pos 0 :ln 0})
 
     (matcho/match
-     (sut/do-read "100" 0)
+     (sut/do-read "100" 0 1)
      [{:type :int
        :value 100}])
 
     (matcho/match
-     (sut/do-read "\"abc\"" 0)
+     (sut/do-read "\"abc\"" 0 1)
      [{:type :str
        :value "abc"}])
 
     (matcho/match
-     (sut/do-read "\"abc " 0)
+     (sut/do-read "\"abc " 0 1)
      [{:type :str
-       :error "Not closed string"
-       :value "abc "}])
+       :error string?
+       :value "\"abc "}
+      nil?])
 
     (matcho/match
-     (sut/read-inline :key "abc: 1" 0)
+     (sut/do-read " true rest" 0 1)
+     [{:type :bool
+       :value true}
+      " rest"])
+
+    (matcho/match
+     (sut/do-read " false rest" 0 1)
+     [{:type :bool
+       :value false}
+      " rest"])
+
+    (matcho/match
+     (sut/read-inline :key "abc: 1" 0 1)
      [{:type :key
        :value :abc}
       " 1"])
 
-    (sut/do-read "{}" 0)
+    (matcho/match
+     (sut/read-inline :key "  abc: 1" 0 1)
+     [{:type :key
+       :value :abc}
+      " 1"])
+    
+
+    (matcho/match
+     (sut/do-read " { }" 0 1)
+     [{:type :map
+       :kind :empty} nil])
+
+    (matcho/match
+     (sut/do-read "{a: 1}" 0 1)
+     [{:type :map
+       :value [{:type :kv
+                :key :a
+                :value {:value 1}}]}])
+
+    (matcho/match
+     (sut/do-read "{a: 1, b: hello}" 0 1)
+     [{:type :map
+       :value [{:type :kv :key :a
+                :value {:value 1}}
+               {:type :kv :key :b
+                :value {:value "hello"}}]}])
 
 
 
@@ -413,6 +447,9 @@ elements:
     )
 
 
+  ;; (let [s (slurp "test/igpop/parser/basic.yaml")]
+  ;;   (time (sut/parse s))
+  ;;   #_(zp/zprint (sut/parse s)))
 
   )
 
