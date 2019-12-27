@@ -2,23 +2,9 @@ description:
   Some description
 
 elements:
-  another-completion
   identifier: # []
     minItems: 1
     elements:
       system: { required: true}
       value:  { required: true, description: The value that is unique within the system }
-  name:
-    minItems: 1
-    description: A name associated with the patient
-    rule:
-      r1: 'family.count() + given.count() >= 1'
-    elements: { family: {}, given: {}}
-  telecom:
-    elements:
-      value:  { required: true }
-      system: { required: true,  valueset: {id: 'fhir:contact-point-system' }}
-  gender: { valueset: { id: 'fhir:administrative-gender' } }
-  birthDate: {} 
-
 

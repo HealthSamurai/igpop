@@ -1,0 +1,50 @@
+description: IGPOP Profile definition
+elements:
+  elements:
+    type: Map
+    description: Definition of elements
+    value:
+      elements:
+        type:  { type: code, description: Element type }
+        description: { type: string, description: 'Element description'}
+        elements: { ref: elements.elements, description: 'Nested elements'}
+        required: { type: boolean, for: singular}
+        disabled: { type: boolean }
+        collection: { type: boolean }
+        minItems: { type: integer, for: collection}
+        maxItems: { type: integer }
+        mustSupport: {type: boolen, default: true}
+        valueset:
+          elements:
+             id: { type: 'string', description: 'valueset id' }
+             url: { type: 'url' }
+             strength: { type: 'code', enum: ['extensible', 'required'], default: 'extensible' }
+        constant: { type: any }
+        match: { type: any }
+        refers:
+          type: Map
+          description: Reference specification
+          key: { type: code, description: 'Resource type' }
+          value: { type: string, description: 'Profile id' }
+        constaints:
+          type: Map
+          description: FHIRPath rules, key is rule identifier
+          value:
+            elements:
+              expression: { type: fhirpath }
+              description: { type: string }
+              severity:  { type: code, enum: ['error']}
+        mapping:
+          type: Map
+          description: Mapping to other systems
+          value:
+            elements:
+              map: { type: string }
+        slices:
+          type: Map
+          key: {type: string, description: 'Slice Name'}
+          description: Define named slices for collection
+          value:
+            elements:
+               ref: 'elements.elements'
+               match: { required: true }

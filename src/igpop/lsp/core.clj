@@ -1,6 +1,7 @@
 (ns igpop.lsp.core
   (:require
    [igpop.parser]
+   [igpop.loader]
    [zprint.core]
    [igpop.lsp.suggest]
    [json-rpc.core :refer [proc]]))
@@ -118,13 +119,6 @@
   nil)
 
 
-;; completion request
-;; {:jsonrpc 2.0, :id 6, :method textDocument/completion,
-;;  :params {:textDocument {:uri file:///Users/mput/projects/igpop/example/src/DiagnosticReport/test.igpop},
-;;           :position {:line 7, :character 0},
-;;           :context {:triggerKind 2, :triggerCharacter}}}
-
-
 
 (defmethod
   proc
@@ -132,15 +126,8 @@
   [ctx {{pos :position} :params :as msg}]
   (println (:method msg) pos)
   (let [ast (:ast @doc-state)
-        opts (igpop.lsp.suggest/suggest ctx :Patient ast {:ln (:line pos) :pos (:character pos)})]
-    {:result
-     (if opts
-       (->> opts
-            (mapv (fn [opt]
-                    {:label (name opt) 
-                     :kind 14
-                     :detail (name opt)})))
-       [])}))
+        completion (igpop.lsp.suggest/suggest ctx msg ast)]
+    {:result completion}))
 
 ;; (defmethod
 ;;   proc
@@ -232,7 +219,9 @@
 (comment
 
   (def ctx
-    (json-rpc.core/start (atom {:type :tcp :port 7345})))
+    (json-rpc.core/start (atom {:type :tcp
+                                :port 7345
+                                :manifest (igpop.loader/load-project "example")})))
 
   (json-rpc.core/stop ctx)
 
