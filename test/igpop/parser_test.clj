@@ -368,6 +368,50 @@ elements:
      :message "Expected key closed by ':'"}]
    )
 
+  (testing "inline parse"
+
+    (is (= (sut/inline-type "{}") :map))
+    (is (= (sut/inline-type "[]") :coll))
+    (is (= (sut/inline-type "'aaa'") :str-q))
+    (is (= (sut/inline-type "\"bbb\"") :str-dq))
+    (is (= (sut/inline-type " any text") :alphanum))
+    (is (= (sut/inline-type "10") :int))
+    (is (= (sut/inline-type "10.01") :num))
+    (is (= (sut/inline-type "true") :true))
+    (is (= (sut/inline-type "false") :false))
+    (is (= (sut/inline-type "null") :null))
+
+    (sut/parse-inline {:text "{}" :pos 0 :ln 0})
+
+    (matcho/match
+     (sut/do-read "100" 0)
+     [{:type :int
+       :value 100}])
+
+    (matcho/match
+     (sut/do-read "\"abc\"" 0)
+     [{:type :str
+       :value "abc"}])
+
+    (matcho/match
+     (sut/do-read "\"abc " 0)
+     [{:type :str
+       :error "Not closed string"
+       :value "abc "}])
+
+    (matcho/match
+     (sut/read-inline :key "abc: 1" 0)
+     [{:type :key
+       :value :abc}
+      " 1"])
+
+    (sut/do-read "{}" 0)
+
+
+
+
+    )
+
 
 
   )

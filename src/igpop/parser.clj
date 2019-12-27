@@ -33,7 +33,45 @@
       (re-find key-regex  txt) :map
       :else :unknown)))
 
+(def inline-type-regex
+  {:map #"^\s*\{.*"
+   :coll #"^\s*\[.*"
+   :str-q #"^\s*'.*"
+   :str-dq #"^\s*\".*"
+   :true #"^\s*true($|\s.*)"
+   :false #"^\s*false($|\s.*)"
+   :null #"^\s*null($|\s.*)"
+   :int #"\s*\d+($|\s.*)"
+   :num #"\s*\d+\.\d*($|\s.*)"})
 
+(defmulti read-inline
+  (fn [tp txt pos] tp))
+
+(defmethod read-inline
+  :default
+  [tp txt pos]
+  (println "ERROR: don't know how to read " tp " - " txt))
+
+(defn inline-type [txt]
+  (or 
+   (loop [[[tp regex] & ms] inline-type-regex]
+     (when-not (nil? tp)
+       (if (re-matches regex txt)
+         tp
+         (recur ms))))
+   :alphanum))
+
+(defmethod read-inline :int
+  [_ txt pos]
+  (let [[_ spaces int rest] (re-find #"(\s*)(\d+)(.*)" txt)]
+    [{:type :int
+      :block {:from {:pos pos} :to {:pos (+ pos (count int))}}
+      :value (Integer/parseInt int)}
+     rest]))
+
+(defn do-read [txt pos]
+  (let [tp (inline-type txt)]
+    (read-inline tp txt pos)))
 
 (defn parse-inline [{ln :ln txt :text pos :pos :as l}]
   {:type :str
