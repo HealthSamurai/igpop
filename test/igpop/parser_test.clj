@@ -59,7 +59,6 @@ elements:
 
     )
 
-  (println "\n\n")
   (matcho/match
    (sut/parse "name: nicola\ngiven: hello")
    {:type :map
@@ -82,6 +81,18 @@ elements:
                      :block {:from {:ln 1 :pos 6}
                              :to {:ln 1 :pos 12}}}}]})
 
+  (matcho/match
+   (sut/parse "desc: |\n  line1\n  line2\n  line3")
+   {:block {:from {:ln 0, :pos 0}, :to {:ln 3, :pos 2}},
+    :type :map,
+    :value
+    [{:block {:from {:ln 0, :pos 0}, :to {:ln 3, :pos 2}},
+      :key :desc,
+      :kind :text-multiline,
+      :type :kv,
+      :value {:block {:from {:ln 1, :pos 2}, :to {:ln 3, :pos 2}},
+              :type :str,
+              :value "line1\nline2\nline3"}}]})
 
   (matcho/match
    (sut/parse "name: nicola\n\ngiven: hello")

@@ -120,6 +120,17 @@
                          (assoc entry :kind :inline))]
             (recur acc lns' (conj entries entry') ks))
 
+          (= kind :text-multiline)
+          (let [[block-lines lns'] (collect-block-lines lns)
+                txt (->> block-lines (mapv :text) (str/join "\n"))
+                from (select-keys (or (first block-lines) ln) [:ln :pos])
+                to (select-keys (or (last block-lines) ln) [:ln :pos])
+                entry' (-> (assoc entry :value {:type :str
+                                                :block {:from from :to to}
+                                                :value txt})
+                           (assoc-in [:block :to] to))]
+            (recur acc lns' (conj entries entry') ks))
+
           :else
           (do 
             (println "ERROR:" (str "Unknown entry" entry))

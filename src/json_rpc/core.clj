@@ -14,10 +14,12 @@
   [ctx msg]
   {:id (:id msg) :message "pong"})
 
+(defn send-message [ctx msg]
+  (json-rpc.tcp/send-message (:channel ctx) msg))
 
 (defn start [ctx]
   (let [tp (:type @ctx)
-        handler (fn [msg] (proc @ctx msg))]
+        handler (fn [conn msg] (proc (assoc @ctx :channel conn) msg))]
     (swap! ctx assoc :handler handler)
     (if (= tp :tcp)
       (json-rpc.tcp/start ctx)

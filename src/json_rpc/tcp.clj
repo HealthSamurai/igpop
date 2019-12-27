@@ -94,20 +94,15 @@
 (defn read-channel [handler ^AsynchronousSocketChannel channel conns]
   (let [buf (ByteBuffer/allocateDirect 10000)
         on-message (fn [msg]
-                     (println "* " (:method msg))
                      (let [res (try
-                                 (cond-> (handler msg)
+                                 (cond-> (handler channel msg)
                                    (:id msg) (assoc :id (:id msg)))
                                  (catch Exception err
                                    (println "ERROR:" err)
                                    {:error {:code -32603
                                             :message (.getMessage err)}}))]
                        (when (:id msg)
-                         (let [json-res (cheshire.core/generate-string res)
-                               res-bytes (.getBytes json-res StandardCharsets/UTF_8)]
-                           (println "Resp" res)
-                           (.write channel (ByteBuffer/wrap (.getBytes (format "Content-Length: %s\r\n\r\n" (count res-bytes)))))
-                           (.write channel (ByteBuffer/wrap res-bytes))))))
+                         (send-message channel res))))
         decode (decoder on-message)]
     ;; (println "read channel")
     (.read channel buf nil

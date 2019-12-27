@@ -86,30 +86,26 @@
 
 (defn validate [ctx doc]
   (Thread/sleep 10)
-  (let [ast (:ast doc)
-        errors (igpop.parser/errors ast)]
-    (println "ERRORS:" errors)
-    (try 
-      (let [conn (first @(:conns (:lsp ctx)))]
-        (json-rpc.tcp/send-message
-         conn
-         {:method "textDocument/publishDiagnostics"
-          :params {:uri (get-in doc [:params :textDocument :uri])
-                   :diagnostics
-                   (->> errors
-                        (mapv (fn [{{from :from to :to} :block msg :message}]
-                                {:range {:start {:line (:ln from) :character (:pos from)}
-                                         :end {:line (:ln to) :character (:pos to)}}
-                                 :message msg})))}}))
-      (catch Exception err
-        (println "Error in validate" err)))))
+  (try
+    (let [ast (:ast doc)
+          errors (igpop.parser/errors ast)]
+      (println "ERRORS:" errors)
+      (json-rpc.core/send-message ctx {:method "textDocument/publishDiagnostics"
+                                       :params {:uri (get-in doc [:params :textDocument :uri])
+                                                :diagnostics
+                                                (->> errors
+                                                     (mapv (fn [{{from :from to :to} :block msg :message}]
+                                                             {:range {:start {:line (:ln from) :character (:pos from)}
+                                                                      :end {:line (:ln to) :character (:pos to)}}
+                                                              :message msg})))}}))
+    (catch Exception err
+      (println "Error in validate" err))))
 
 
 (defmethod
   proc
   :textDocument/didChange
   [ctx {params :params :as msg}]
-  (println ">>" (:method msg) (get-in msg [:params :uri]))
   (let [uri (get-in params [:textDocument :uri])
         newText (:text (last (:contentChanges params)))
         ast (igpop.parser/parse newText {})]
