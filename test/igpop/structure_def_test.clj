@@ -118,6 +118,24 @@
 
   ;; --------------------------------------------------------------------------------------
 
+  (def props
+    {:elements
+     {:name {:type "HumanName"
+             :required true
+             :elements
+             {:family {:type "string" :isCollection true :minItem 1 :maxItem 10 }}
+             :refers [{
+                       :profile "basic"
+                       :resourceType "Practitioner"}
+                      {:resourceType "Organization"
+                       :profile "basic"}
+                      {
+                       :profile "basic"
+                       :resourceType "Patient"}
+                      ]}}})
+
+  (clojure.pprint/pprint (sdef/generate-differential :Patient "basic" props))
+
   (def plain-elements-in
     {:CarePlan.subject {}
      :CarePlan.text {}})
