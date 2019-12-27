@@ -54,12 +54,26 @@
                              (= k :minItems) {:min v}
                              (= k :maxItems) {:max v}))
 
+;;target url = https://healthsamurai.github.io/igpop/profiles/{resourceType}/basic.html
+(defn refers [k v]
+  {:type
+   (reduce (fn [outer-acc ordmap]
+             (conj outer-acc
+                   (reduce (fn [acc [key val]]
+                             (into acc (if (= key :resourceType)
+                                         { :targetProfile [ (str "https://healthsamurai.github.io/igpop/profiles/" val "/basic.html") ] })))
+                           (ordered-map {:code "Reference"}) ordmap)
+                   )) [] v)
+   }
+  )
+
 (def agenda {:required cardinality
              :disabled cardinality
              :minItems cardinality
              :maxItems cardinality
              :constraints fhirpath-rule
-             :mustSupport mustSupport})
+             :mustSupport mustSupport
+             :refers refers})
 
 (def default-agenda {:mustSupport mustSupport})
 
