@@ -65,7 +65,6 @@
         file-name (if (= "basic" (last parsed-name))
                     (str (first parsed-name) ".yaml")
                     (str (clojure.string/join "/" parsed-name) ".yaml"))]
-    (println "!!!!!!!!!!!!!!" parsed-name)
     (if-let [file (io/file (str (:home ctx) "/src/" file-name))]
       (let [content (slurp file)]
         {:status 200
@@ -76,7 +75,7 @@
 (defn edit [ctx req]
   {:status 200
    :headers {}
-   :body (io/input-stream (io/resource "/public/editor/index.html"))})
+   :body (io/input-stream (io/resource "public/editor/index.html"))})
 
 (def routes
   {:GET #'welcome
