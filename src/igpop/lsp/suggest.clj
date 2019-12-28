@@ -115,5 +115,51 @@
     (println "\n------------------------------\n")
     suggests))
 
+(defn igpop-key-doc [k]
+  (get {:maxItems "Max items in collection collection (positive int)"
+        :minItems "Min items in collection (positive int)"
+        :elements "elements map element-name: element-spec"
+        :valueset "Binding to valuset {id: <vs-id>}"} k))
+
+(defn capital? [t]
+  (and (string? t)
+       (= (subs t 0 1) (str/upper-case (subs t 0 1)))))
+
+(defn element-from-path [manif rt pth]
+  (when-let [res-def (get-in manif [:base :profiles rt])]
+    (loop [[p & ps :as aps] pth
+           subj res-def]
+      (if (nil? p)
+        subj
+        (when-let [subj' (get subj p)]
+          (if (empty? ps)
+            subj'
+            (recur ps (if-let [tp (when-let [t (:type subj')]
+                                    (when (capital? t) t))]
+                        (get-in manif [:base :profiles (keyword tp)])
+                        subj'))))))))
+
+(defn element-doc [manif rt pth]
+  (when-let [el (element-from-path manif rt pth)]
+    (str
+     (:description el)
+     (when-let [tp (get-in el [:type])]
+       (str " **" tp (when (:collection el) "[]") "**")))))
+
+(defn hover [ctx msg ast]
+  (let [params (:params msg)
+        uri (get-in params [:textDocument :uri])
+        rt (parse-uri uri)
+        pos (lsp-pos->ig-pos (:position params))
+        path (filterv keyword? (pos-to-path ast pos))
+        doc (cond
+              (= :elements (last (butlast (butlast path))))
+              (igpop-key-doc (last path))
+              :else
+              (element-doc (:manifest ctx) rt path))]
+    
+    (println "Hover for" (into [rt] path))
+    {:contents (if doc [doc] nil)}))
+
 (comment
   )
