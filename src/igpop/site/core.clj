@@ -12,7 +12,9 @@
    [ring.util.response]
    [route-map.core]
    [igpop.site.utils :as u]
-   [clojure.java.io :as io]))
+   [org.httpkit.server :as http]
+   [clojure.java.io :as io]
+   [json-rpc.core]))
 
 (defn welcome [ctx req]
   {:status 200
@@ -36,9 +38,29 @@
   {:status 200
    :body (clj-yaml.core/generate-string (dissoc ctx :fhir))})
 
+(defn lsp [ctx req]
+  (println "LSP")
+  (http/with-channel
+    req chann
+    (http/on-close chann (fn [status] (println "chann closed: " status)))
+    (http/on-receive chann (fn [data]
+                             (let [msg (cheshire.core/parse-string data keyword)
+                                   resp (try
+                                          (cond-> (json-rpc.core/proc {:manifest ctx :channel chann} msg)
+                                            (:id msg) (assoc :id (:id msg)))
+                                          (catch Exception err
+                                            (println "ERROR:" err)
+                                            {:error {:code -32603
+                                                     :message (.getMessage err)}}))]
+                               (println "IN:" msg)
+                               (println "RESP:" resp)
+                               (when (:id msg)
+                                 (http/send! chann (cheshire.core/generate-string resp))))))))
+
 (def routes
   {:GET #'welcome
    "ig.yaml" {:GET #'source}
+   "lsp" {:GET #'lsp}
    "docs" {:GET #'igpop.site.docs/dashboard
            [:doc-id] {:GET #'igpop.site.docs/doc-page}}
    "valuesets" {:GET #'igpop.site.valuesets/valuesets-dashboard
