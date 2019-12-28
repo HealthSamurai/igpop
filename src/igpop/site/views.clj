@@ -110,6 +110,16 @@
       [:h2 :h3 {:font-weight "800"
                 :font-family "'Montserrat', sans-serif"}]
       [:hr {:border-top "2px solid #E6ECF1"}]
+      [:a.refbtn {:margin "0 5px"
+                  ;;:background "linear-gradient(#ffffff, #f6f7f8)"
+                  ;;:border "1px solid #e8eaed"
+                  :color "#888888"
+                  ;;:text-decoration "none"
+                  :cursor "pointer"
+                  :padding "6px 12px"
+                  :font-size "14px"
+                  :font-style "italic"
+                  :line-height "1.42857143"}]
       [:span.sub {:float :right
                   :font-size "16px"
                   :color "#888" :display "inline-block"}]]

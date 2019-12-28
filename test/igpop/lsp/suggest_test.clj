@@ -26,12 +26,14 @@
 
 ;; go to definition for valuset
 
+;; type or elements
+
 ;; examples:
 ;; [:Patient] [ ]
 ;; - [igpop-schema] suggest props
 ;; [:Patient :description] [ ]
 ;;   - [base] suggest val.
-;; [:Patient :elements] [ ]
+;; [:Patient :elements] [x]
 ;;   - [base] suggest -elements name-. [id meta language ...etc]
 ;;   - [igpop-schema] suggest "extension"
 ;; [:Patient :elements :identifier] [ ]
@@ -41,27 +43,51 @@
 
 
 (def ctx
-  {:manifest {:base
-              {:profiles
-               {:Patient {:elements {:name {:type "HumanName"
-                                            :description "Some Description"
-                                            :isCollection true}
-                                     :birthDate {:description "The date of birth for the individual"
-                                                 :type "date"}
-                                     :contact {:collection true
-                                               :description "description"
-                                               :elements {:id {
-                                                               :description "uniq id"
-                                                               :type "string"
-                                                               }
-                                                          :name {
-                                                                 :description "contact person name"
-                                                                 :type "HumanName"
-                                                                 }
-                                                          }}}}
-                :HumanName {:elements {:family {:type "string"}}}}}
+  {:manifest {:base {:profiles
+                     {:Patient {:elements {:name {:type "HumanName"
+                                                  :description "Some Description"
+                                                  :isCollection true}
+                                           :birthDate {:description "The date of birth for the individual"
+                                                       :type "date"}
+                                           :contact {:collection true
+                                                     :description "description"
+                                                     :elements {:id {
+                                                                     :description "uniq id"
+                                                                     :type "string"
+                                                                     }
+                                                                :name {
+                                                                       :description "contact person name"
+                                                                       :type "HumanName"
+                                                                       }
+                                                                }}}}
+                      :HumanName {:elements {:family {:type "string"}}}}}
               :primitive-types {}
-              :valuesets {:id {}}}})
+              :valuesets {:id {}}
+
+              :schema {:description
+                        {:description "FHIR profile description"
+                         :type "String"}
+                        :elements
+                        {:type "Map"
+                         :description "Definition of elements"
+                         :value {:type  { :type "code", :description "Element type" }
+                                 :description { :type "string", :description "Element description"}
+                                 :elements { :ref "elements", :description "Nested elements"}
+                                 :valueset {:id { :type "string", :description "Element type" }
+                                            :url { :type "url" }
+                                            :strength {:type "code"
+                                                       :enum ["extensible" "required"]
+                                                       :default "extensible"}}
+                                 :disabled { :type "boolean" }
+                                 :collection { :type "boolean" }
+                                 :minItems { :type "integer", :for "??collection"}
+                                 :maxItems { :type "integer" }
+                                 :mustSupport {:type "boolean" :default true}
+                                 }
+                         }
+                       }
+
+              }})
 
 
 
@@ -81,6 +107,48 @@
      :detail "uniq id"}
     {:label "name: "
      :detail "contact person name"}
+    {:label "extension: "
+     :detail "Additional content defined by implementations"}
     ])
 
+
+  (matcho/match
+   (sut/sgst-igpop-keys ctx [:Patient] nil)
+   [{:label "description: "}
+    {:label "elements: "}]
+   )
+
+  (is (empty? (sut/sgst-igpop-keys ctx [:Patient :elements] nil)))
+
+
+  (matcho/match
+   (sut/sgst-igpop-keys ctx [:Patient :elements :identifier] nil)
+   [{:label "description: "}
+    {:label "disabled: "}]
+   )
+
+  (matcho/match
+   (sut/sgst-igpop-keys ctx [:Patient :elements :identifier :valueset] nil)
+   [{:label "id: ", :kind 12, :detail "Element type"}
+    {:label "url: ", :kind 12, :detail nil}
+    {:label "strength: ", :kind 12, :detail nil}
+    ]
+   )
   )
+
+
+
+(comment
+ (sut/sgst-igpop-keys ctx [:Patient] nil)
+
+ (sut/sgst-igpop-keys ctx [:Patient :elements] nil)
+
+ (sut/sgst-igpop-keys ctx [:Patient :elements :name] nil)
+ ;; => ({:label "description: ", :kind 10, :detail "Element description"} {:label "disabled: ", :kind 10, :detail nil} {:label "valueset: ", :kind 10, :detail nil} {:label "type: ", :kind 10, :detail "Element type"} {:label "mustSupport: ", :kind 10, :detail nil} {:label "elements: ", :kind 10, :detail "Nested elements"} {:label "minItems: ", :kind 10, :detail nil} {:label "collection: ", :kind 10, :detail nil} {:label "maxItems: ", :kind 10, :detail nil})
+
+ (sut/sgst-igpop-keys ctx [:Patient :elements :name :valueset] nil)
+
+ (get-in ctx [:manifest :schema :elements :elements :value :elements :valueset])
+
+ (sut/sgst-igpop-keys ctx [:Patient :elements :identifier] nil)
+ )

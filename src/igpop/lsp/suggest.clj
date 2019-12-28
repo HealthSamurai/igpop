@@ -57,16 +57,39 @@
                  nil))
     :else nil))
 
+(defn node->suggests [node kind]
+  (map (fn [[element-name val]]
+         {:label (str (name element-name) ": ")
+          :kind kind
+          :detail (:description val)})
+       node))
+
+
+(def extension-elm {:extension {
+                            :description "Additional content defined by implementations"
+                            :type "Extension"
+                            }})
+
 (defn sgst-elements-name
-  [ctx pth cont]
+  [ctx pth conent]
   (if (= (last pth) :elements)
     (let [base-profiles (get-in ctx [:manifest :base :profiles])
           elements (get-in base-profiles pth)]
-      (map (fn [[element-name val]]
-             {:label (str (name element-name) ": ")
-              :kind (:Property completion-item-kind)
-              :detail (:description val)})
-           elements))))
+      (node->suggests (conj elements extension-elm) (:Property completion-item-kind)))))
+
+
+(defn sgst-igpop-keys
+  [ctx pth conent]
+  (let [igpop-schema (get-in ctx [:manifest :schema])]
+    (loop [keys (rest pth)
+           cur-ig-node igpop-schema]
+      (if (empty? keys)
+        (if-not (= (:type cur-ig-node) "Map")
+          (node->suggests cur-ig-node (:Value completion-item-kind)))
+        (let [[cur-key & rest] keys]
+          (cond
+            (cur-key cur-ig-node) (recur rest (cur-key cur-ig-node))
+            (= (:type cur-ig-node) "Map") (recur rest (:value cur-ig-node))))))))
 
 
 (defn collect
@@ -77,9 +100,8 @@
                (into acc suggest)
                acc))
            []
-           [sgst-elements-name])))
-
-;; {:jsonrpc 2.0, :id 6, :method textDocument/completion, :params {:textDocument {:uri file:///Users/mput/projects/igpop/example/src/DiagnosticReport/Patient.igpop}, :position {:line 4, :character 1}, :context {:triggerKind 1}}}
+           [sgst-elements-name
+            sgst-igpop-keys])))
 
 (defn suggest [ctx msg ast]
   (let [params (:params msg)
@@ -88,6 +110,10 @@
         pos (lsp-pos->ig-pos (:position params))
         path (filterv keyword? (pos-to-path ast pos))
         suggests (collect ctx (into [rt] path))]
-    (println "\n----------suggest_res---------\n" rt path)
+    (println "\n----------request_params---------  " (into [rt] path) " \n")
+    #_(clojure.pprint/pprint suggests)
     (println "\n------------------------------\n")
     suggests))
+
+(comment
+  )
