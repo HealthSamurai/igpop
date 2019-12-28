@@ -35,8 +35,8 @@
                                       ;;SaveOptions
                                       :save  {}}
                    ;; :hoverProvider true
-                   :completionProvider {:triggerCharacters ["\n"]}
-                   :signatureHelpProvider {:triggerCharacters ["."]}
+                   :completionProvider {:triggerCharacters ["\n" " " ":"]}
+                   :signatureHelpProvider {:triggerCharacters []}
                    ;; :definitionProvider true
                    ;; :implementationProvider true
                    ;; :referencesProvider true
