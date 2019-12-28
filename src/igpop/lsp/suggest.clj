@@ -75,7 +75,8 @@
   (if (= (last pth) :elements)
     (let [base-profiles (get-in ctx [:manifest :base :profiles])
           elements (get-in base-profiles pth)]
-      (node->suggests (conj elements extension-elm) (:Property completion-item-kind)))))
+      (node->suggests (into (or elements []) extension-elm) (:Property completion-item-kind)))))
+
 
 
 (defn sgst-igpop-keys
@@ -88,9 +89,22 @@
           (node->suggests cur-ig-node (:Value completion-item-kind)))
         (let [[cur-key & rest] keys]
           (cond
-            (cur-key cur-ig-node) (recur rest (cur-key cur-ig-node))
+            (cur-key cur-ig-node) (recur rest (if-let [ref (:ref (cur-key cur-ig-node))]
+                                                (get-in igpop-schema [(keyword ref)]) ;; need to process complex ref
+                                                (cur-key cur-ig-node)))
             (= (:Type cur-ig-node) "Map") (recur rest (:value cur-ig-node))))))))
 
+
+(defn sgst-hardcoded [_ pth _]
+  (map (fn [val] {:label val :kind (:Enum completion-item-kind)})
+       (let [last-kv? (fn [k] (= (last pth) k))]
+        (cond-> []
+          (last-kv? :minItems) (into ["1" "0"])
+          (last-kv? :maxItems) (into ["*"])
+          (last-kv? :required) (into ["true"])
+          (last-kv? :disabled) (into ["true"])
+          (last-kv? :description) (into ["| "])
+          ))))
 
 (defn collect
   ([ctx pth] (collect ctx pth nil))
@@ -100,7 +114,8 @@
                (into acc suggest)
                acc))
            []
-           [sgst-elements-name
+           [sgst-hardcoded
+            sgst-elements-name
             sgst-igpop-keys])))
 
 (defn suggest [ctx msg ast]
@@ -111,7 +126,7 @@
         path (filterv keyword? (pos-to-path ast pos))
         suggests (collect ctx (into [rt] path))]
     (println "\n----------request_params---------  " (into [rt] path) " \n")
-    #_(clojure.pprint/pprint suggests)
+    (clojure.pprint/pprint suggests)
     (println "\n------------------------------\n")
     suggests))
 

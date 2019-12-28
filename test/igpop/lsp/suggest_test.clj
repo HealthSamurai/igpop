@@ -133,6 +133,27 @@
     {:label "url:", :kind 12, :detail nil}
     {:label "strength:", :kind 12, :detail nil}]
    )
+
+  (matcho/match
+   (sut/sgst-igpop-keys ctx [:Patient :elements :address :elements] nil)
+   [{:label "id:", :kind 12, :detail "Element type"}
+    {:label "url:", :kind 12, :detail nil}
+    {:label "strength:", :kind 12, :detail nil}]
+   )
+
+
+  (matcho/match
+   (sut/sgst-igpop-keys ctx [:Patient :elements :address :elements :postalCode] nil)
+   [{:label "description:"}
+    {:label "disabled:"}]
+   )
+
+  (matcho/match
+   (sut/sgst-igpop-keys ctx [:Patient :elements :address :elements :postalCode :valueset] nil)
+   [{:label "id:", :kind 12, :detail "Element type"}
+    {:label "url:", :kind 12, :detail nil}
+    {:label "strength:", :kind 12, :detail nil}]
+   )
   )
 
 
@@ -151,4 +172,8 @@
 
  (sut/sgst-igpop-keys ctx [:Patient :elements :identifier] nil)
 
- )
+ (sut/sgst-igpop-keys ctx [:Patient :elements :address :elements :postalCode] nil)
+
+ (sut/sgst-elements-name ctx [:Patient :elements :address :elements] nil)
+)
+

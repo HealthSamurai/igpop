@@ -1,10 +1,5 @@
-description:
-  Some description
-
+description: | 
 elements:
-  identifier: # []
-    minItems: 1
-    elements:
-      system: { required: true}
-      value:  { required: true, description: The value that is unique within the system }
-
+  gender:
+    minItems: 0
+  
