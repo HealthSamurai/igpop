@@ -7,7 +7,7 @@ elements:
   value:
     type:  { Type: code, description: Element type }
     description: { Type: string, description: 'Element description'}
-    elements: { ref: elements.elements, description: 'Nested elements'}
+    elements: { ref: elements, description: 'Nested elements'}
     required: { Type: boolean, for: singular}
     disabled: { Type: boolean }
     collection: { Type: boolean }

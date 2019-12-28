@@ -57,18 +57,25 @@
                                (when (:id msg)
                                  (http/send! chann (cheshire.core/generate-string resp))))))))
 
-(defn edit [ctx req]
+(defn get-profile [ctx req]
   (let [parsed-name (-> req
                         (get :uri)
-                        (clojure.string/replace #"/edit/" "")
+                        (clojure.string/replace #"/get-profile/" "")
                         (clojure.string/split #"-"))
         file-name (if (= "basic" (last parsed-name))
                     (str (first parsed-name) ".yaml")
-                    (str (clojure.string/join parsed-name "/") ".yaml"))]
+                    (str (clojure.string/join "/" parsed-name) ".yaml"))]
     (if-let [file (io/file (str (:home ctx) "/src/" file-name))]
       (let [content (slurp file)]
         {:status 200
-         :body content}))))
+         :body content})
+      {:status 404
+       :body "File not found!"})))
+
+(defn edit [ctx req]
+  {:status 200
+   :headers {}
+   :body (io/input-stream (io/resource "public/editor/index.html"))})
 
 (def routes
   {:GET #'welcome
@@ -78,7 +85,8 @@
            [:doc-id] {:GET #'igpop.site.docs/doc-page}}
    "valuesets" {:GET #'igpop.site.valuesets/valuesets-dashboard
                 [:valuset-id] {:GET #'igpop.site.valuesets/valueset}}
-   "edit" {[:profile] {:GET #'edit}}
+   "get-profile" {[:profile-id] {:GET #'get-profile}}
+   "edit" {[:profile-id] {:GET #'edit}}
    "profiles" {:GET #'igpop.site.profiles/profiles-dashboard
                [:resource-type] {:GET #'igpop.site.profiles/profile
                                  [:profile] {:GET #'igpop.site.profiles/profile}}}})

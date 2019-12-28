@@ -12,6 +12,15 @@ function collapseExpandProfileItem(thisElem) {
     $content.slideToggle(100, function () {});
 }
 
+String.prototype.replaceAt=function(index, replacement) {
+  return this.substr(0, index) + replacement+ this.substr(index + replacement.length);
+}
+
+function openEditor() {
+  let location = window.location.href.replace('profiles', 'edit').replace('.html', '');
+  window.location.replace(location.replaceAt(location.lastIndexOf('/'), '-'));
+}
+
 let dropdown = document.getElementsByClassName("el-header");
 for (let i = 0; i < dropdown.length; i++) {
     dropdown[i].addEventListener("click", function() {
@@ -22,3 +31,4 @@ for (let i = 0; i < dropdown.length; i++) {
         }
     });
 }
+

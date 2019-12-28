@@ -75,7 +75,24 @@
   (if (= (last pth) :elements)
     (let [base-profiles (get-in ctx [:manifest :base :profiles])
           elements (get-in base-profiles pth)]
-      (node->suggests (conj elements extension-elm) (:Property completion-item-kind)))))
+      (node->suggests (into (or elements []) extension-elm) (:Property completion-item-kind)))))
+
+(defn capitalized? [s]
+  (when (string? s)
+    (Character/isUpperCase (first s))))
+
+(defn complex-type? [type] (capitalized? (name type)))
+
+
+(defn sgst-complex-types
+  [ctx pth content]
+  (if (= (last pth) :elements)
+    (let [base-profiles (get-in ctx [:manifest :base :profiles])
+          element (get-in base-profiles (butlast pth))
+          type (:type element)]
+      (if (and type (complex-type? type))
+        (node->suggests (get-in base-profiles [(keyword type) :elements]) (:Property completion-item-kind))))))
+
 
 
 (defn sgst-igpop-keys
@@ -88,9 +105,22 @@
           (node->suggests cur-ig-node (:Value completion-item-kind)))
         (let [[cur-key & rest] keys]
           (cond
-            (cur-key cur-ig-node) (recur rest (cur-key cur-ig-node))
+            (cur-key cur-ig-node) (recur rest (if-let [ref (:ref (cur-key cur-ig-node))]
+                                                (get-in igpop-schema [(keyword ref)]) ;; need to process complex ref
+                                                (cur-key cur-ig-node)))
             (= (:Type cur-ig-node) "Map") (recur rest (:value cur-ig-node))))))))
 
+
+(defn sgst-hardcoded [_ pth _]
+  (map (fn [val] {:label val :kind (:Enum completion-item-kind)})
+       (let [last-kv? (fn [k] (= (last pth) k))]
+        (cond-> []
+          (last-kv? :minItems) (into ["1" "0"])
+          (last-kv? :maxItems) (into ["*"])
+          (last-kv? :required) (into ["true"])
+          (last-kv? :disabled) (into ["true"])
+          (last-kv? :description) (into ["| "])
+          ))))
 
 (defn collect
   ([ctx pth] (collect ctx pth nil))
@@ -100,7 +130,9 @@
                (into acc suggest)
                acc))
            []
-           [sgst-elements-name
+           [sgst-hardcoded
+            sgst-elements-name
+            sgst-complex-types
             sgst-igpop-keys])))
 
 (defn suggest [ctx msg ast]
@@ -111,9 +143,55 @@
         path (filterv keyword? (pos-to-path ast pos))
         suggests (collect ctx (into [rt] path))]
     (println "\n----------request_params---------  " (into [rt] path) " \n")
-    #_(clojure.pprint/pprint suggests)
+    (clojure.pprint/pprint suggests)
     (println "\n------------------------------\n")
     suggests))
+
+(defn igpop-key-doc [k]
+  (get {:maxItems "Max items in collection collection (positive int)"
+        :minItems "Min items in collection (positive int)"
+        :elements "elements map element-name: element-spec"
+        :valueset "Binding to valuset {id: <vs-id>}"} k))
+
+(defn capital? [t]
+  (and (string? t)
+       (= (subs t 0 1) (str/upper-case (subs t 0 1)))))
+
+(defn element-from-path [manif rt pth]
+  (when-let [res-def (get-in manif [:base :profiles rt])]
+    (loop [[p & ps :as aps] pth
+           subj res-def]
+      (if (nil? p)
+        subj
+        (when-let [subj' (get subj p)]
+          (if (empty? ps)
+            subj'
+            (recur ps (if-let [tp (when-let [t (:type subj')]
+                                    (when (capital? t) t))]
+                        (get-in manif [:base :profiles (keyword tp)])
+                        subj'))))))))
+
+(defn element-doc [manif rt pth]
+  (when-let [el (element-from-path manif rt pth)]
+    (str
+     (:description el)
+     (when-let [tp (get-in el [:type])]
+       (str " **" tp (when (:collection el) "[]") "**")))))
+
+(defn hover [ctx msg ast]
+  (let [params (:params msg)
+        uri (get-in params [:textDocument :uri])
+        rt (parse-uri uri)
+        pos (lsp-pos->ig-pos (:position params))
+        path (filterv keyword? (pos-to-path ast pos))
+        doc (cond
+              (= :elements (last (butlast (butlast path))))
+              (igpop-key-doc (last path))
+              :else
+              (element-doc (:manifest ctx) rt path))]
+    
+    (println "Hover for" (into [rt] path))
+    {:contents (if doc [doc] nil)}))
 
 (comment
   )

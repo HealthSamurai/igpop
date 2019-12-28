@@ -1,4 +1,1 @@
-elements:
-  name:
-    maxItems: 1
-    
+elements: {  name: { maxItem: 1, maxItem: 2 }}
