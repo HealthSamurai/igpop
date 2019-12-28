@@ -66,23 +66,23 @@
 
               :schema {:description
                         {:description "FHIR profile description"
-                         :type "String"}
+                         :Type "String"}
                         :elements
-                        {:type "Map"
+                        {:Type "Map"
                          :description "Definition of elements"
-                         :value {:type  { :type "code", :description "Element type" }
-                                 :description { :type "string", :description "Element description"}
+                         :value {:type  { :Type "code", :description "Element type" }
+                                 :description { :Type "string", :description "Element description"}
                                  :elements { :ref "elements", :description "Nested elements"}
-                                 :valueset {:id { :type "string", :description "Element type" }
-                                            :url { :type "url" }
-                                            :strength {:type "code"
+                                 :valueset {:id { :Type "string", :description "Element type" }
+                                            :url { :Type "url" }
+                                            :strength {:Type "code"
                                                        :enum ["extensible" "required"]
                                                        :default "extensible"}}
-                                 :disabled { :type "boolean" }
-                                 :collection { :type "boolean" }
-                                 :minItems { :type "integer", :for "??collection"}
-                                 :maxItems { :type "integer" }
-                                 :mustSupport {:type "boolean" :default true}
+                                 :disabled { :Type "boolean" }
+                                 :collection { :Type "boolean" }
+                                 :minItems { :Type "integer", :for "??collection"}
+                                 :maxItems { :Type "integer" }
+                                 :mustSupport {:Type "boolean" :default true}
                                  }
                          }
                        }
@@ -95,27 +95,27 @@
 (deftest test-lsp-suggest
   (matcho/match
    (sut/sgst-elements-name ctx [:Patient :elements] nil)
-   [{:label "name: "
+   [{:label "name:"
      :detail "Some Description"}
-    {:label "birthDate: "
+    {:label "birthDate:"
      :detail "The date of birth for the individual"}
     ])
 
   (matcho/match
    (sut/sgst-elements-name ctx [:Patient :elements :contact :elements] nil)
-   [{:label "id: "
+   [{:label "id:"
      :detail "uniq id"}
-    {:label "name: "
+    {:label "name:"
      :detail "contact person name"}
-    {:label "extension: "
+    {:label "extension:"
      :detail "Additional content defined by implementations"}
     ])
 
 
   (matcho/match
    (sut/sgst-igpop-keys ctx [:Patient] nil)
-   [{:label "description: "}
-    {:label "elements: "}]
+   [{:label "description:"}
+    {:label "elements:"}]
    )
 
   (is (empty? (sut/sgst-igpop-keys ctx [:Patient :elements] nil)))
@@ -123,16 +123,15 @@
 
   (matcho/match
    (sut/sgst-igpop-keys ctx [:Patient :elements :identifier] nil)
-   [{:label "description: "}
-    {:label "disabled: "}]
+   [{:label "description:"}
+    {:label "disabled:"}]
    )
 
   (matcho/match
    (sut/sgst-igpop-keys ctx [:Patient :elements :identifier :valueset] nil)
-   [{:label "id: ", :kind 12, :detail "Element type"}
-    {:label "url: ", :kind 12, :detail nil}
-    {:label "strength: ", :kind 12, :detail nil}
-    ]
+   [{:label "id:", :kind 12, :detail "Element type"}
+    {:label "url:", :kind 12, :detail nil}
+    {:label "strength:", :kind 12, :detail nil}]
    )
   )
 
@@ -144,11 +143,12 @@
  (sut/sgst-igpop-keys ctx [:Patient :elements] nil)
 
  (sut/sgst-igpop-keys ctx [:Patient :elements :name] nil)
- ;; => ({:label "description: ", :kind 10, :detail "Element description"} {:label "disabled: ", :kind 10, :detail nil} {:label "valueset: ", :kind 10, :detail nil} {:label "type: ", :kind 10, :detail "Element type"} {:label "mustSupport: ", :kind 10, :detail nil} {:label "elements: ", :kind 10, :detail "Nested elements"} {:label "minItems: ", :kind 10, :detail nil} {:label "collection: ", :kind 10, :detail nil} {:label "maxItems: ", :kind 10, :detail nil})
+
 
  (sut/sgst-igpop-keys ctx [:Patient :elements :name :valueset] nil)
 
  (get-in ctx [:manifest :schema :elements :elements :value :elements :valueset])
 
  (sut/sgst-igpop-keys ctx [:Patient :elements :identifier] nil)
+
  )
