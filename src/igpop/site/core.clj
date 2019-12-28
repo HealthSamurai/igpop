@@ -57,6 +57,19 @@
                                (when (:id msg)
                                  (http/send! chann (cheshire.core/generate-string resp))))))))
 
+(defn edit [ctx req]
+  (let [parsed-name (-> req
+                        (get :uri)
+                        (clojure.string/replace #"/edit/" "")
+                        (clojure.string/split #"-"))
+        file-name (if (= "basic" (last parsed-name))
+                    (str (first parsed-name) ".yaml")
+                    (str (clojure.string/join parsed-name "/") ".yaml"))]
+    (if-let [file (io/file (str (:home ctx) "/src/" file-name))]
+      (let [content (slurp file)]
+        {:status 200
+         :body content}))))
+
 (def routes
   {:GET #'welcome
    "ig.yaml" {:GET #'source}
@@ -65,6 +78,7 @@
            [:doc-id] {:GET #'igpop.site.docs/doc-page}}
    "valuesets" {:GET #'igpop.site.valuesets/valuesets-dashboard
                 [:valuset-id] {:GET #'igpop.site.valuesets/valueset}}
+   "edit" {[:profile] {:GET #'edit}}
    "profiles" {:GET #'igpop.site.profiles/profiles-dashboard
                [:resource-type] {:GET #'igpop.site.profiles/profile
                                  [:profile] {:GET #'igpop.site.profiles/profile}}}})
