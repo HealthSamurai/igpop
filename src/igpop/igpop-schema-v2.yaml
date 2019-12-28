@@ -1,45 +1,45 @@
 description:
-  type: string
+  Type: string
   description: Natural language description of the structure definition
 elements:
-  type: Map
+  Type: Map
   description: Definition of elements
   value:
-    type:  { type: code, description: Element type }
-    description: { type: string, description: 'Element description'}
+    type:  { Type: code, description: Element type }
+    description: { Type: string, description: 'Element description'}
     elements: { ref: elements.elements, description: 'Nested elements'}
-    required: { type: boolean, for: singular}
-    disabled: { type: boolean }
-    collection: { type: boolean }
-    minItems: { type: integer, for: collection}
-    maxItems: { type: integer }
-    mustSupport: {type: boolean, default: true}
+    required: { Type: boolean, for: singular}
+    disabled: { Type: boolean }
+    collection: { Type: boolean }
+    minItems: { Type: integer, for: collection}
+    maxItems: { Type: integer }
+    mustSupport: {Type: boolean, default: true}
     valueset:
-      id: { type: 'string', description: 'valueset id' }
-      url: { type: 'url' }
-      strength: { type: 'code', enum: ['extensible', 'required'], default: 'extensible' }
-    constant: { type: any }
-    match: { type: any }
+      id: { Type: 'string', description: 'valueset id' }
+      url: { Type: 'url' }
+      strength: { Type: 'code', enum: ['extensible', 'required'], default: 'extensible' }
+    constant: { Type: any }
+    match: { Type: any }
     refers:
-      type: Map
+      Type: Map
       description: Reference specification
-      key: { type: code, description: 'Resource type' }
-      value: { type: string, description: 'Profile id' }
+      key: { Type: code, description: 'Resource type' }
+      value: { Type: string, description: 'Profile id' }
     constaints:
-      type: Map
+      Type: Map
       description: FHIRPath rules, key is rule identifier
       value:
-        expression: { type: fhirpath }
-        description: { type: string }
-        severity:  { type: code, enum: ['error']}
+        expression: { Type: fhirpath }
+        description: { Type: string }
+        severity:  { Type: code, enum: ['error']}
     mapping:
-      type: Map
+      Type: Map
       description: Mapping to other systems
       value:
-        map: { type: string }
+        map: { Type: string }
     slices:
-      type: Map
-      key: {type: string, description: 'Slice Name'}
+      Type: Map
+      key: {Type: string, description: 'Slice Name'}
       description: Define named slices for collection
       value:
         ref: 'elements.elements'

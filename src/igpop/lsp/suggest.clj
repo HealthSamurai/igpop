@@ -59,7 +59,7 @@
 
 (defn node->suggests [node kind]
   (map (fn [[element-name val]]
-         {:label (str (name element-name) ": ")
+         {:label (str (name element-name) ":")
           :kind kind
           :detail (:description val)})
        node))
@@ -84,12 +84,12 @@
     (loop [keys (rest pth)
            cur-ig-node igpop-schema]
       (if (empty? keys)
-        (if-not (= (:type cur-ig-node) "Map")
+        (if-not (:Type cur-ig-node)
           (node->suggests cur-ig-node (:Value completion-item-kind)))
         (let [[cur-key & rest] keys]
           (cond
             (cur-key cur-ig-node) (recur rest (cur-key cur-ig-node))
-            (= (:type cur-ig-node) "Map") (recur rest (:value cur-ig-node))))))))
+            (= (:Type cur-ig-node) "Map") (recur rest (:value cur-ig-node))))))))
 
 
 (defn collect
