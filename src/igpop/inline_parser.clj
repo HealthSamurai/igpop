@@ -119,31 +119,34 @@
         :kind :empty
         :block block} nil]
       (let [[_ kvs] (re-find #"\s*\{(.*)" txt)
-            entries (loop [rest kvs, pos pos, entries [] i 0]
-                      (if (or (nil? rest) (str/blank? rest))
-                        entries
-                        (if-let [[{k :value} rest'] (read-inline :key rest ln pos)]
-                          (let [pos-diff (- (count rest) (count rest'))
-                                [v rest''] (do-read rest' ln (+ pos pos-diff))
-                                entry {:type :kv
-                                       :kind :inline
-                                       :key k
-                                       :block (assoc-in block [:to :pos] (+ pos pos-diff))
-                                       :value v}
-                                entries (conj entries entry)]
-                            (if (nil? rest'')
-                              entries
-                              (if-let [[_ rest'''] (re-matches #"\s*,(.*)" rest'')]
-                                (if-not (str/blank? (str/trim rest'''))
-                                  (recur rest''' (+ pos (- (count rest) (count rest'''))) entries (inc i))
-                                  entries)
-                                (if (re-matches #"\s*}(.*)" rest'')
-                                  entries
-                                  (println "ERROR:" rest''))))))))]
-        [{:type :map
-          :kind :inline
-          :block block
-          :value entries}]))))
+            {entries :entries error :error}
+            (loop [rest kvs, pos pos, entries [] i 0]
+              (if (or (nil? rest) (str/blank? rest))
+                {:entries  entries}
+                (if-let [[{k :value} rest'] (read-inline :key rest ln pos)]
+                  (let [pos-diff (- (count rest) (count rest'))
+                        [v rest''] (do-read rest' ln (+ pos pos-diff))
+                        entry {:type :kv
+                               :kind :inline
+                               :key k
+                               :block (assoc-in block [:to :pos] (+ pos pos-diff))
+                               :value v}
+                        entries (conj entries entry)]
+                    (if (nil? rest'')
+                      {:entries entries}
+                      (if-let [[_ rest'''] (re-matches #"\s*,(.*)" rest'')]
+                        (if-not (str/blank? (str/trim rest'''))
+                          (recur rest''' (+ pos (- (count rest) (count rest'''))) entries (inc i))
+                          {:entries entries})
+                        (if (re-matches #"\s*}(.*)" rest'')
+                          {:entries entries}
+                          {:entries entries :error "Expected } to close map"})))))))]
+        [(cond->
+             {:type :map
+                 :kind :inline
+                 :block block
+              :value entries}
+           error (assoc :error error))]))))
 
 (defn do-read [txt ln pos]
   (let [tp (inline-type txt)]

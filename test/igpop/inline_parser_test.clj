@@ -2,7 +2,8 @@
   (:require
    [igpop.inline-parser :as sut]
    [matcho.core :as matcho]
-   [clojure.test :refer :all]))
+   [clojure.test :refer :all]
+   [zprint.core :as zp]))
 
 (deftest test-inline-parser 
   (testing "inline parse"
@@ -85,6 +86,31 @@
                 :value {:value 1}}
                {:type :kv :key :b
                 :value {:value "hello"}}]}])
+
+    (matcho/match
+     (sut/do-read "{a: 1, b: 'hello'" 0 1)
+     [{:kind :inline,
+       :type :map,
+       :error "Expected } to close map"
+       :value
+       [{,:key :a,
+         :kind :inline,
+         :type :kv,
+         :value {:type :int,:value 1}}
+        {:key :b,
+         :kind :inline,
+         :type :kv,
+         :value {:type :str,:value "hello"}}]}])
+
+    (matcho/match
+     (sut/do-read "{ valueset { id : x}}" 0 1)
+     [{:type :map
+       :value [{:type :kv
+                :key :valueset
+                :value {:type :map
+                        :value [{:type :kv
+                                 :key :id
+                                 :value {:value "x"}}]}}]}])
 
 
 
