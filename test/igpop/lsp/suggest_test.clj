@@ -59,8 +59,12 @@
                                                                        :description "contact person name"
                                                                        :type "HumanName"
                                                                        }
-                                                                }}}}
-                      :HumanName {:elements {:family {:type "string"}}}}}
+                                                                }}
+                                           :address {:type "Address"
+                                                     :collection true
+                                                     :description "An address for the individual"}}}
+                      :Address {:elements {:line {:type "string"}
+                                           :period {:type "Period"}}}}}
               :primitive-types {}
               :valuesets {:id {}}
 
@@ -135,14 +139,6 @@
    )
 
   (matcho/match
-   (sut/sgst-igpop-keys ctx [:Patient :elements :address :elements] nil)
-   [{:label "id:", :kind 12, :detail "Element type"}
-    {:label "url:", :kind 12, :detail nil}
-    {:label "strength:", :kind 12, :detail nil}]
-   )
-
-
-  (matcho/match
    (sut/sgst-igpop-keys ctx [:Patient :elements :address :elements :postalCode] nil)
    [{:label "description:"}
     {:label "disabled:"}]
@@ -154,12 +150,21 @@
     {:label "url:", :kind 12, :detail nil}
     {:label "strength:", :kind 12, :detail nil}]
    )
+
+  (matcho/match
+   (sut/sgst-complex-types ctx [:Patient :elements :address :elements] nil)
+   [{:label "line:"}
+    {:label "period:"}])
+
+
   )
 
 
 
 (comment
  (sut/sgst-igpop-keys ctx [:Patient] nil)
+
+ (sut/sgst-igpop-keys ctx [:Patient :elements :address :elements] nil)
 
  (sut/sgst-igpop-keys ctx [:Patient :elements] nil)
 
@@ -175,5 +180,8 @@
  (sut/sgst-igpop-keys ctx [:Patient :elements :address :elements :postalCode] nil)
 
  (sut/sgst-elements-name ctx [:Patient :elements :address :elements] nil)
+
+ (sut/sgst-complex-types ctx [:Patient :elements :address :elements] nil)
+
 )
 

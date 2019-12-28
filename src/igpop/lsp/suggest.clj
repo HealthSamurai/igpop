@@ -77,6 +77,22 @@
           elements (get-in base-profiles pth)]
       (node->suggests (into (or elements []) extension-elm) (:Property completion-item-kind)))))
 
+(defn capitalized? [s]
+  (when (string? s)
+    (Character/isUpperCase (first s))))
+
+(defn complex-type? [type] (capitalized? (name type)))
+
+
+(defn sgst-complex-types
+  [ctx pth content]
+  (if (= (last pth) :elements)
+    (let [base-profiles (get-in ctx [:manifest :base :profiles])
+          element (get-in base-profiles (butlast pth))
+          type (:type element)]
+      (if (and type (complex-type? type))
+        (node->suggests (get-in base-profiles [(keyword type) :elements]) (:Property completion-item-kind))))))
+
 
 
 (defn sgst-igpop-keys
@@ -116,6 +132,7 @@
            []
            [sgst-hardcoded
             sgst-elements-name
+            sgst-complex-types
             sgst-igpop-keys])))
 
 (defn suggest [ctx msg ast]
