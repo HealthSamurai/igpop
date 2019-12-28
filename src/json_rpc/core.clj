@@ -1,5 +1,8 @@
 (ns json-rpc.core
-  (:require [json-rpc.tcp]))
+  (:require
+   [org.httpkit.server :as http]
+   [json-rpc.tcp])
+  (:import org.httpkit.server.AsyncChannel))
 
 (defmulti proc (fn [ctx {meth :method :as arg}] (keyword meth)))
 
@@ -15,7 +18,11 @@
   {:id (:id msg) :message "pong"})
 
 (defn send-message [ctx msg]
-  (json-rpc.tcp/send-message (:channel ctx) msg))
+  (let [chann (:channel ctx)]
+    (println "CHANNEL:" (type chann))
+    (if (instance? org.httpkit.server.AsyncChannel chann)
+      (http/send! chann (cheshire.core/generate-string msg))
+      (json-rpc.tcp/send-message chann msg))))
 
 (defn start [ctx]
   (let [tp (:type @ctx)
