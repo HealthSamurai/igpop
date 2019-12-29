@@ -61,8 +61,19 @@
   (map (fn [[element-name val]]
          {:label (str (name element-name) ":")
           :kind kind
-          :detail (:description val)})
+          :detail (:description val)
+          :meta element-name})
        node))
+
+
+(defn ast->map [{:keys [type value] :as ast}]
+  (cond
+    (= type :map) (reduce
+                   (fn [acc node] (if-let [val (ast->map (:value node))]
+                                    (assoc acc (:key node) val)
+                                    acc))
+                   {} value)
+    (#{:int :bool :str} type) value))
 
 
 (def extension-elm {:extension {
@@ -111,16 +122,16 @@
             (= (:Type cur-ig-node) "Map") (recur rest (:value cur-ig-node))))))))
 
 
-(defn sgst-hardcoded [_ pth _]
+(defn sgst-hardcoded [ctx pth _]
   (map (fn [val] {:label val :kind (:Enum completion-item-kind)})
-       (let [last-kv? (fn [k] (= (last pth) k))]
-        (cond-> []
-          (last-kv? :minItems) (into ["1" "0"])
-          (last-kv? :maxItems) (into ["*"])
-          (last-kv? :required) (into ["true"])
-          (last-kv? :disabled) (into ["true"])
-          (last-kv? :description) (into ["| "])
-          ))))
+       (let [last-kv? (fn [k] (= (last pth) k))
+             type-defs (get-in ctx [:manifest :definitions])]
+         (cond-> []
+           (last-kv? :minItems) (into ["1" "0"])
+           (last-kv? :required) (into ["true"])
+           (last-kv? :disabled) (into ["true"])
+           (last-kv? :description) (into ["| "])
+           (last-kv? :code) (into (map (fn [[key]] (name key)) (into (:primitive type-defs) (:complex type-defs))))))))
 
 (defn collect
   ([ctx pth] (collect ctx pth nil))
@@ -141,11 +152,14 @@
         rt (parse-uri uri)
         pos (lsp-pos->ig-pos (:position params))
         path (filterv keyword? (pos-to-path ast pos))
-        suggests (collect ctx (into [rt] path))]
+        content (ast->map ast)
+        suggests (collect ctx (into [rt] path))
+        suggests-filterd (->> suggests
+                            (filter (fn [{sg :meta}] ((complement contains?) (get-in content path) (keyword sg))) )
+                            (map (fn [sg] (dissoc sg :meta))) )]
     (println "\n----------request_params---------  " (into [rt] path) " \n")
-    (clojure.pprint/pprint suggests)
     (println "\n------------------------------\n")
-    suggests))
+    suggests-filterd))
 
 (defn igpop-key-doc [k]
   (get {:maxItems "Max items in collection collection (positive int)"
