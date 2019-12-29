@@ -34,6 +34,16 @@ function docReady(fn) {
     }
 }    
 
+function exit() {
+    let url = window.location.href;
+    let temp = url.split("/").pop();
+    let resource = temp.split("-").reverse().pop();
+    let profile = temp.split("-").pop();
+    let beg = url.split("edit").reverse().pop();
+    //alert(beg + "profiles/" + resource + "/" + profile + ".html");
+    window.location.href = beg + "profiles/" + resource + "/" + profile + ".html";
+}
+
 docReady(function() {
     let url = window.location.href;
     let temp = url.split("/").pop();
