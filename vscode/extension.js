@@ -23,16 +23,34 @@ function activate(context) {
         server = context.asAbsolutePath(path.join('server.js'));
 
         let serverOptions = function(args){
-            console.log("Here", args); 
             return new Promise(function(resolve, reject){
                 var client = new net.Socket();
+                var result = {}
                 client.connect(7345, "127.0.0.1", function() {
                    console.log('connected');
+                   result.reader = client;
+                   result.reader = client;
                    resolve({
                         reader: client,
                         writer: client
                     });
-                  })
+                });
+                client.on('closed', () => {
+                   console.log('socket closed, try reconnect');
+                   setTimeout(()=>{
+                      try { 
+                          client.end();
+                      } finally {}
+                      client = new net.Socket();
+                      client.connect(7345, "127.0.0.1", function() {
+                        console.log('Re-connected');
+                        result.reader = client;
+                        result.reader = client;
+                      });
+
+                   }, 2000);
+                   
+                });
             });
 			
         };
