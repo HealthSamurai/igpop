@@ -35,7 +35,7 @@
                                       ;;SaveOptions
                                       :save  {}}
                    :hoverProvider true
-                   :completionProvider {:triggerCharacters ["\n" " " ":"]}
+                   :completionProvider {:triggerCharacters ["\n" " " ":" "*" ": "]}
                    :signatureHelpProvider {:triggerCharacters []}
                    ;; :definitionProvider true
                    ;; :implementationProvider true
@@ -229,9 +229,6 @@
                                 :manifest (igpop.loader/load-project "example")})))
 
   (json-rpc.core/stop ctx)
-
-
-  
 
   )
 

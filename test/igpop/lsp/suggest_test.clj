@@ -94,6 +94,81 @@
               }})
 
 
+(deftest ast-transform
+
+  (def ast {:type :map,
+            :block {:from {:ln 0, :pos 0}, :to {:ln 8, :pos 2}},
+            :value
+            [{:type :kv,
+              :kind :block,
+              :key :elements,
+              :block {:from {:ln 0, :pos 0}, :to {:ln 8, :pos 2}},
+              :value
+              {:type :map,
+               :block {:from {:ln 1, :pos 2}, :to {:ln 8, :pos 2}},
+               :value
+               [{:type :kv,
+                 :kind :block,
+                 :key :identifier,
+                 :block {:from {:ln 1, :pos 2}, :to {:ln 7, :pos 10}},
+                 :value
+                 {:type :map,
+                  :block {:from {:ln 2, :pos 4}, :to {:ln 7, :pos 10}},
+                  :value
+                  [{:type :kv,
+                    :kind :inline,
+                    :key :minItems,
+                    :block {:from {:ln 2, :pos 4}, :to {:pos 14, :ln 2}},
+                    :value
+                    {:type :int,
+                     :block {:from {:pos 13, :ln 2}, :to {:pos 14, :ln 2}},
+                     :value 0}}
+                   {:type :kv,
+                    :kind :inline,
+                    :key :maxNode,
+                    :block {:from {:ln 3, :pos 4}, :to {:pos 22, :ln 3}},
+                    :value
+                    {:type :str,
+                     :block {:from {:pos 12, :ln 3}, :to {:pos 22, :ln 3}},
+                     :value "stinghere"}}
+                   {:type :kv,
+                    :kind :inline,
+                    :key :boolean,
+                    :block {:from {:ln 4, :pos 4}, :to {:pos 16, :ln 4}},
+                    :value
+                    {:type :bool,
+                     :block {:from {:pos 12, :ln 4}, :to {:pos 16, :ln 4}},
+                     :value true}}
+                   {:type :kv,
+                    :kind :block,
+                    :key :deepper,
+                    :block {:from {:ln 5, :pos 4}, :to {:ln 7, :pos 10}},
+                    :value
+                    {:type :map,
+                     :block {:from {:ln 6, :pos 6}, :to {:ln 7, :pos 10}},
+                     :value
+                     [{:type :kv,
+                       :kind :inline,
+                       :key :helpme,
+                       :block {:from {:ln 6, :pos 6}, :to {:pos 20, :ln 6}},
+                       :value
+                       {:type :str,
+                        :block {:from {:pos 13, :ln 6}, :to {:pos 20, :ln 6}},
+                        :value "helper"}}
+                      {:type :kv,
+                       :kind :key-start,
+                       :error "Expected key closed by ':'",
+                       :key "errr",
+                       :block {:from {:ln 7, :pos 6}, :to {:ln 7, :pos 10}}}]}}]}}
+                {:type :kv,
+                 :kind :newline,
+                 :block {:from {:ln 8, :pos 2}, :to {:ln 8, :pos 2}}}]}}]})
+
+  (matcho/match
+   (sut/ast->map ast)
+   {:elements {:identifier {:minItems 0, :maxNode "stinghere", :boolean true, :deepper {:helpme "helper"}}}})
+
+  )
 
 
 (deftest test-lsp-suggest
@@ -184,4 +259,6 @@
  (sut/sgst-complex-types ctx [:Patient :elements :address :elements] nil)
 
 )
+
+
 
