@@ -23,3 +23,15 @@ function switchTheme(e) {
 }
 
 toggleSwitch.addEventListener('change', switchTheme, false);
+
+function saveProfile () {
+    let xhr = new XMLHttpRequest();
+    xhr.open('POST', window.location.href.replace('edit', 'post-profile'), false);
+    xhr.setRequestHeader('Content-Type', 'text/x-yaml');
+    xhr.send(document.getElementById('container').value);
+    if (xhr.status != 200) {
+        alert("File not found!"); 
+      } else {
+        alert(xhr.responseText); 
+      }
+}   

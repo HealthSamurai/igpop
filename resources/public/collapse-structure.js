@@ -18,7 +18,7 @@ String.prototype.replaceAt=function(index, replacement) {
 
 function openEditor() {
   let location = window.location.href.replace('profiles', 'edit').replace('.html', '');
-  window.location.replace(location.replaceAt(location.lastIndexOf('/'), '-'));
+  window.location.replace(location.replaceAt(location.lastIndexOf('/'), '&'));
 }
 
 let dropdown = document.getElementsByClassName("el-header");

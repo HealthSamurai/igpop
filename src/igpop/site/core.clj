@@ -58,24 +58,60 @@
                                  (http/send! chann (cheshire.core/generate-string resp))))))))
 
 (defn get-profile [ctx req]
-  (let [parsed-name (-> req
+(let [parsed-name (-> req
                         (get :uri)
                         (clojure.string/replace #"/get-profile/" "")
-                        (clojure.string/split #"-"))
-        file-name (if (= "basic" (last parsed-name))
-                    (str (first parsed-name) ".yaml")
-                    (str (clojure.string/join "/" parsed-name) ".yaml"))]
-    (if-let [file (io/file (str (:home ctx) "/src/" file-name))]
-      (let [content (slurp file)]
+                        (clojure.string/split #"&"))
+        file-name-yaml (if (= "basic" (last parsed-name))
+                         (str (first parsed-name) ".yaml")
+                         (str (clojure.string/join "/" parsed-name) ".yaml"))
+        file-name-igpop (if (= "basic" (last parsed-name))
+                          (str (first parsed-name) ".igpop")
+                          (str (clojure.string/join "/" parsed-name) ".igpop"))]
+    (cond
+      (.exists (io/file (str (:home ctx) "/src/" file-name-yaml)))
+      (let [content (slurp (io/file (str (:home ctx) "/src/" file-name-yaml)))]
         {:status 200
          :body content})
-      {:status 404
-       :body "File not found!"})))
+      (.exists (io/file (str (:home ctx) "/src/" file-name-igpop)))
+      (let [content (slurp (io/file (str (:home ctx) "/src/" file-name-igpop)))]
+        {:status 200
+         :body content})
+      :else {:status 404 :body "File not found!"})))
+
+
 
 (defn edit [ctx req]
+  (println req)
   {:status 200
    :headers {}
    :body (io/input-stream (io/resource "public/editor/index.html"))})
+
+(defn post-profile! [ctx req]
+  (let [parsed-name (-> req
+                        (get :uri)
+                        (clojure.string/replace #"/post-profile/" "")
+                        (clojure.string/split #"&"))
+        file-name-yaml (if (= "basic" (last parsed-name))
+                         (str (first parsed-name) ".yaml")
+                         (str (clojure.string/join "/" parsed-name) ".yaml"))
+        file-name-igpop (if (= "basic" (last parsed-name))
+                          (str (first parsed-name) ".igpop")
+                          (str (clojure.string/join "/" parsed-name) ".igpop"))]
+    (cond
+      (.exists (io/file (str (:home ctx) "/src/" file-name-yaml)))
+      (let [file (io/file (str (:home ctx) "/src/" file-name-yaml))
+            content (slurp (get req :body))]
+        (println "content" content)
+        (spit file content)
+        {:status 200
+         :body "File has been saved!"})
+      (.exists (io/file (str (:home ctx) "/src/" file-name-igpop)))
+      (let [file (io/file (str (:home ctx) "/src/" file-name-igpop))
+            content (slurp (get req :body))]
+        (spit file content)
+        {:status 200
+         :body "File has been saved!"}))))
 
 (def routes
   {:GET #'welcome
@@ -86,6 +122,7 @@
    "valuesets" {:GET #'igpop.site.valuesets/valuesets-dashboard
                 [:valuset-id] {:GET #'igpop.site.valuesets/valueset}}
    "get-profile" {[:profile-id] {:GET #'get-profile}}
+   "post-profile" {[:profile-id] {:POST #'post-profile!}}
    "edit" {[:profile-id] {:GET #'edit}}
    "profiles" {:GET #'igpop.site.profiles/profiles-dashboard
                [:resource-type] {:GET #'igpop.site.profiles/profile
