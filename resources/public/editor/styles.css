@@ -27,7 +27,8 @@ h2 {
 }
 
 body {
-  font-family: "Lato", sans-serif;
+  /* font-family: "Lato", sans-serif; */
+  font-family: "Montserrat", sans-serif;
   background-color: var(--bg-color);
   color: var(--font-color);
   max-width: 98%;
