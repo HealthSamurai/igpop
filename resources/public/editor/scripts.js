@@ -28,10 +28,29 @@ function saveProfile () {
     let xhr = new XMLHttpRequest();
     xhr.open('POST', window.location.href.replace('edit', 'post-profile'), false);
     xhr.setRequestHeader('Content-Type', 'text/x-yaml');
-    xhr.send(document.getElementById('container').value);
+    xhr.send(monaco.editor.getModels()[0].getValue());
     if (xhr.status != 200) {
         alert("File not found!"); 
       } else {
         alert(xhr.responseText); 
       }
 }   
+
+function docReady(fn) {
+    // see if DOM is already available
+    if (document.readyState === "complete" || document.readyState === "interactive") {
+        // call on next available tick
+        setTimeout(fn, 1);
+    } else {
+        document.addEventListener("DOMContentLoaded", fn);
+    }
+}    
+
+docReady(function() {
+    let url = window.location.href;
+    let temp = url.split("/").pop();
+    let resource = temp.split("-").reverse().pop();
+    let profile = temp.split("-").pop();
+    whereami.innerText = resource + ": " + profile;
+});
+
