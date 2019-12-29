@@ -22,7 +22,7 @@
                                  el)]
                   (validate-value errs manifest meta-cur (into path [:elements k]) v))
                 (conj errs {:path (into path [:elements k]) :message (str "Unknown key - " (name k) ". Expected one of: " (str/join ", " (sort (mapv name (keys (:elements meta-cursor))))))})
-                )) errs (:elements value))
+                )) errs (dissoc (:elements value) :extension))
     :else errs))
 
 (defn validate-profile [ctx rt value]

@@ -204,8 +204,10 @@
 
 (comment
 
-  (def log-file (io/writer "/tmp/igpop-lsp.log"))
   (.close log-file)
+  (do
+
+  (def log-file (io/writer "/tmp/igpop-lsp.log"))
 
   (defn xlog [msg]
     (try
@@ -227,6 +229,7 @@
                                                      (xlog (str "<! " (:method note)))
                                                      (xlog (zp/zprint-str note)))}
                                 :manifest (igpop.loader/load-project "example")})))
+    )
 
   (json-rpc.core/stop ctx)
 
