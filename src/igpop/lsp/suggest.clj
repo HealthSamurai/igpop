@@ -38,6 +38,12 @@
                           ))
 
 
+(defn capitalized? [s]
+  (when (string? s)
+    (Character/isUpperCase (first s))))
+
+(defn complex-type? [type] (capitalized? (name type)))
+
 ;; todo: compare pos
 (defn in-block? [{{fln :ln fpos :pos} :from {tln :ln tpos :pos} :to :as block} {ln :ln pos :pos :as coord}]
   (when (and fln tln)
@@ -57,12 +63,28 @@
                  nil))
     :else nil))
 
-(defn node->suggests [node kind]
-  (map (fn [[element-name val]]
-         {:label (str (name element-name) ":")
-          :kind kind
-          :detail (:description val)
-          :meta element-name})
+(defn node->suggests
+  [node kind]
+   (map (fn [[element-name val]]
+          {:label (str (name element-name) ":")
+           :kind kind
+           :detail (:description val)
+           :meta element-name
+           :insertText (str (name element-name) ":\n  ")
+           })
+        node))
+
+;; TODO: merge with previous.
+(defn node->suggests-newline
+  [node kind]
+  (map (fn [[element-name {type :Type description :description :as val}]]
+         (let [base {:label (str (name element-name) ":")
+                     :kind kind
+                     :detail description
+                     :meta element-name}]
+           (cond
+             (and type (complex-type? type)) (assoc base :insertText (str (name element-name) ":\n  "))
+             :else (assoc base :insertText (str (name element-name) ": ")))))
        node))
 
 
@@ -88,12 +110,6 @@
           elements (get-in base-profiles pth)]
       (node->suggests (into (or elements []) extension-elm) (:Property completion-item-kind)))))
 
-(defn capitalized? [s]
-  (when (string? s)
-    (Character/isUpperCase (first s))))
-
-(defn complex-type? [type] (capitalized? (name type)))
-
 
 (defn sgst-complex-types
   [ctx pth content]
@@ -113,7 +129,7 @@
            cur-ig-node igpop-schema]
       (if (empty? keys)
         (if-not (:Type cur-ig-node)
-          (node->suggests cur-ig-node (:Value completion-item-kind)))
+          (node->suggests-newline cur-ig-node (:Value completion-item-kind)))
         (let [[cur-key & rest] keys]
           (cond
             (cur-key cur-ig-node) (recur rest (if-let [ref (:ref (cur-key cur-ig-node))]
@@ -129,8 +145,9 @@
          (cond-> []
            (last-kv? :minItems) (into ["1" "0"])
            (last-kv? :required) (into ["true"])
+           (last-kv? :collection) (into ["true"])
            (last-kv? :disabled) (into ["true"])
-           (last-kv? :description) (into ["| "])
+           (last-kv? :description) (into ["|"])
            (last-kv? :code) (into (map (fn [[key]] (name key)) (into (:primitive type-defs) (:complex type-defs))))))))
 
 (defn collect
@@ -158,6 +175,7 @@
                             (filter (fn [{sg :meta}] ((complement contains?) (get-in content path) (keyword sg))) )
                             (map (fn [sg] (dissoc sg :meta))) )]
     (println "\n----------request_params---------  " (into [rt] path) " \n")
+    (clojure.pprint/pprint suggests-filterd)
     (println "\n------------------------------\n")
     suggests-filterd))
 
