@@ -49,8 +49,8 @@ function docReady(fn) {
 docReady(function() {
     let url = window.location.href;
     let temp = url.split("/").pop();
-    let resource = temp.split("-").reverse().pop();
-    let profile = temp.split("-").pop();
+    let resource = temp.split("&").reverse().pop();
+    let profile = temp.split("&").pop();
     whereami.innerText = resource + ": " + profile;
 });
 
