@@ -34,7 +34,7 @@
                                       ;; sent.
                                       ;;SaveOptions
                                       :save  {}}
-                   ;; :hoverProvider true
+                   :hoverProvider true
                    :completionProvider {:triggerCharacters ["\n" " " ":"]}
                    :signatureHelpProvider {:triggerCharacters []}
                    ;; :definitionProvider true
@@ -137,7 +137,7 @@
 ;;   {:response {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :workspace/didChangeConfiguration
 ;;   [ctx msg]
 ;;   (println (:method msg) msg)
@@ -145,42 +145,42 @@
 
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/didOpen
 ;;   [ctx msg]
 ;;   (println (:method msg) msg)
 ;;   {:response {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/documentSymbol
 ;;   [ctx msg]
 ;;   (println (:method msg) msg)
 ;;   {:response {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/documentColor
 ;;   [ctx msg]
 ;;   (println (:method msg) msg)
 ;;   {:response {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/foldingRange
 ;;   [ctx msg]
 ;;   (println (:method msg) msg)
 ;;   {:response {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/colorPresentation
 ;;   [ctx msg]
 ;;   (println (:method msg) msg)
 ;;   {:response {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/didChange
 ;;   [ctx msg]
 ;;   (println (:method msg) msg)
@@ -188,32 +188,33 @@
 
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/willSave
 ;;   [ctx msg]
 ;;   (println (:method msg) msg)
 ;;   {:response {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/didSave
 ;;   [ctx msg]
 ;;   (println (:method msg) msg)
 ;;   {:response {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :workspace/didChangeWatchedFiles
 ;;   [ctx msg]
 ;;   (println (:method msg) msg)
 ;;   {:response {}})
 
-;; (defmethod
-;;   json-rpc.procedure/proc
-;;   :textDocument/hover
-;;   [ctx msg]
-;;   (println (:method msg) msg)
-;;   {:response {}})
+(defmethod
+  json-rpc.core/proc
+  :textDocument/hover
+  [ctx {params :params meth :method :as msg}]
+  (let [ast (:ast @doc-state)
+        completion (igpop.lsp.suggest/hover ctx msg ast)]
+    {:result completion}))
 
 
 (comment
