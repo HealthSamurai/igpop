@@ -6,6 +6,7 @@
    [igpop.lsp.suggest]
    [json-rpc.core :refer [proc]]
    [clojure.java.io :as io]
+   [igpop.lsp.validation]
    [zprint.core :as zp]))
 
 
@@ -84,33 +85,10 @@
 
 (def doc-state (atom {}))
 
-(defn validate [ctx doc]
-  (Thread/sleep 10)
-  (try
-    (let [ast (:ast doc)
-          errors (igpop.parser/errors ast)]
-      (json-rpc.core/send-message ctx {:method "textDocument/publishDiagnostics"
-                                       :params {:uri (get-in doc [:params :textDocument :uri])
-                                                :diagnostics
-                                                (->> errors
-                                                     (mapv (fn [{{from :from to :to} :block msg :message}]
-                                                             {:range {:start {:line (:ln from) :character (:pos from)}
-                                                                      :end {:line (:ln to) :character (:pos to)}}
-                                                              :message msg})))}}))
-    (catch Exception err
-      (println "Error in validate" err))))
 
 
-(defmethod
-  proc
-  :textDocument/didChange
-  [ctx {params :params :as msg}]
-  (let [uri (get-in params [:textDocument :uri])
-        newText (:text (last (:contentChanges params)))
-        ast (igpop.parser/parse newText {})]
-    (swap! doc-state assoc-in [:docs uri] (assoc msg :ast ast))
-    (future (validate ctx @doc-state)))
-  nil)
+
+
 
 
 (defmethod
@@ -132,6 +110,26 @@
     (if-let [ast (:ast doc)]
       {:result (igpop.lsp.suggest/hover ctx msg ast)}
       {:result []})))
+
+(defn validate [ctx doc]
+  (Thread/sleep 10)
+  (try
+    (let [resp (igpop.lsp.validation/validate ctx doc)]
+      (json-rpc.core/send-message ctx resp))
+    (catch Exception err
+      (println "Error in validate" err))))
+
+(defmethod
+  proc
+  :textDocument/didChange
+  [ctx {params :params :as msg}]
+  (let [uri (get-in params [:textDocument :uri])
+        newText (:text (last (:contentChanges params)))
+        ast (igpop.parser/parse newText {})
+        doc (assoc msg :ast ast)]
+    (swap! doc-state assoc-in [:docs uri] doc)
+    (future (validate ctx doc)))
+  nil)
 
 ;; (defmethod
 ;;   proc

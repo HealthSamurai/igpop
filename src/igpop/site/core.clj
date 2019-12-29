@@ -39,7 +39,6 @@
    :body (clj-yaml.core/generate-string (dissoc ctx :fhir))})
 
 (defn lsp [ctx req]
-  (println "LSP")
   (http/with-channel
     req chann
     (http/on-close chann (fn [status] (println "chann closed: " status)))
