@@ -131,13 +131,7 @@
             (assoc-in [eln :properties] (reduce (fn [acc el] (element-to-schema acc el ctx)) acc (:elements props))))
         acc'))))
 
-(defn profile-to-schema [rt prn props ctx]
-  (assoc (ordered-map {}) (keyword (str (name rt) (when (not (= "basic" (name prn)))
-                                      (str "_" (name prn)))))
-         (let [els (get props :elements)
-               properties (assoc (ordered-map {}) :properties (ordered-map (into {} (map (fn [el] (element-to-schema (ordered-map {}) el ctx)) els))))]
-           (if-let [required-elements (get-required els)]
-             (assoc properties :required required-elements)))))
+
 
 (defn get-fhir-complex-def [type {{complex :complex} :definitions :as ctx}]
   (when-let [def (get complex (keyword type))]
@@ -223,6 +217,16 @@
                                   (vec (concat acc (conj (get-refered-def {k v} ctx) {k v}))))
                                 acc)) [] props)]
     (extract-simple-types pr-schema ctx definitions)))
+
+(defn profile-to-schema [rt prn props ctx]
+  (let [pr-schema (assoc (ordered-map {}) (keyword (str (name rt) (when (not (= "basic" (name prn)))
+                                                                    (str "_" (name prn)))))
+                         (let [els (get props :elements)
+                               properties (assoc (ordered-map {}) :properties (ordered-map (into {} (map (fn [el] (element-to-schema (ordered-map {}) el ctx)) els))))]
+                           (if-let [required-elements (get-required els)]
+                             (assoc properties :required required-elements))))
+        definitions (ordered-map (into {} (shape-up-definitions pr-schema ctx)))]
+    (assoc {} :definitions (conj definitions pr-schema))))
 
 ;;deprecated
 (defn generate-schema [{profiles :profiles :as ctx}]
