@@ -22,6 +22,9 @@
          (map vector)
          (mapcat #(tree-seq branch? children %)))))
 
+(defn cast-to-ordered-map [m eln]
+  (update-in m [eln] ordered-map))
+
 (defn get-concepts [{valuesets :valuesets :as ctx} props]
   (if-let [vs (get props :valueset)]
     (let [vs' (get-in valuesets [(-> vs
@@ -56,8 +59,32 @@
     (assoc-in acc [eln :enum] concepts)
     acc))
 
-(defn cast-to-ordered-map [m eln]
-  (update-in m [eln] ordered-map))
+(defmulti process-property (fn [prn _] prn))
+
+(defmethod process-property :valueset
+  [_ prop acc eln {valuesets :valuesets :as ctx}]
+  (cast-to-ordered-map (assoc-in acc [eln :enum] (let [vs (get-in valuesets [(keyword (get prop :id)) :concepts])
+                                                       prefixed-vs (get-in [(-> prop
+                                                                                (get :id)
+                                                                                (clojure.string/replace #"fhir:" "")
+                                                                                keyword) :concepts])]
+                                                   (cond
+                                                     prefixed-vs
+                                                     (mapv #(get % :code) prefixed-vs)
+                                                     vs
+                                                     (mapv #(get % :code) vs)))) eln))
+
+(defmethod process-property :description
+  [_ prop acc eln ctx]
+  (cast-to-ordered-map (assoc-in acc [eln :description (prop)]) eln))
+
+(defmethod process-property :maxItems
+  [_ prop acc eln ctx]
+  (cast-to-ordered-map (assoc-in acc [eln :maxItems] prop)))
+
+(defmethod process-property :minItems
+  [_ prop acc eln ctx]
+  (cast-to-ordered-map (assoc-in acc [eln :minItems] prop)))
 
 (defn attach-card-restrictions [acc eln props]
   (let [with-restrictions (cond
