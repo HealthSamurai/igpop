@@ -8,3 +8,6 @@ test-structure-def.json
 src/igpop/test.clj
 show-project.json
 plain-igpop.json
+.idea/
+classes/
+*.iml
