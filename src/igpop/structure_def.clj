@@ -23,8 +23,8 @@
 
 (defn flatten-profile
   [map prefix]
-  (reduce
-   (fn [acc [k v]]
+  (reduce-kv
+   (fn [acc k v]
      (if (map? v)
        (if (contains? v :elements)
          (merge (merge acc (ordered-map {(get-path prefix k) (dissoc v :elements)})) (flatten-profile (:elements v) (get-path prefix k)) )
@@ -79,11 +79,11 @@
 
 (defn refers
   ;;target url = https://healthsamurai.github.io/igpop/profiles/{resourceType}/basic.html
-  [k v]
+  [v]
   {:type
    (reduce (fn [outer-acc ordmap]
              (conj outer-acc
-                   (reduce (fn [acc [key val]]
+                   (reduce-kv (fn [acc key val]
                              (into acc (if (= key :resourceType)
                                          { :targetProfile [ (str "https://healthsamurai.github.io/igpop/profiles/" val "/basic.html") ] })))
                            (ordered-map {:code "Reference"}) ordmap)
@@ -93,15 +93,15 @@
   [els]
   (map (fn [[el-key props]]
          (add-defaults
-          (reduce
-           (fn [acc [prop-k v]]
+          (reduce-kv
+           (fn [acc prop-k v]
              (into acc
                    (cond
                      (= prop-k (or :required :disabled :minItems :maxItems)) (cardinality prop-k v)
                      (= prop-k :constant) (constants el-key v)
                      (= prop-k :constraints) (fhirpath-rule v)
                      (= prop-k :mustSupport) (mustSupport v)
-                     (= prop-k :refers) (refers prop-k v))))
+                     (= prop-k :refers) (refers v))))
            (ordered-map {:id (name el-key) :path (name el-key)}) props)))
        els))
 
@@ -319,7 +319,7 @@
    {:path [path of current position]
     :result [converted elements]} "
   [ctx elements]
-  (reduce (fn [ctx [item-name item]]
+  (reduce-kv (fn [ctx item-name item]
             (cond-> ctx
 
               (:union item)

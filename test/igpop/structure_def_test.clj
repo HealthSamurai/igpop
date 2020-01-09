@@ -145,6 +145,7 @@
                   :system "sys-1"}}
       :animal {:disable true}}})
 
+
   (testing "fixed values"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
@@ -207,6 +208,25 @@
      (sdef/fhirpath-rule :constraints constraint-example)
      {:constraints [{:key "ele-1", :severity "error", :human "All FHIR elements"}
       {:key "ext-1", :severity "init", :expression "Must have either"}]}))
+
+  (testing "refers"
+    (matcho/match
+     (sdef/refers [{:profile "basic"
+                    :resourceType "Practitioner"}
+                   {:resourceType "Organization"
+                    :profile "basic"}
+                   {:profile "basic"
+                    :resourceType "Patient"}])
+     {:type
+      [{:code "Reference",
+        :targetProfile
+        ["https://healthsamurai.github.io/igpop/profiles/Practitioner/basic.html"]}
+       {:code "Reference",
+        :targetProfile
+        ["https://healthsamurai.github.io/igpop/profiles/Organization/basic.html"]}
+       {:code "Reference",
+        :targetProfile
+        ["https://healthsamurai.github.io/igpop/profiles/Patient/basic.html"]}]}))
 
   (def project-path (.getPath (io/resource "test-project")))
 
