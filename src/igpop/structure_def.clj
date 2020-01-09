@@ -1,14 +1,21 @@
 (ns igpop.structure-def
-  (:require [flatland.ordered.map :refer :all]))
+  (:require [flatland.ordered.map :refer :all]
+            [clojure.string :as str]))
 
-(defn name-that-profile [rt prn] (str (name rt) (when (not (= "basic" (name prn)))
-                                                  (str "_" (name prn)))))
+(defn name-that-profile
+  [rt prn]
+  (str (name rt) (when (not (= "basic" (name prn)))
+                   (str "_" (name prn)))))
 
-(defn generate-snapshot [] (-> {}
-                               (assoc :element [(-> {})])))
+(defn generate-snapshot
+  []
+  (-> {}
+      (assoc :element [(-> {})])))
 
-(defn element-processing [acc el parent-name] (-> {}
-                                                  (assoc :id (str parent-name "." (name el)))))
+(defn element-processing
+  [acc el parent-name]
+  (-> {}
+      (assoc :id (str parent-name "." (name el)))))
 
 (defn get-path
   [prefix key]
@@ -16,46 +23,63 @@
 
 (defn flatten-profile
   [map prefix]
-     (reduce
-      (fn [acc [k v]]
-        (if (map? v)
-          (if (contains? v :elements)
-            (merge (merge acc (ordered-map {(get-path prefix k) (dissoc v :elements)})) (flatten-profile (:elements v) (get-path prefix k)) )
-            (merge acc (ordered-map {(get-path prefix k) v})))
-          (merge acc (ordered-map {(get-path prefix k) v}))))
-        (ordered-map []) map))
+  (reduce
+   (fn [acc [k v]]
+     (if (map? v)
+       (if (contains? v :elements)
+         (merge (merge acc (ordered-map {(get-path prefix k) (dissoc v :elements)})) (flatten-profile (:elements v) (get-path prefix k)) )
+         (merge acc (ordered-map {(get-path prefix k) v})))
+       (merge acc (ordered-map {(get-path prefix k) v}))))
+   (ordered-map []) map))
 
-(def constraint-struct '(:requirements :severity :human :expression :xpath :source))
+(defn capitalize-first
+  [s]
+  (str (clojure.string/capitalize (subs s 0 1)) (subs s 1)))
+
+(defn constants
+  [k v]
+  {(keyword (str "fixed" (capitalize-first (last (clojure.string/split (name k) #"\."))))) v})
+
+(def constraint-struct
+  '(:requirements :severity :human :expression :xpath :source))
 
 (defn fhirpath-rule
-  [k coll]
-  {k (mapv
-      (fn [item]
-        (let [k (first (keys item))
-              v (first (vals item))]
-          (reduce
-           (fn [acc k]
-             (into acc
-                   (if (contains? v k)
-                     {k (get v k)}
-                     (cond
-                       (= k :severity) {k "error"}
-                       (= k :human) (if-let [str (get v :description)] {k str})))))
-           (ordered-map {:key (name k)}) constraint-struct)))
-      coll)})
+  [coll]
+  {:constraint (mapv
+                (fn [item]
+                  (let [k (first (keys item))
+                        v (first (vals item))]
+                    (reduce
+                     (fn [acc k]
+                       (into acc
+                             (if (contains? v k)
+                               {k (get v k)}
+                               (cond
+                                 (= k :severity) {k "error"}
+                                 (= k :human) (if-let [str (get v :description)] {k str})))))
+                     (ordered-map {:key (name k)}) constraint-struct)))
+                coll)})
 
 (defn mustSupport
   ([] (mustSupport true))
   ([v] {:mustSupport v}))
 
-(defn cardinality [k v] (cond
-                             (= k :required) (if (= true v) {:min 1})
-                             (= k :disabled) (if (= true v) {:max 0})
-                             (= k :minItems) {:min v}
-                             (= k :maxItems) {:max v}))
+(defn cardinality
+  [k v]
+  (cond
+    (= k :required) (if (= true v) {:min 1})
+    (= k :disabled) (if (= true v) {:max 0})
+    (= k :minItems) {:min v}
+    (= k :maxItems) {:max v}))
 
-;;target url = https://healthsamurai.github.io/igpop/profiles/{resourceType}/basic.html
-(defn refers [k v]
+(defn add-defaults
+  [map]
+  (if (not (contains? map :mustSupport))
+    (into map (mustSupport))))
+
+(defn refers
+  ;;target url = https://healthsamurai.github.io/igpop/profiles/{resourceType}/basic.html
+  [k v]
   {:type
    (reduce (fn [outer-acc ordmap]
              (conj outer-acc
@@ -63,36 +87,31 @@
                              (into acc (if (= key :resourceType)
                                          { :targetProfile [ (str "https://healthsamurai.github.io/igpop/profiles/" val "/basic.html") ] })))
                            (ordered-map {:code "Reference"}) ordmap)
-                   )) [] v)
-   }
-  )
-
-(def agenda {:required cardinality
-             :disabled cardinality
-             :minItems cardinality
-             :maxItems cardinality
-             :constraints fhirpath-rule
-             :mustSupport mustSupport
-             :refers refers})
-
-(def default-agenda {:mustSupport mustSupport})
+                   )) [] v)})
 
 (defn elements-to-sd
   [els]
   (map (fn [[el-key props]]
-         (reduce
-          (fn [acc [rule-key rule-func]]
-            (into acc
-                  (if (contains? props rule-key)
-                    (rule-func rule-key (get props rule-key))
-                    (if (contains? default-agenda rule-key) (rule-func)))))
-          (ordered-map {:id (name el-key) :path (name el-key)}) agenda))
+         (add-defaults
+          (reduce
+           (fn [acc [prop-k v]]
+             (into acc
+                   (cond
+                     (= prop-k (or :required :disabled :minItems :maxItems)) (cardinality prop-k v)
+                     (= prop-k :constant) (constants el-key v)
+                     (= prop-k :constraints) (fhirpath-rule v)
+                     (= prop-k :mustSupport) (mustSupport v)
+                     (= prop-k :refers) (refers prop-k v))))
+           (ordered-map {:id (name el-key) :path (name el-key)}) props)))
        els))
 
-(defn generate-differential [rt prn props] (-> {}
-                                               (assoc :element (elements-to-sd (into (ordered-map []) (flatten-profile (:elements props) (name rt)))))))
+(defn generate-differential
+  [rt prn props]
+  (-> {}
+      (assoc :element (elements-to-sd (into (ordered-map []) (flatten-profile (:elements props) (name rt)))))))
 
-(defn generate-structure [{diffs :diff-profiles profiles :profiles :as ctx}]
+(defn generate-structure
+  [{diffs :diff-profiles profiles :profiles :as ctx}]
   (let [m {:resourceType "Bundle"
            :id "resources"
            :meta {:lastUpdated (java.util.Date.)}

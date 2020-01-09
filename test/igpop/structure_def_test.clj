@@ -21,6 +21,8 @@
      (sdef/to-sd profile)
      {:snapshot [{:path "Patient.name" :min 1}]}))
 
+  (clojure.pprint/pprint (sdef/to-sd profile))
+
   (testing "cardinality: entity `disabled`"
     (matcho/match
      (sdef/to-sd {:Patient {:elements {:name {:disabled true :type "HumanName"}}}})
@@ -118,6 +120,9 @@
 
   ;; --------------------------------------------------------------------------------------
 
+  ;;Functional tests
+  ;;differential generation
+
   (def props
     {:elements
      {:name {:type "HumanName"
@@ -132,9 +137,24 @@
                       {
                        :profile "basic"
                        :resourceType "Patient"}
-                      ]}}})
+                      ]}
+      :birthDate {:required true}
+      :code {:constant "female"}
+      :coding
+      {:constant {:code "code-1"
+                  :system "sys-1"}}
+      :animal {:disable true}}})
+
+  (testing "fixed values"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {}))
 
   (clojure.pprint/pprint (sdef/generate-differential :Patient "basic" props))
+
+  (clojure.pprint/pprint (sdef/elements-to-sd (:elements props)))
+
+  ;;Unit tests
 
   (def plain-elements-in
     {:CarePlan.subject {}
