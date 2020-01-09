@@ -72,20 +72,21 @@
 (defn valueset
   [k v]
   (let [resource (last (s/split "fhir:administrative-gender" #":"))
-        value-set-url (str "http://hl7.org/fhir/ValueSet/"resource)]
-   {:binding {
-              :strength "required",
-              :valueSet value-set-url
-              }}))
+        value-set-url (str "http://hl7.org/fhir/ValueSet/" resource)]
+    {:binding {
+               :strength "required",
+               :valueSet value-set-url
+               }}))
 
 (defn description [k v])
 
 (defn collection [k v])
 
-(defn val-type [k v])
+(defn val-type [k v]
+  )
 
 (defn poly [k v]
-  )
+  (ordered-map {:type (map (fn [entry] {:code entry}) v)}))
 
 (def agenda {:required    cardinality
              :disabled    cardinality
@@ -98,7 +99,8 @@
              :description description
              :collection  collection
              :type        val-type
-             :union       poly})
+             :union       poly
+             :value       poly})
 
 (def default-agenda {:mustSupport mustSupport})
 
@@ -123,8 +125,8 @@
       (assoc :element (elements-to-sd (into (ordered-map []) (flatten-profile elements (name resource-type)))))))
 
 (defn profile-structure-def
-  [profile-id resource-type props profiles]
-  (let [basic-elements (get-in profiles [resource-type :basic :elements])
+  [profile-id resource-type props resources]
+  (let [basic-elements (get-in resources [resource-type :basic :elements])
         differential-elements (:elements props)
         snapshot-elements (merge basic-elements differential-elements)]
     (-> {}
@@ -135,7 +137,7 @@
         (assoc :snapshot (generate-snapshot resource-type, snapshot-elements))
         (assoc :differential (generate-differential resource-type profile-id props)))))
 
-(defn generate-structure [{diffs :diff-profiles profiles :profiles :as ctx}]
+(defn generate-structure [{diffs :diff-profiles profiles :profiles resources :resources :as ctx}]
   (let [m {:resourceType "Bundle"
            :id           "resources"
            :meta         {:lastUpdated (java.util.Date.)}
@@ -146,7 +148,7 @@
                                         (for [[prn props] prls]
                                           (-> {}
                                               (assoc :fullUrl (str "baseUrl" "/" (name-that-profile rt prn)))
-                                              (assoc :resource (profile-structure-def prn rt props profiles)))))))))))
+                                              (assoc :resource (profile-structure-def prn rt props resources)))))))))))
 
 
 ;; ----------------------------- PLAYGROUND ----------------------------
