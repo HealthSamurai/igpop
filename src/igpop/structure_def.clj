@@ -77,6 +77,18 @@
   (if (not (contains? map :mustSupport))
     (into map (mustSupport))))
 
+(defn refers
+  ;;target url = https://healthsamurai.github.io/igpop/profiles/{resourceType}/basic.html
+  [k v]
+  {:type
+   (reduce (fn [outer-acc ordmap]
+             (conj outer-acc
+                   (reduce (fn [acc [key val]]
+                             (into acc (if (= key :resourceType)
+                                         { :targetProfile [ (str "https://healthsamurai.github.io/igpop/profiles/" val "/basic.html") ] })))
+                           (ordered-map {:code "Reference"}) ordmap)
+                   )) [] v)})
+
 (defn elements-to-sd
   [els]
   (map (fn [[el-key props]]
@@ -88,7 +100,8 @@
                      (= prop-k (or :required :disabled :minItems :maxItems)) (cardinality prop-k v)
                      (= prop-k :constant) (constants el-key v)
                      (= prop-k :constraints) (fhirpath-rule v)
-                     (= prop-k :mustSupport) (mustSupport v))))
+                     (= prop-k :mustSupport) (mustSupport v)
+                     (= prop-k :refers) (refers prop-k v))))
            (ordered-map {:id (name el-key) :path (name el-key)}) props)))
        els))
 

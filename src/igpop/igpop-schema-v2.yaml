@@ -1,0 +1,46 @@
+description:
+  Type: string
+  description: Natural language description of the structure definition
+elements:
+  Type: Map
+  description: Definition of elements
+  value:
+    type:  { Type: code, description: Element type }
+    description: { Type: string, description: 'Element description'}
+    elements: { ref: elements, description: 'Nested elements', Type: String}
+    required: { Type: boolean, for: singular}
+    disabled: { Type: boolean }
+    collection: { Type: boolean }
+    minItems: { Type: integer, for: collection}
+    maxItems: { Type: integer }
+    mustSupport: {Type: boolean, default: true}
+    valueset:
+      id: { Type: 'string', description: 'valueset id' }
+      url: { Type: 'url' }
+      strength: { Type: 'code', enum: ['extensible', 'required'], default: 'extensible' }
+    constant: { Type: any }
+    match: { Type: any }
+    refers:
+      Type: Map
+      description: Reference specification
+      key: { Type: code, description: 'Resource type' }
+      value: { Type: string, description: 'Profile id' }
+    constaints:
+      Type: Map
+      description: FHIRPath rules, key is rule identifier
+      value:
+        expression: { Type: fhirpath }
+        description: { Type: string }
+        severity:  { Type: code, enum: ['error']}
+    mapping:
+      Type: Map
+      description: Mapping to other systems
+      value:
+        map: { Type: string }
+    slices:
+      Type: Map
+      key: {Type: string, description: 'Slice Name'}
+      description: Define named slices for collection
+      value:
+        ref: 'elements.elements'
+        match: { required: true }

@@ -6,8 +6,7 @@
    [clojure.string :as str]))
 
 (defn read-yaml [pth]
-  (clj-yaml.core/parse-string
-   (slurp pth)))
+  (clj-yaml.core/parse-string (slurp pth)))
 
 (defn get-inlined-valuesets [{profiles :profiles valuesets :valuesets :as ctx}]
   (assoc ctx :valuesets (merge valuesets (:valuesets (reduce (fn [acc [rt prls]]
@@ -212,6 +211,10 @@
     (read-yaml fhir-types)
     (println "Could not find " (.getPath (io/file home (str "igpop-fhir-" fhir-version "fhir-types-definition.yaml"))))))
 
+(defn load-and-parse [file-name]
+  (let [defaults (safe-file file-name)]
+    (read-yaml defaults)))
+
 (defn load-project [home]
   (let [manifest-file (io/file home "ig.yaml")]
     (when-not (.exists manifest-file)
@@ -220,7 +223,8 @@
     (let [manifest (read-yaml (.getPath manifest-file))
           fhir (when-let [fv (:fhir manifest)] (load-fhir home fv))
           definitions (when-let [fv (:fhir manifest)] (load-definitions home fv))
-          manifest' (assoc manifest :base fhir :home home :definitions definitions)]
+          schema (load-and-parse "src/igpop/igpop-schema-v2.yaml")
+          manifest' (assoc manifest :base fhir :home home :definitions definitions :schema schema)]
       (merge
        manifest'
        (load-defs manifest' home)))))

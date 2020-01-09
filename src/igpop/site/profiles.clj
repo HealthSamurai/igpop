@@ -252,9 +252,10 @@
             style-tag
             (views/menu (profiles-to-menu ctx) req)
             [:div#content
-             [:h1 rt " " [:span.sub (str/lower-case rt) "-" nm]]
+             [:h1 rt " " [:span.sub (str/lower-case rt) "-" nm [:a.refbtn {:onclick "openEditor()"} "edit"]]]
              [:div.summary (:description profile)]
              [:hr]
+             [:br]
              [:br]
              [:div.profile
               [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]

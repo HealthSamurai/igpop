@@ -1,15 +1,19 @@
 (ns igpop.lsp.core
-  (:require [json-rpc.core :refer [proc]]))
-
-
-(def files-content (atom {}))
+  (:require
+   [igpop.parser]
+   [igpop.loader]
+   [zprint.core]
+   [igpop.lsp.suggest]
+   [json-rpc.core :refer [proc]]
+   [clojure.java.io :as io]
+   [igpop.lsp.validation]
+   [zprint.core :as zp]))
 
 
 (defmethod
   proc
   :initialize
   [ctx msg]
-  (println "Init msg" msg)
   {:result
    {:capabilities {:textDocumentSync {:openClose true
                                       ;; Change notifications are sent to the server. See TextDocumentSyncKind.None, TextDocumentSyncKind.Full
@@ -30,9 +34,9 @@
                                       ;; sent.
                                       ;;SaveOptions
                                       :save  {}}
-                   ;; :hoverProvider true
-                   :completionProvider {:triggerCharacters ["\n"]}
-                   :signatureHelpProvider {:triggerCharacters ["."]}
+                   :hoverProvider true
+                   :completionProvider {:triggerCharacters ["\n" " " ":" "*" ": "]}
+                   :signatureHelpProvider {:triggerCharacters []}
                    ;; :definitionProvider true
                    ;; :implementationProvider true
                    ;; :referencesProvider true
@@ -79,141 +83,155 @@
     }})
 
 
-(defmethod
-  proc
-  :textDocument/didChange
-  [ctx {params :params :as msg}]
-  (println (:method msg) msg)
-  (let [uri (get-in params [:textDocument :uri])
-        newText (:text (last (:contentChanges params)))]
-    (swap! files-content #(assoc % uri newText)))
-  nil)
+(def doc-state (atom {}))
 
 
-;; completion request
-;; {:jsonrpc 2.0, :id 6, :method textDocument/completion,
-;;  :params {:textDocument {:uri file:///Users/mput/projects/igpop/example/src/DiagnosticReport/test.igpop},
-;;           :position {:line 7, :character 0},
-;;           :context {:triggerKind 2, :triggerCharacter}}}
 
 
-(defn get-items
-  [text content uri]
-  (println "!!!!!!!!!!!!!!!!!!!!!")
-  (clojure.pprint/pprint text)
-  (println "!!!!!!!!!!!!!!!!!!!!!")
-  [{:label "i'm-completion-item"
-    :kind 14
-    :detail "Patient element choose"}
-   {:label "another-completion"
-    :detail "Some description here"}])
+
+
 
 (defmethod
   proc
   :textDocument/completion
-  [ctx {params :params :as msg}]
-  (println (:method msg) msg)
+  [ctx {{pos :position :as params} :params :as msg}]
   (let [uri (get-in params [:textDocument :uri])
-        position (:position params)
-        content (get @files-content uri)
-        items (get-items content position uri)]
-    {:result items}))
+        doc (get-in @doc-state [:docs uri])]
+    (if-let [ast (:ast doc)]
+      {:result (igpop.lsp.suggest/suggest ctx msg ast)}
+      {:result []})))
+
+(defmethod
+  json-rpc.core/proc
+  :textDocument/hover
+  [ctx {params :params meth :method :as msg}]
+  (let [uri (get-in params [:textDocument :uri])
+        doc (get-in @doc-state [:docs uri])]
+    (if-let [ast (:ast doc)]
+      {:result (igpop.lsp.suggest/hover ctx msg ast)}
+      {:result []})))
+
+(defn validate [ctx doc]
+  (Thread/sleep 10)
+  (try
+    (let [resp (igpop.lsp.validation/validate ctx doc)]
+      (json-rpc.core/send-message ctx resp))
+    (catch Exception err
+      (println "Error in validate" err))))
+
+(defmethod
+  proc
+  :textDocument/didChange
+  [ctx {params :params :as msg}]
+  (let [uri (get-in params [:textDocument :uri])
+        newText (:text (last (:contentChanges params)))
+        ast (igpop.parser/parse newText {})
+        doc (assoc msg :ast ast)]
+    (swap! doc-state assoc-in [:docs uri] doc)
+    (future (validate ctx doc)))
+  nil)
 
 ;; (defmethod
 ;;   proc
 ;;   :initialized
 ;;   [ctx msg]
-;;   (println (:method msg) msg)
-;;   {:response {}})
+;;   {:result {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :workspace/didChangeConfiguration
 ;;   [ctx msg]
-;;   (println (:method msg) msg)
-;;   {:response {}})
+;;   {:result {}})
 
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/didOpen
 ;;   [ctx msg]
-;;   (println (:method msg) msg)
-;;   {:response {}})
+;;   {:result {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/documentSymbol
 ;;   [ctx msg]
-;;   (println (:method msg) msg)
-;;   {:response {}})
+;;   {:result {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/documentColor
 ;;   [ctx msg]
-;;   (println (:method msg) msg)
-;;   {:response {}})
+;;   {:result {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/foldingRange
 ;;   [ctx msg]
-;;   (println (:method msg) msg)
-;;   {:response {}})
+;;   {:result {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/colorPresentation
 ;;   [ctx msg]
-;;   (println (:method msg) msg)
-;;   {:response {}})
+;;   {:result {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/didChange
 ;;   [ctx msg]
-;;   (println (:method msg) msg)
-;;   {:response {}})
+;;   {:result {}})
 
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/willSave
 ;;   [ctx msg]
-;;   (println (:method msg) msg)
-;;   {:response {}})
+;;   {:result {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :textDocument/didSave
 ;;   [ctx msg]
-;;   (println (:method msg) msg)
-;;   {:response {}})
+;;   {:result {}})
 
 ;; (defmethod
-;;   json-rpc.procedure/proc
+;;   json-rpc.core/proc
 ;;   :workspace/didChangeWatchedFiles
 ;;   [ctx msg]
-;;   (println (:method msg) msg)
-;;   {:response {}})
+;;   {:result {}})
 
-;; (defmethod
-;;   json-rpc.procedure/proc
-;;   :textDocument/hover
-;;   [ctx msg]
-;;   (println (:method msg) msg)
-;;   {:response {}})
+
 
 
 (comment
 
+  (.close log-file)
+  (do
+
+  (def log-file (io/writer "/tmp/igpop-lsp.log"))
+
+  (defn xlog [msg]
+    (try
+      (.write log-file msg)
+      (.write log-file "\n")
+      (catch Exception e
+        (println e))))
+
   (def ctx
-    (json-rpc.core/start (atom {:type :tcp :port 7345})))
+    (json-rpc.core/start (atom {:type :tcp
+                                :port 7345
+                                :json-rpc {:request (fn [_ msg]
+                                                      (xlog (str "-> " (:method msg) " " (:id msg)))
+                                                      (xlog (zp/zprint-str msg)))
+                                           :response (fn [_ resp]
+                                                       (xlog (str "<- " (:id resp)))
+                                                       (xlog (zp/zprint-str resp)))
+                                           :notify (fn [_ note]
+                                                     (xlog (str "<! " (:method note)))
+                                                     (xlog (zp/zprint-str note)))}
+                                :manifest (igpop.loader/load-project "example")})))
+    )
 
   (json-rpc.core/stop ctx)
-
-
 
   )
 

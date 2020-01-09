@@ -125,7 +125,20 @@
 
   (def props
     {:elements
-     {:birthDate {:required true}
+     {:name {:type "HumanName"
+             :required true
+             :elements
+             {:family {:type "string" :isCollection true :minItem 1 :maxItem 10 }}
+             :refers [{
+                       :profile "basic"
+                       :resourceType "Practitioner"}
+                      {:resourceType "Organization"
+                       :profile "basic"}
+                      {
+                       :profile "basic"
+                       :resourceType "Patient"}
+                      ]}
+      :birthDate {:required true}
       :code {:constant "female"}
       :coding
       {:constant {:code "code-1"

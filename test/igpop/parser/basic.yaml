@@ -1,0 +1,24 @@
+# comment
+int-key:  109
+true-key:  true
+false-key:  false
+null-key:  null
+empty-key:  null
+number-key: 3.004
+string-key: string value
+q-string-key: 'string "value'  
+dq-string-key: "string' value"  
+prim-arr-key:
+  - 1 
+  - 2.0 
+  - string
+nested-key:
+  a-key: a
+  b-key:
+    b-1-key: b1
+    b-2-key: b1
+nested-arr-key:
+  - system: 1
+    value: 2
+  - system: 1
+    value: 2
