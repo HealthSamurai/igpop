@@ -125,10 +125,14 @@
 
   (def props
     {:elements
-     {:name {:type "HumanName"
+     {:name {:constraints
+             {:us-core-8
+              {:expression "family.exists() or given.exists()"
+               :description "Patient.name.given or Patient.name.family or both SHALL be present"}}
+             :type "HumanName"
              :required true
              :elements
-             {:family {:type "string" :isCollection true :minItem 1 :maxItem 10 }}
+             {:family {:type "string" :isCollection true :minItems 2 :maxItems 10 }}
              :refers [{
                        :profile "basic"
                        :resourceType "Practitioner"}
@@ -138,17 +142,37 @@
                        :profile "basic"
                        :resourceType "Patient"}
                       ]}
-      :birthDate {:required true}
-      :code {:constant "female"}
+      :birthDate {:disabled true :mustSupport false :union ["string" "CodeableConcept" "Quantity"]}
+      :code {:constant "female" :minItems 8}
       :coding
       {:constant {:code "code-1"
                   :system "sys-1"}}
-      :animal {:disable true}}})
+      :animal {:minItems 7}}})
 
-  (testing "fixed values"
+  (testing "cardinality"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {}))
+     {:element [{:min 1} {:min 2 :max 10} {:max 0}]}))
+
+  (testing "constant | fixed value"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{} {} {} {:fixedCode "female"} {:fixedCoding {:code "code-1", :system "sys-1"}}]}))
+
+  (testing "FHIRPath"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{:constraint [{:key "us-core-8"}]}]}))
+
+  (testing "Polymorphic types"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{} {} {:type [{:code "string"} {:code "CodeableConcept"} {:code "Quantity"}]}]}))
+
+  (testing "mustSupport"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{:mustSupport true} {} {:mustSupport false}]}))
 
   (clojure.pprint/pprint (sdef/generate-differential :Patient "basic" props))
 

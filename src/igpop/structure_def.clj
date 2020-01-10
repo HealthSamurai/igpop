@@ -46,10 +46,8 @@
 (defn fhirpath-rule
   [coll]
   {:constraint (mapv
-                (fn [item]
-                  (let [k (first (keys item))
-                        v (first (vals item))]
-                    (reduce
+                (fn [[k v]]
+                  (reduce
                      (fn [acc k]
                        (into acc
                              (if (contains? v k)
@@ -57,12 +55,17 @@
                                (cond
                                  (= k :severity) {k "error"}
                                  (= k :human) (if-let [str (get v :description)] {k str})))))
-                     (ordered-map {:key (name k)}) constraint-struct)))
+                     (ordered-map {:key (name k)}) constraint-struct))
                 coll)})
 
-(defn mustSupport
-  ([] (mustSupport true))
-  ([v] {:mustSupport v}))
+(defn polymorphic-types
+  [id path v]
+  {:id (str id "[x]")
+   :path (str path "[x]")
+   :type (mapv
+          (fn [type]
+            {:code type})
+          v)})
 
 (defn cardinality
   [k v]
@@ -74,8 +77,9 @@
 
 (defn add-defaults
   [map]
-  (if (not (contains? map :mustSupport))
-    (into map (mustSupport))))
+  (if (contains? map :mustSupport)
+    map
+    (into map {:mustSupport true})))
 
 (defn refers
   ;;target url = https://healthsamurai.github.io/igpop/profiles/{resourceType}/basic.html
@@ -97,11 +101,12 @@
            (fn [acc [prop-k v]]
              (into acc
                    (cond
-                     (= prop-k (or :required :disabled :minItems :maxItems)) (cardinality prop-k v)
+                     (some #(= prop-k %) '(:disabled :required :minItems :maxItems)) (cardinality prop-k v)
                      (= prop-k :constant) (constants el-key v)
                      (= prop-k :constraints) (fhirpath-rule v)
-                     (= prop-k :mustSupport) (mustSupport v)
-                     (= prop-k :refers) (refers prop-k v))))
+                     (= prop-k :union) (polymorphic-types (:id acc) (:path acc) v)
+                     (= prop-k :refers) (refers prop-k v)
+                     (= prop-k :mustSupport) {:mustSupport v})))
            (ordered-map {:id (name el-key) :path (name el-key)}) props)))
        els))
 
