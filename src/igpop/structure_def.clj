@@ -89,6 +89,19 @@
                            (ordered-map {:code "Reference"}) ordmap)
                    )) [] v)})
 
+(defn description
+  [v] {:short v})
+
+(defn valueset
+  [map]
+  {:binding (reduce-kv (fn [acc k v]
+                         (into acc
+                               (cond
+                                 (= k :id) {:valueSet (str "https://healthsamurai.github.io/igpop/valuesets/" v ".html")}
+                                 (= k :description) {k v}
+                                 (= k :strength) {k v})))
+                       (ordered-map {:strength "extensible"}) map)})
+
 (defn elements-to-sd
   [els]
   (map (fn [[el-key props]]
@@ -101,7 +114,9 @@
                      (= prop-k :constant) (constants el-key v)
                      (= prop-k :constraints) (fhirpath-rule v)
                      (= prop-k :mustSupport) (mustSupport v)
-                     (= prop-k :refers) (refers v))))
+                     (= prop-k :refers) (refers v)
+                     (= prop-k :description) (description v)
+                     (= prop-k :valueset) (valueset v))))
            (ordered-map {:id (name el-key) :path (name el-key)}) props)))
        els))
 

@@ -127,6 +127,7 @@
     {:elements
      {:name {:type "HumanName"
              :required true
+             :description "Hi"
              :elements
              {:family {:type "string" :isCollection true :minItem 1 :maxItem 10 }}
              :refers [{
@@ -136,8 +137,10 @@
                        :profile "basic"}
                       {
                        :profile "basic"
-                       :resourceType "Patient"}
-                      ]}
+                       :resourceType "Patient"}]
+             :valueset {:id "sample"
+                        :strength "required"
+                        :description "This is a valueset"}}
       :birthDate {:required true}
       :code {:constant "female"}
       :coding
@@ -227,6 +230,16 @@
        {:code "Reference",
         :targetProfile
         ["https://healthsamurai.github.io/igpop/profiles/Patient/basic.html"]}]}))
+
+  (testing "valueset"
+    (matcho/match
+     (sdef/valueset {:id "sample" :description "test"})
+     {:binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/sample.html" :description "test" :strength "extensible"}}))
+
+  (testing "description"
+    (matcho/match
+     (sdef/description "test")
+     {:short "test"}))
 
   (def project-path (.getPath (io/resource "test-project")))
 
