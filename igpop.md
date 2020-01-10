@@ -287,9 +287,8 @@ binding:
 ...
 participant:
   elements:
-    type: 
-      description: Role of participant in encounter.
-      valueset:  { id: encounter-participant-type } #default strength: extensible 
+    type:
+      valueset:  { id: encounter-participant-type description: Role of participant in encounter. } #default strength: extensible 
 
 ```
 
