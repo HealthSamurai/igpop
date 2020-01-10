@@ -125,23 +125,27 @@
 
   (def props
     {:elements
-     {:name {:constraints
-             {:us-core-8
-              {:expression "family.exists() or given.exists()"
-               :description "Patient.name.given or Patient.name.family or both SHALL be present"}}
-             :type "HumanName"
-             :required true
-             :elements
-             {:family {:type "string" :isCollection true :minItems 2 :maxItems 10 }}
-             :refers [{
-                       :profile "basic"
-                       :resourceType "Practitioner"}
-                      {:resourceType "Organization"
-                       :profile "basic"}
-                      {
-                       :profile "basic"
-                       :resourceType "Patient"}
-                      ]}
+     {:name
+      {:constraints
+       {:us-core-8
+        {:expression "family.exists() or given.exists()"
+         :description "Patient.name.given or Patient.name.family or both SHALL be present"}}
+       :type "HumanName"
+       :required true
+       :description "Hi"
+       :elements
+       {:family {:type "string" :isCollection true :minItems 2 :maxItems 10 }}
+       :refers [{
+                 :profile "basic"
+                 :resourceType "Practitioner"}
+                {:resourceType "Organization"
+                 :profile "basic"}
+                {
+                 :profile "basic"
+                 :resourceType "Patient"}]
+       :valueset {:id "sample"
+                  :strength "required"
+                  :description "This is a valueset"}}
       :birthDate {:disabled true :mustSupport false :union ["string" "CodeableConcept" "Quantity"]}
       :code {:constant "female" :minItems 8}
       :coding
@@ -231,6 +235,35 @@
      (sdef/fhirpath-rule :constraints constraint-example)
      {:constraints [{:key "ele-1", :severity "error", :human "All FHIR elements"}
       {:key "ext-1", :severity "init", :expression "Must have either"}]}))
+
+  (testing "refers"
+    (matcho/match
+     (sdef/refers [{:profile "basic"
+                    :resourceType "Practitioner"}
+                   {:resourceType "Organization"
+                    :profile "basic"}
+                   {:profile "basic"
+                    :resourceType "Patient"}])
+     {:type
+      [{:code "Reference",
+        :targetProfile
+        ["https://healthsamurai.github.io/igpop/profiles/Practitioner/basic.html"]}
+       {:code "Reference",
+        :targetProfile
+        ["https://healthsamurai.github.io/igpop/profiles/Organization/basic.html"]}
+       {:code "Reference",
+        :targetProfile
+        ["https://healthsamurai.github.io/igpop/profiles/Patient/basic.html"]}]}))
+
+  (testing "valueset"
+    (matcho/match
+     (sdef/valueset {:id "sample" :description "test"})
+     {:binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/sample.html" :description "test" :strength "extensible"}}))
+
+  (testing "description"
+    (matcho/match
+     (sdef/description "test")
+     {:short "test"}))
 
   (def project-path (.getPath (io/resource "test-project")))
 
