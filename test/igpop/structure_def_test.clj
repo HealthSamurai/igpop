@@ -125,30 +125,58 @@
 
   (def props
     {:elements
-     {:name {:type "HumanName"
-             :required true
-             :elements
-             {:family {:type "string" :isCollection true :minItem 1 :maxItem 10 }}
-             :refers [{
-                       :profile "basic"
-                       :resourceType "Practitioner"}
-                      {:resourceType "Organization"
-                       :profile "basic"}
-                      {
-                       :profile "basic"
-                       :resourceType "Patient"}
-                      ]}
-      :birthDate {:required true}
-      :code {:constant "female"}
+     {:name
+      {:constraints
+       {:us-core-8
+        {:expression "family.exists() or given.exists()"
+         :description "Patient.name.given or Patient.name.family or both SHALL be present"}}
+       :type "HumanName"
+       :required true
+       :description "Hi"
+       :elements
+       {:family {:type "string" :isCollection true :minItems 2 :maxItems 10 }}
+       :refers [{
+                 :profile "basic"
+                 :resourceType "Practitioner"}
+                {:resourceType "Organization"
+                 :profile "basic"}
+                {
+                 :profile "basic"
+                 :resourceType "Patient"}]
+       :valueset {:id "sample"
+                  :strength "required"
+                  :description "This is a valueset"}}
+      :birthDate {:disabled true :mustSupport false :union ["string" "CodeableConcept" "Quantity"]}
+      :code {:constant "female" :minItems 8}
       :coding
       {:constant {:code "code-1"
                   :system "sys-1"}}
-      :animal {:disable true}}})
+      :animal {:minItems 7}}})
 
-  (testing "fixed values"
+  (testing "cardinality"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {}))
+     {:element [{:min 1} {:min 2 :max 10} {:max 0}]}))
+
+  (testing "constant | fixed value"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{} {} {} {:fixedCode "female"} {:fixedCoding {:code "code-1", :system "sys-1"}}]}))
+
+  (testing "FHIRPath"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{:constraint [{:key "us-core-8"}]}]}))
+
+  (testing "Polymorphic types"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{} {} {:type [{:code "string"} {:code "CodeableConcept"} {:code "Quantity"}]}]}))
+
+  (testing "mustSupport"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{:mustSupport true} {} {:mustSupport false}]}))
 
   (clojure.pprint/pprint (sdef/generate-differential :Patient "basic" props))
 
@@ -207,6 +235,35 @@
      (sdef/fhirpath-rule :constraints constraint-example)
      {:constraints [{:key "ele-1", :severity "error", :human "All FHIR elements"}
       {:key "ext-1", :severity "init", :expression "Must have either"}]}))
+
+  (testing "refers"
+    (matcho/match
+     (sdef/refers [{:profile "basic"
+                    :resourceType "Practitioner"}
+                   {:resourceType "Organization"
+                    :profile "basic"}
+                   {:profile "basic"
+                    :resourceType "Patient"}])
+     {:type
+      [{:code "Reference",
+        :targetProfile
+        ["https://healthsamurai.github.io/igpop/profiles/Practitioner/basic.html"]}
+       {:code "Reference",
+        :targetProfile
+        ["https://healthsamurai.github.io/igpop/profiles/Organization/basic.html"]}
+       {:code "Reference",
+        :targetProfile
+        ["https://healthsamurai.github.io/igpop/profiles/Patient/basic.html"]}]}))
+
+  (testing "valueset"
+    (matcho/match
+     (sdef/valueset {:id "sample" :description "test"})
+     {:binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/sample.html" :description "test" :strength "extensible"}}))
+
+  (testing "description"
+    (matcho/match
+     (sdef/description "test")
+     {:short "test"}))
 
   (def project-path (.getPath (io/resource "test-project")))
 
