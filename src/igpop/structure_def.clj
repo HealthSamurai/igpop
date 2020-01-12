@@ -128,7 +128,10 @@
 (defn generate-differential
   [rt prn props]
   (-> {}
-      (assoc :element (elements-to-sd (into (ordered-map []) (flatten-profile (:elements props) (name rt)))))))
+      (assoc :element (-> {rt (dissoc props :elements)}
+                          ordered-map
+                          (into (flatten-profile (:elements props) (name rt)))
+                          elements-to-sd))))
 
 (defn generate-structure
   [{diffs :diff-profiles profiles :profiles :as ctx}]

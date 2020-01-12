@@ -124,7 +124,8 @@
   ;;differential generation
 
   (def props
-    {:elements
+    {:description "hi"
+     :elements
      {:name
       {:constraints
        {:us-core-8
