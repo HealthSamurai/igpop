@@ -231,7 +231,7 @@
 (defn process-unions [props ctx definitions]
   (let [paths (filter #(coll? (get-in props %)) (get-type-pths props))]
     (apply (comp distinct concat) (for [pth paths]
-                                    (let [t (get-in props pth)] 
+                                    (let [t (get-in props pth)]
                                       (apply (comp distinct concat) (map (fn [el]
                                                                            (let [def (get-def el ctx definitions)
                                                                                  refered (get-refered def ctx)]
@@ -242,7 +242,8 @@
         unions (process-unions props ctx definitions)]
     (into (empty definitions) (concat unions definitions (for [pth paths]
                                                     (let [t (-> props (get-in pth) keyword)]
-                                                      (get-def t ctx definitions)))))))
+                                                      (when (not (contains? (into {} definitions) (attach-prid (first pth) t)))
+                                                        (get-def t ctx definitions))))))))
 
 (defn shape-up-definitions [pr-schema ctx]
   (let [profile-name (-> pr-schema keys first)
