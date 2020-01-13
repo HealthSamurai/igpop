@@ -11,7 +11,7 @@
 (defn flatten-profile
   [map prefix]
   (let [flatten-extension (fn [accum entry]
-                            (let [path (get-path (str prefix ".extension") (key entry))]
+                            (let [path (conj  prefix :extension (keyword (key entry)))]
                               (merge accum {path
                                             {:extension {:name  (name (key entry))
                                                          :id    path
@@ -21,27 +21,39 @@
         (if (map? v)
           (if (contains? v :elements)
             (merge
-              (merge acc (ordered-map {(get-path prefix k) (dissoc v :elements)}))
-              (flatten-profile (:elements v) (get-path prefix k)))
+              (merge acc (ordered-map {(conj prefix k) (dissoc v :elements)}))
+              (flatten-profile (:elements v) (conj prefix k)))
             (if (= :extension k)
               (reduce flatten-extension acc v)
-              (merge acc (ordered-map {(get-path prefix k) v}))))
-          (merge acc (ordered-map {(get-path prefix k) v}))))
+              (merge acc (ordered-map {(conj prefix k) v}))))
+          (merge acc (ordered-map {(conj prefix k) v}))))
       (ordered-map []) map)))
 
-(defn elements-to-sd
-  [id el-type els]
-  els
-  (let [elements (reduce
-                   (fn [acc [el-key props]]
-                     (conj acc (reduce
-                                 (fn [acc [rule-key rule-func]]
-                                   (into acc
-                                         (if (contains? props rule-key)
-                                           (rule-func rule-key (get props rule-key)))))
-                                 {:id (name key) :path (name key)} domain-resource-agenda))) [] els)]
-    elements))
 
+
+(defn domain-resource->structure-definition
+  [els]
+  (map (fn [[el-key props]]
+         (reduce
+           (fn [acc [rule-key rule-func]]
+             (into acc
+                   (if (contains? props rule-key)
+                     (rule-func rule-key (get props rule-key))
+                     (if (contains? default-agenda rule-key) (rule-func)))))
+           (ordered-map {:id (->str-path el-key) :path (->str-path el-key)}) domain-resource-agenda))
+       els))
+
+(defn extension-diff->structure-definition
+  [els]
+  (into [] (reduce (fn [acc [el-key props]]
+             (concat acc (parse-extension-diff el-key props)))
+           [] els)))
+
+(defn extension-snapshot->structure-definition
+  [els]
+  (into [] (reduce (fn [acc [el-key props]]
+                     (concat acc (parse-extension-snapshot el-key props)))
+                   [] els)))
 
 (defn prepare-parse-metadata
   [profile-type
@@ -60,21 +72,21 @@
               target-elements-parse-metadata extension-elements))))
 
 (defmulti structure-definition
-          (fn[meta context] (meta :type)))
+          (fn [meta context] (meta :type)))
 
 (defmethod structure-definition :DomainResource
   [{differential-elements :elements profile-type :profile-type type :type}
    {resources :resources}]
   (let [basic-elements (get resources profile-type)
         snapshot-elements (merge basic-elements differential-elements)
-        differential (into (ordered-map []) (flatten-profile differential-elements (name profile-type)))
-        snapshot (into (ordered-map []) (flatten-profile snapshot-elements (name profile-type)))]
+        differential (into (ordered-map []) (flatten-profile differential-elements [profile-type]))
+        snapshot (into (ordered-map []) (flatten-profile snapshot-elements [profile-type]))]
     {:resourceType profile-type
      :id           "id"
      :snapshot     (-> {}
-                       (assoc :element (elements-to-sd "id" type snapshot)))
+                       (assoc :element (domain-resource->structure-definition snapshot)))
      :differential (-> {}
-                       (assoc :element (elements-to-sd "id" type differential)))
+                       (assoc :element (domain-resource->structure-definition differential)))
      }))
 
 (defmethod structure-definition :Extension
@@ -82,14 +94,14 @@
    {resources :resources}]
   (let [basic-elements (get resources profile-type)
         snapshot-elements (merge basic-elements differential-elements)
-        differential (into (ordered-map []) (flatten-profile differential-elements (name profile-type)))
-        snapshot (into (ordered-map []) (flatten-profile snapshot-elements (name profile-type)))]
+        differential (into (ordered-map []) (flatten-profile differential-elements [profile-type]))
+        snapshot (into (ordered-map []) (flatten-profile snapshot-elements [profile-type]))]
     {:resourceType profile-type
      :id           "id"
-     :snapshot     (-> {}
-                       (assoc :element (elements-to-sd "id" type snapshot)))
+     ;:snapshot     (-> {}
+     ;                  (assoc :element (extension->structure-definition differential)))
      :differential (-> {}
-                       (assoc :element (elements-to-sd "id" type differential)))
+                       (assoc :element (extension-diff->structure-definition differential)))
      }))
 
 (defn parsed-profile
@@ -97,7 +109,6 @@
    profile-id
    {diffs :diff-profiles :as context}]
   (let [parse-metadata (prepare-parse-metadata profile-type profile-id diffs)]
-    (map (fn [meta]
-           (structure-definition meta context)) parse-metadata)
-    (structure-definition (first parse-metadata) context)
-    ))
+    ;(map (fn [meta]
+    ;       (structure-definition meta context)) parse-metadata)
+    (structure-definition (second parse-metadata) context)))
