@@ -67,6 +67,12 @@
             {:code type})
           v)})
 
+(defn mapping
+  [maps]
+  {:mapping (mapv (fn [[k v]]
+                    (into (ordered-map {:identity (name k)}) v))
+                  maps)})
+
 (defn cardinality
   [k v]
   (cond
@@ -121,6 +127,7 @@
                      (= prop-k :refers) (refers v)
                      (= prop-k :description) (description v)
                      (= prop-k :valueset) (valueset v)
+                     (= prop-k :mappings) (mapping v)
                      (= prop-k :mustSupport) {:mustSupport v})))
            (ordered-map {:id (name el-key) :path (name el-key)}) props)))
        els))
