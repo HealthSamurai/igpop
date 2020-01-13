@@ -124,7 +124,8 @@
   ;;differential generation
 
   (def props
-    {:elements
+    {:description "hi"
+     :elements
      {:name
       {:constraints
        {:us-core-8
@@ -136,6 +137,8 @@
        :comment "comment"
        :definition "definition"
        :requirements "requirements"
+       :mappings {:hl7.v2 {:map "PID-5, PID-9"}
+                  :ru.tfoms {:map "XX-XX-F1"}}
        :elements
        {:family {:type "string" :isCollection true :minItems 2 :maxItems 10 }}
        :refers [{:profile "basic"
@@ -157,27 +160,33 @@
   (testing "cardinality"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {:element [{:min 1} {:min 2 :max 10} {:max 0}]}))
+     {:element [{} {:min 1} {:min 2 :max 10} {:max 0}]}))
 
   (testing "constant | fixed value"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {:element [{} {} {} {:fixedCode "female"} {:fixedCoding {:code "code-1", :system "sys-1"}}]}))
+     {:element [{} {} {} {} {:fixedCode "female"} {:fixedCoding {:code "code-1", :system "sys-1"}}]}))
 
   (testing "FHIRPath"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {:element [{:constraint [{:key "us-core-8"}]}]}))
+     {:element [{} {:constraint [{:key "us-core-8"}]}]}))
 
   (testing "Polymorphic types"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {:element [{} {} {:type [{:code "string"} {:code "CodeableConcept"} {:code "Quantity"}]}]}))
+     {:element [{} {} {} {:type [{:code "string"} {:code "CodeableConcept"} {:code "Quantity"}]}]}))
 
   (testing "mustSupport"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {:element [{:mustSupport true} {} {:mustSupport false}]}))
+     {:element [{} {:mustSupport true} {} {:mustSupport false}]}))
+
+  (testing "mappings"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{} {:mapping [{:identity "hl7.v2" :map "PID-5, PID-9"}
+                              {:identity "ru.tfoms" :map "XX-XX-F1"}]}]}))
 
   (testing "valueset"
     (matcho/match
@@ -232,24 +241,14 @@
      (sdef/cardinality :maxItems 14)
      {:max 14}))
 
-  (testing "mustSupport default"
-    (matcho/match
-     (sdef/mustSupport)
-     {:mustSupport true}))
-
-  (testing "mustSupport from profile"
-    (matcho/match
-     (sdef/mustSupport false)
-     {:mustSupport false}))
-
   (def constraint-example
-    '({:ele-1 {:description "All FHIR elements"}}
-      {:ext-1 {:expression "Must have either" :severity "init"}}))
+    {:constraint {:ele-1 {:description "All FHIR elements"}
+                  :ext-1 {:expression "Must have either" :severity "init"}}})
 
   (testing "fhirpath rules"
     (matcho/match
-     (sdef/fhirpath-rule :constraints constraint-example)
-     {:constraints [{:key "ele-1", :severity "error", :human "All FHIR elements"}
+     (sdef/fhirpath-rule (:constraint constraint-example))
+     {:constraint [{:key "ele-1", :severity "error", :human "All FHIR elements"}
       {:key "ext-1", :severity "init", :expression "Must have either"}]}))
 
   (testing "refers"

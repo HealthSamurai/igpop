@@ -67,6 +67,12 @@
             {:code type})
           v)})
 
+(defn mapping
+  [maps]
+  {:mapping (mapv (fn [[k v]]
+                    (into (ordered-map {:identity (name k)}) v))
+                  maps)})
+
 (defn cardinality
   [k v]
   (cond
@@ -117,18 +123,22 @@
                      (= prop-k :union) (polymorphic-types (:id acc) (:path acc) v)
                      (= prop-k :refers) (refers v)
                      (= prop-k :valueset) (valueset v)
-                     (= prop-k :mustSupport) {:mustSupport v}
                      (= prop-k :description) {:short v}
                      (= prop-k :comment) {:comment v}
                      (= prop-k :definition) {:definition v}
-                     (= prop-k :requirements) {:requirements v})))
+                     (= prop-k :requirements) {:requirements v}
+                     (= prop-k :mappings) (mapping v)
+                     (= prop-k :mustSupport) {:mustSupport v})))
            (ordered-map {:id (name el-key) :path (name el-key)}) props)))
        els))
 
 (defn generate-differential
   [rt prn props]
   (-> {}
-      (assoc :element (elements-to-sd (into (ordered-map []) (flatten-profile (:elements props) (name rt)))))))
+      (assoc :element (-> {rt (dissoc props :elements)}
+                          ordered-map
+                          (into (flatten-profile (:elements props) (name rt)))
+                          elements-to-sd))))
 
 (defn generate-structure
   [{diffs :diff-profiles profiles :profiles :as ctx}]
