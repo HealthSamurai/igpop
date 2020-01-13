@@ -134,20 +134,23 @@
        :type "HumanName"
        :required true
        :description "Hi"
+       :comment "comment"
+       :definition "definition"
+       :requirements "requirements"
+       :mappings {:hl7.v2 {:map "PID-5, PID-9"}
+                  :ru.tfoms {:map "XX-XX-F1"}}
        :elements
        {:family {:type "string" :isCollection true :minItems 2 :maxItems 10 }}
-       :refers [{
-                 :profile "basic"
+       :refers [{:profile "basic"
                  :resourceType "Practitioner"}
                 {:resourceType "Organization"
-                 :profile "basic"}
-                {
+                 :profile "basic"} {
                  :profile "basic"
                  :resourceType "Patient"}]
        :valueset {:id "sample"
                   :strength "required"
                   :description "This is a valueset"}}
-      :birthDate {:disabled true :mustSupport false :union ["string" "CodeableConcept" "Quantity"]}
+      :birthDate {:disabled true :mustSupport false :union ["string" "CodeableConcept" "Quantity"] :valueset {:id "birthDate" :description "Birth date desc"}}
       :code {:constant "female" :minItems 8}
       :coding
       {:constant {:code "code-1"
@@ -157,27 +160,48 @@
   (testing "cardinality"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {:element [{:min 1} {:min 2 :max 10} {:max 0}]}))
+     {:element [{} {:min 1} {:min 2 :max 10} {:max 0}]}))
 
   (testing "constant | fixed value"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {:element [{} {} {} {:fixedCode "female"} {:fixedCoding {:code "code-1", :system "sys-1"}}]}))
+     {:element [{} {} {} {} {:fixedCode "female"} {:fixedCoding {:code "code-1", :system "sys-1"}}]}))
 
   (testing "FHIRPath"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {:element [{:constraint [{:key "us-core-8"}]}]}))
+     {:element [{} {:constraint [{:key "us-core-8"}]}]}))
 
   (testing "Polymorphic types"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {:element [{} {} {:type [{:code "string"} {:code "CodeableConcept"} {:code "Quantity"}]}]}))
+     {:element [{} {} {} {:type [{:code "string"} {:code "CodeableConcept"} {:code "Quantity"}]}]}))
 
   (testing "mustSupport"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {:element [{:mustSupport true} {} {:mustSupport false}]}))
+     {:element [{} {:mustSupport true} {} {:mustSupport false}]}))
+
+  (testing "mappings"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{} {:mapping [{:identity "hl7.v2" :map "PID-5, PID-9"}
+                              {:identity "ru.tfoms" :map "XX-XX-F1"}]}]}))
+
+  (testing "valueset"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{} {:binding {:strength "required" :valueSet "https://healthsamurai.github.io/igpop/valuesets/sample.html" :description "This is a valueset"}} {} {:binding {:strength "extensible"}}]}))
+
+  (testing "refers"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{} {:type [{:code "Reference",:targetProfile ["https://healthsamurai.github.io/igpop/profiles/Practitioner/basic.html"]} {:code "Reference",:targetProfile ["https://healthsamurai.github.io/igpop/profiles/Organization/basic.html"]} {:code "Reference",:targetProfile ["https://healthsamurai.github.io/igpop/profiles/Patient/basic.html"]}]}]}))
+
+  (testing "refined definitions etc"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{} {:short "Hi" :comment "comment" :definition "definition" :requirements "requirements"}]}))
 
   (clojure.pprint/pprint (sdef/generate-differential :Patient "basic" props))
 
@@ -217,24 +241,14 @@
      (sdef/cardinality :maxItems 14)
      {:max 14}))
 
-  (testing "mustSupport default"
-    (matcho/match
-     (sdef/mustSupport)
-     {:mustSupport true}))
-
-  (testing "mustSupport from profile"
-    (matcho/match
-     (sdef/mustSupport false)
-     {:mustSupport false}))
-
   (def constraint-example
-    '({:ele-1 {:description "All FHIR elements"}}
-      {:ext-1 {:expression "Must have either" :severity "init"}}))
+    {:constraint {:ele-1 {:description "All FHIR elements"}
+                  :ext-1 {:expression "Must have either" :severity "init"}}})
 
   (testing "fhirpath rules"
     (matcho/match
-     (sdef/fhirpath-rule :constraints constraint-example)
-     {:constraints [{:key "ele-1", :severity "error", :human "All FHIR elements"}
+     (sdef/fhirpath-rule (:constraint constraint-example))
+     {:constraint [{:key "ele-1", :severity "error", :human "All FHIR elements"}
       {:key "ext-1", :severity "init", :expression "Must have either"}]}))
 
   (testing "refers"
@@ -261,11 +275,6 @@
      (sdef/valueset {:id "sample" :description "test"})
      {:binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/sample.html" :description "test" :strength "extensible"}}))
 
-  (testing "description"
-    (matcho/match
-     (sdef/description "test")
-     {:short "test"}))
-
   (def project-path (.getPath (io/resource "test-project")))
 
   (def project (loader/load-project project-path))
@@ -284,4 +293,3 @@
 
     )
   )
-

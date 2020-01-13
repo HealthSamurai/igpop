@@ -67,6 +67,12 @@
             {:code type})
           v)})
 
+(defn mapping
+  [maps]
+  {:mapping (mapv (fn [[k v]]
+                    (into (ordered-map {:identity (name k)}) v))
+                  maps)})
+
 (defn cardinality
   [k v]
   (cond
@@ -93,9 +99,6 @@
                            (ordered-map {:code "Reference"}) ordmap)
                    )) [] v)})
 
-(defn description
-  [v] {:short v})
-
 (defn valueset
   [map]
   {:binding (reduce-kv (fn [acc k v]
@@ -119,8 +122,12 @@
                      (= prop-k :constraints) (fhirpath-rule v)
                      (= prop-k :union) (polymorphic-types (:id acc) (:path acc) v)
                      (= prop-k :refers) (refers v)
-                     (= prop-k :description) (description v)
                      (= prop-k :valueset) (valueset v)
+                     (= prop-k :description) {:short v}
+                     (= prop-k :comment) {:comment v}
+                     (= prop-k :definition) {:definition v}
+                     (= prop-k :requirements) {:requirements v}
+                     (= prop-k :mappings) (mapping v)
                      (= prop-k :mustSupport) {:mustSupport v})))
            (ordered-map {:id (name el-key) :path (name el-key)}) props)))
        els))
