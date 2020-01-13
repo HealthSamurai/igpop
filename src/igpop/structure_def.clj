@@ -93,9 +93,6 @@
                            (ordered-map {:code "Reference"}) ordmap)
                    )) [] v)})
 
-(defn description
-  [v] {:short v})
-
 (defn valueset
   [map]
   {:binding (reduce-kv (fn [acc k v]
@@ -119,9 +116,12 @@
                      (= prop-k :constraints) (fhirpath-rule v)
                      (= prop-k :union) (polymorphic-types (:id acc) (:path acc) v)
                      (= prop-k :refers) (refers v)
-                     (= prop-k :description) (description v)
                      (= prop-k :valueset) (valueset v)
-                     (= prop-k :mustSupport) {:mustSupport v})))
+                     (= prop-k :mustSupport) {:mustSupport v}
+                     (= prop-k :description) {:short v}
+                     (= prop-k :comment) {:comment v}
+                     (= prop-k :definition) {:definition v}
+                     (= prop-k :requirements) {:requirements v})))
            (ordered-map {:id (name el-key) :path (name el-key)}) props)))
        els))
 

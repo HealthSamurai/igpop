@@ -133,14 +133,15 @@
        :type "HumanName"
        :required true
        :description "Hi"
+       :comment "comment"
+       :definition "definition"
+       :requirements "requirements"
        :elements
        {:family {:type "string" :isCollection true :minItems 2 :maxItems 10 }}
-       :refers [{
-                 :profile "basic"
+       :refers [{:profile "basic"
                  :resourceType "Practitioner"}
                 {:resourceType "Organization"
-                 :profile "basic"}
-                {
+                 :profile "basic"} {
                  :profile "basic"
                  :resourceType "Patient"}]
        :valueset {:id "sample"
@@ -177,6 +178,21 @@
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
      {:element [{:mustSupport true} {} {:mustSupport false}]}))
+
+  (testing "valueset"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{:binding {:strength "required" :valueSet "https://healthsamurai.github.io/igpop/valuesets/sample.html" :description "This is a valueset"}} {} {:binding {:strength "extensible"}}]}))
+
+  (testing "refers"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{:type [{:code "Reference",:targetProfile ["https://healthsamurai.github.io/igpop/profiles/Practitioner/basic.html"]} {:code "Reference",:targetProfile ["https://healthsamurai.github.io/igpop/profiles/Organization/basic.html"]} {:code "Reference",:targetProfile ["https://healthsamurai.github.io/igpop/profiles/Patient/basic.html"]}]}]}))
+
+  (testing "refined definitions etc"
+    (matcho/match
+     (sdef/generate-differential :Patient "basic" props)
+     {:element [{:short "Hi" :comment "comment" :definition "definition" :requirements "requirements"}]}))
 
   (clojure.pprint/pprint (sdef/generate-differential :Patient "basic" props))
 
@@ -260,11 +276,6 @@
      (sdef/valueset {:id "sample" :description "test"})
      {:binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/sample.html" :description "test" :strength "extensible"}}))
 
-  (testing "description"
-    (matcho/match
-     (sdef/description "test")
-     {:short "test"}))
-
   (def project-path (.getPath (io/resource "test-project")))
 
   (def project (loader/load-project project-path))
@@ -283,4 +294,3 @@
 
     )
   )
-
