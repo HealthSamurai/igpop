@@ -98,8 +98,8 @@
         snapshot (into (ordered-map []) (flatten-profile snapshot-elements [profile-type]))]
     {:resourceType profile-type
      :id           "id"
-     ;:snapshot     (-> {}
-     ;                  (assoc :element (extension->structure-definition differential)))
+     :snapshot     (-> {}
+                       (assoc :element (extension->structure-definition differential)))
      :differential (-> {}
                        (assoc :element (extension-diff->structure-definition differential)))
      }))
@@ -109,6 +109,5 @@
    profile-id
    {diffs :diff-profiles :as context}]
   (let [parse-metadata (prepare-parse-metadata profile-type profile-id diffs)]
-    ;(map (fn [meta]
-    ;       (structure-definition meta context)) parse-metadata)
-    (structure-definition (second parse-metadata) context)))
+    (map (fn [meta]
+           (structure-definition meta context)) parse-metadata)))
