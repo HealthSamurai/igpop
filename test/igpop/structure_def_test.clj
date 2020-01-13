@@ -150,7 +150,7 @@
        :valueset {:id "sample"
                   :strength "required"
                   :description "This is a valueset"}}
-      :birthDate {:disabled true :mustSupport false :union ["string" "CodeableConcept" "Quantity"]}
+      :birthDate {:disabled true :mustSupport false :union ["string" "CodeableConcept" "Quantity"] :valueset {:id "birthDate" :description "Birth date desc"}}
       :code {:constant "female" :minItems 8}
       :coding
       {:constant {:code "code-1"
@@ -191,17 +191,17 @@
   (testing "valueset"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {:element [{:binding {:strength "required" :valueSet "https://healthsamurai.github.io/igpop/valuesets/sample.html" :description "This is a valueset"}} {} {:binding {:strength "extensible"}}]}))
+     {:element [{} {:binding {:strength "required" :valueSet "https://healthsamurai.github.io/igpop/valuesets/sample.html" :description "This is a valueset"}} {} {:binding {:strength "extensible"}}]}))
 
   (testing "refers"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {:element [{:type [{:code "Reference",:targetProfile ["https://healthsamurai.github.io/igpop/profiles/Practitioner/basic.html"]} {:code "Reference",:targetProfile ["https://healthsamurai.github.io/igpop/profiles/Organization/basic.html"]} {:code "Reference",:targetProfile ["https://healthsamurai.github.io/igpop/profiles/Patient/basic.html"]}]}]}))
+     {:element [{} {:type [{:code "Reference",:targetProfile ["https://healthsamurai.github.io/igpop/profiles/Practitioner/basic.html"]} {:code "Reference",:targetProfile ["https://healthsamurai.github.io/igpop/profiles/Organization/basic.html"]} {:code "Reference",:targetProfile ["https://healthsamurai.github.io/igpop/profiles/Patient/basic.html"]}]}]}))
 
   (testing "refined definitions etc"
     (matcho/match
      (sdef/generate-differential :Patient "basic" props)
-     {:element [{:short "Hi" :comment "comment" :definition "definition" :requirements "requirements"}]}))
+     {:element [{} {:short "Hi" :comment "comment" :definition "definition" :requirements "requirements"}]}))
 
   (clojure.pprint/pprint (sdef/generate-differential :Patient "basic" props))
 
