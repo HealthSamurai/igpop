@@ -99,7 +99,7 @@
     {:resourceType profile-type
      :id           "id"
      :snapshot     (-> {}
-                       (assoc :element (extension->structure-definition differential)))
+                       (assoc :element (extension-snapshot->structure-definition differential)))
      :differential (-> {}
                        (assoc :element (extension-diff->structure-definition differential)))
      }))
