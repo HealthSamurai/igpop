@@ -231,7 +231,6 @@ FHIR:
 
 ```
 
-
 IGPOP:
 
 ```yaml
@@ -259,7 +258,7 @@ type:
 
 ```
 
-IGPOP
+IGPOP:
 ```yaml
 elements:
   subject:
@@ -270,7 +269,6 @@ elements:
 7. Binding to a value set 
 
 FHIR:
-
 ```yaml
 ---
 path: Encounter.participant.type
@@ -282,6 +280,7 @@ binding:
 
 ```
 
+IGPOP:
 ```yaml
 # Encounter.yaml
 ...
@@ -298,7 +297,6 @@ participant:
 
 8. Refined definitions, comments etc
 
-
 ```yaml
 name:
   elements:
@@ -314,7 +312,6 @@ name:
 9. Providing more specific or additional mappings
 
 FHIR:
-
 ```yaml
 mapping:
 - identity:
@@ -355,10 +352,42 @@ elements:
 ## Extensions
 
 FHIR: 
- extension definition
- slice in profile
+```yaml
 
-IGPOP
+- path: Patient.extension
+  slicing:
+    # by default
+    discriminator:
+      - type: value
+        path: url
+    ordered: false
+    rules: open
+  short:
+    This profile sets minimum expectations for the Patient resource to record,
+    search and fetch basic demographics and other administrative information about
+    an individual patient. It identifies which core elements, extensions,
+    vocabularies and value sets SHALL be present in the resource when using this
+    profile.
+    
+- path: Patient.extension:race
+  short: US Core Race Extension
+  sliceName: race
+  type:
+    - code: Extension
+      profile:
+        - <base_url>/Patient.extension:race.html
+  ...
+  
+- path: Patient.extension:birthsex
+  sliceName: birthsex
+  binding:
+    strength: extensible
+    valueSet: <base_url>/valuesets/birthsex.html
+  ...
+
+```
+
+IGPOP:
 ```yaml
 
 description:
