@@ -223,7 +223,7 @@
     (let [manifest (read-yaml (.getPath manifest-file))
           fhir (when-let [fv (:fhir manifest)] (load-fhir home fv))
           definitions (when-let [fv (:fhir manifest)] (load-definitions home fv))
-          schema (load-and-parse "src/igpop/igpop-schema-v2.yaml")
+          schema "TODO: LOADANDPARSE" ;;(load-and-parse "src/igpop/igpop-schema-v2.yaml")
           manifest' (assoc manifest :base fhir :home home :definitions definitions :schema schema)]
       (merge
        manifest'

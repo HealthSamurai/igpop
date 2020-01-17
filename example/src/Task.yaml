@@ -1,0 +1,32 @@
+description: A task to be performed.
+elements:
+  language:
+    description: Language of the resource content
+  text:
+    description: Text summary of the resource, for human interpretation
+    required: true
+  identifier: #[]
+    collection: true
+    minItems: 1
+    description: Task Instance Identifier
+  basedOn: #[]
+    description: Request fulfilled by this task
+  status:
+    description: draft | requested | received | accepted | +
+  owner:
+    description: Responsible individual
+    type: Reference
+  location:
+    description: Where task occurs
+    type: Reference
+  note: #[]
+    description: Comments made about the task
+  input: #[]
+    description: Information used to perform task
+    elements:
+      type:
+        description: Label for the input
+      value:
+        description: Content to use in performing the task
+        required: true
+        union: [ boolean, code, Address ]
