@@ -190,26 +190,32 @@
     (when (.exists file) file)))
 
 (defn load-fhir [home fhir-version]
-  (if-let [fhir-dir (safe-file home (str "igpop-fhir-" fhir-version) "src")]
-    (->> (file-seq fhir-dir)
-         (reduce (fn [acc f]
-                   (let [nm (.getName f)]
-                     (cond
-                       (str/starts-with? nm "vs.")
-                       (let [rt (str/replace nm #"\.yaml$" "")]
-                         (assoc-in acc [:valuesets (keyword rt)]
-                                   (read-yaml (.getPath f))))
+  (let [fhir-dir (if-let [dir (safe-file home (str "igpop-fhir-" fhir-version) "src")]
+                   dir
+                   (safe-file home (str "node_modules/igpop-fhir-" fhir-version) "src"))]
+    (if fhir-dir
+      (->> (file-seq fhir-dir)
+           (reduce (fn [acc f]
+                     (let [nm (.getName f)]
+                       (cond
+                         (str/starts-with? nm "vs.")
+                         (let [rt (str/replace nm #"\.yaml$" "")]
+                           (assoc-in acc [:valuesets (keyword rt)]
+                                     (read-yaml (.getPath f))))
 
-                       (and (str/ends-with? nm ".yaml"))
-                       (let [rt (str/replace nm #"\.yaml$" "")]
-                         (assoc-in acc [:profiles (keyword rt)] (read-yaml (.getPath f))))
-                       ))) {}))
-    (println "Could not find " (.getPath (io/file home (str "igpop-fhir-" fhir-version))))))
+                         (and (str/ends-with? nm ".yaml"))
+                         (let [rt (str/replace nm #"\.yaml$" "")]
+                           (assoc-in acc [:profiles (keyword rt)] (read-yaml (.getPath f))))
+                         ))) {}))
+      (println "Could not find " (.getPath (io/file home (str "igpop-fhir-" fhir-version)))))))
 
 (defn load-definitions [home fhir-version]
-  (if-let [fhir-types (safe-file home (str "igpop-fhir-" fhir-version) "fhir-types-definition.yaml")]
-    (read-yaml fhir-types)
-    (println "Could not find " (.getPath (io/file home (str "igpop-fhir-" fhir-version "fhir-types-definition.yaml"))))))
+  (let [fhir-types (if-let [dir (safe-file home (str "igpop-fhir-" fhir-version) "fhir-types-definition.yaml")]
+                     dir
+                     (safe-file home (str "igpop-fhir-" fhir-version) " fhir-types-definition.yaml"))]
+    (if fhir-types
+      (read-yaml fhir-types)
+      (println "Could not find " (.getPath (io/file home (str "igpop-fhir-" fhir-version "fhir-types-definition.yaml")))))))
 
 (defn load-and-parse [file-name]
   (let [defaults (safe-file file-name)]
@@ -223,8 +229,8 @@
     (let [manifest (read-yaml (.getPath manifest-file))
           fhir (when-let [fv (:fhir manifest)] (load-fhir home fv))
           definitions (when-let [fv (:fhir manifest)] (load-definitions home fv))
-          schema "TODO: LOADANDPARSE" ;;(load-and-parse "src/igpop/igpop-schema-v2.yaml")
-          manifest' (assoc manifest :base fhir :home home :definitions definitions :schema schema)]
+          ;;schema (load-and-parse "src/igpop/igpop-schema-v2.yaml")
+          manifest' (assoc manifest :base fhir :home home :definitions definitions #_:schema #_schema)]
       (merge
        manifest'
        (load-defs manifest' home)))))

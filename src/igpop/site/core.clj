@@ -167,11 +167,23 @@
     (spit (.getPath output) body)))
 
 (defmacro get-static []
-  (let [r (clojure.string/join " " (for [f (->> (str (System/getProperty "user.dir") "/resources" "/public")
-                                                clojure.java.io/file
-                                                file-seq
-                                                (filter #(not (.isDirectory %))))]
-                                     (.getName f)))]
+  (let [r (clojure.string/join " "  (reduce (fn [acc f]
+                                              (if (.isDirectory f)
+                                                (into acc (map (fn [el]
+                                                                 (str (.getName f) "/" (.getName el)))
+                                                               (filter #(not (.isDirectory %)) (file-seq f))))
+                                                (if (not (some
+                                                          (fn [el]
+                                                            (println el)
+                                                            (re-find (re-pattern (.getName f)) el))
+                                                          acc))
+                                                  (conj acc (.getName f))
+                                                  acc)))
+                                            []
+                                            (->> (str (System/getProperty "user.dir") "/resources" "/public")
+                                                 clojure.java.io/file
+                                                 file-seq
+                                                 (filter #(not (= (.getName %) "public"))))))]
     `~r))
 
 (defn build [home base-url]
@@ -201,7 +213,7 @@
 
     (doseq [f (str/split (get-static) #" ")]
       (when-not (or (= f "static-resources") (= f "static-resources\n"))
-        (io/copy (io/input-stream (io/resource (str "public/" f))) (io/file home "build" "static" f))))
+        (io/copy (io/input-stream (io/resource (str "public/" f))) (io/file home "build" "static" (last (str/split f #"/"))))))
     ))
 
 (comment
