@@ -212,10 +212,10 @@
 (defn load-definitions [home fhir-version]
   (let [fhir-types (if-let [dir (safe-file home (str "igpop-fhir-" fhir-version) "fhir-types-definition.yaml")]
                      dir
-                     (safe-file home (str "igpop-fhir-" fhir-version) " fhir-types-definition.yaml"))]
+                     (safe-file home (str "node_modules/igpop-fhir-" fhir-version) "fhir-types-definition.yaml"))]
     (if fhir-types
       (read-yaml fhir-types)
-      (println "Could not find " (.getPath (io/file home (str "igpop-fhir-" fhir-version "fhir-types-definition.yaml")))))))
+      (println "Could not find " (.getPath (io/file home (str "igpop-fhir-" fhir-version) "fhir-types-definition.yaml"))))))
 
 (defn load-and-parse [file-name]
   (let [defaults (safe-file file-name)]
