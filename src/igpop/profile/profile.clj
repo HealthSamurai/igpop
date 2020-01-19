@@ -106,5 +106,6 @@
    profile-id
    {diffs :diff-profiles :as context}]
   (let [parse-metadata (extract-resources-to-parse profile-type profile-id diffs)]
-    (map (fn [meta]
-           (structure-definition meta profile-id context)) parse-metadata)))
+    (mapv (fn [meta]
+           (structure-definition meta profile-id context))
+         parse-metadata)))
