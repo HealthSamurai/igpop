@@ -69,17 +69,18 @@
               target-elements-parse-metadata extension-elements))))
 
 (defmulti structure-definition
-          (fn [meta context] (meta :type)))
+          (fn [meta profile-id context] (meta :type)))
 
 (defmethod structure-definition :DomainResource
   [{differential-elements :elements profile-type :profile-type type :type}
+   profile-id
    {resources :resources}]
   (let [basic-elements (get resources profile-type)
         snapshot-elements (merge basic-elements differential-elements)
         differential (into (ordered-map []) (flatten-profile differential-elements [profile-type]))
         snapshot (into (ordered-map []) (flatten-profile snapshot-elements [profile-type]))]
     {:resourceType profile-type
-     :id           "id"
+     :id           (name profile-id)
      :snapshot     (-> {}
                        (assoc :element (domain-resource->structure-definition snapshot)))
      :differential (-> {}
