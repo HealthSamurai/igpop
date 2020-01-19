@@ -5,6 +5,7 @@
     [clojure.pprint :as p]
     ))
 
+
 (def constraint-struct '(:requirements :severity :human :expression :xpath :source))
 
 (defn fhirpath-rule
@@ -62,6 +63,7 @@
 
 (defn poly [k v])
 
+
 (defn extension [k {name :name id :id}]
   {:id          id,
    :path        id,
@@ -74,35 +76,52 @@
    :mapping     [{:identity "argonaut-dq-dstu2",
                   :map      id}]})
 
+(defn base-extension [id [extension ext-name ext-field] description]
+  (let [base-path (if (not (nil? ext-field)) "Extension.extension" "Extension")
+        base-id (if (not (nil? ext-field)) (str base-path ":" (name ext-field)) "Extension")]
+    (if (not (nil? ext-field))
+      {:id          base-id,
+       :path        base-path,
+       :sliceName   (name ext-field),
+       :min         0,
+       :max         "1",
+       :type        [{:code "Extension"}],
+       :mustSupport true,
+       :mapping     [{:map id}]}
+      {:id         base-id,
+       :path       base-path,
+       :short      base-id,
+       :definition description
+       :min        0,
+       :max        "1"})))
 
-(defn base-extension [id path]
-  {:id          id,
-   :path        path,
-   :sliceName   name,
-   :min         0,
-   :max         "1",
-   :type        [{:code    "Extension",
-                  :profile [(str "http://hl7.org/fhir/us/core/StructureDefinition/" name)]}],
-   :mustSupport true,
-   :mapping     [{:map id}]})
+(defn url-extension [id [extension ext-name ext-field]]
+  (let [base-path (if (not (nil? ext-field)) "Extension.extension" "Extension")
+        base-id (if (not (nil? ext-field)) (str base-path ":" (name ext-field)) "Extension")]
+    {:id       (str base-id ".url"),
+     :path     (str base-path ".url"),
+     :min      1,
+     :max      "1",
+     :type     [{:code "uri"}],
+     :fixedUri id}))
 
-(defn url-extension [id path]
-  {:id       "Extension.extension:ombCategory.url",
-   :path     "Extension.extension.url",
-   :min      1,
-   :max      "1",
-   :type     [{:code "uri"}],
-   :fixedUri "ombCategory"})
-
-(defn value-extension [id path type required description]
-  {:id      (str path ".value" type),
-   :path    (str path ".value" type),
-   :min     1,
-   :max     "1",
-   :type    [{:code type}],
-   :binding {:strength    required,
-             :description description,
-             :valueSet    "http://hl7.org/fhir/us/core/ValueSet/omb-race-category"}})
+(defn value-extension [id [extension ext-name ext-field] required type description]
+  (let [base-path (if (not (nil? ext-field)) "Extension.extension" "Extension")
+        base-id (if (not (nil? ext-field)) (str base-path ":" (name ext-field)) "Extension")]
+    (if (not (nil? type))
+      (let [type (s/capitalize type)]
+        {:id      (str base-id ".value" type),
+         :path    (str base-path ".value" type),
+         :min     1,
+         :max     "1",
+         :type    [{:code type}],
+         :binding {:strength    required,
+                   :description description,
+                   :valueSet    "http://hl7.org/fhir/us/core/ValueSet/omb-race-category"}})
+      {:id   (str base-id ".value[x]"),
+       :path (str base-path ".value[x]"),
+       :min  0,
+       :max  "0"})))
 
 (def domain-resource-agenda {:required    cardinality
                              :disabled    cardinality
@@ -126,62 +145,22 @@
 
 (def default-agenda {:mustSupport mustSupport})
 
-
-(defn extension-default-elements
-  [id]
-  [{:id       "Extension.url",
-    :path     "Extension.url",
-    :min      1,
-    :max      "1",
-    :fixedUri (str "http://hl7.org/fhir/us/core/StructureDefinition/" id)},
-   {:id   "Extension.value[x]",
-    :path "Extension.value[x]",
-    :min  0,
-    :max  "0"}])
-
-
-(defn default-elements
-  [type]
-  (get {:DomainResource []
-        :Extension      extension-default-elements} type))
-
-(def snapshot-elements
-  [:base
-   :id
-   :url
-   :value
-   :extension.base
-   :extension.id
-   :extension.url
-   :extension.valueX
-   :extension.valueX.value
-   :extension.extension])
-
-(def differential-elements
-  [:base
-   :url
-   :value])
-
 (defn ->str-path
   [vec-path]
   (clojure.string/join "." (map name vec-path)))
 
 (defn parse-extension-diff
   [path {required :required description :description type :type :as props}]
-  (let [key-name (name (second path))
-        path (->str-path path)]
-   (into []
-         (concat (extension-default-elements key-name)
-                 [(base-extension key-name path)
-                  (url-extension key-name path)
-                  (value-extension key-name path required type description)]))))
+  (let [key-name (name (second path))]
+    (into []
+          [(base-extension key-name path description)
+           (url-extension key-name path)
+           (value-extension key-name path required type description)])))
 
 (defn parse-extension-snapshot
   [path {required :required description :description type :type :as props}]
-  (let [key-name (name (second path))
-        path (->str-path path)]
-   (into []
-         (concat (extension-default-elements key-name)
-                 [(base-extension key-name path)
-                  (url-extension key-name path)
-                  (value-extension key-name path required type description)]))))
+  (let [key-name (name (second path))]
+    (into []
+          [(base-extension key-name path description)
+           (url-extension key-name path)
+           (value-extension key-name path required type description)])))

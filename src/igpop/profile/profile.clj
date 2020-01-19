@@ -4,18 +4,14 @@
             [clojure.string :as s]
             [igpop.profile.parse-rule :refer :all]))
 
-(defn get-path
-  [prefix key]
-  (str prefix "." (name key)))
-
 (defn flatten-profile
   [map prefix]
   (let [flatten-extension (fn [accum entry]
-                            (let [path (conj  prefix :extension (keyword (key entry)))]
-                              (merge accum {path
-                                            {:extension {:name  (name (key entry))
-                                                         :id    path
-                                                         :entry entry}}})))]
+                            (let [path (conj prefix :extension (keyword (key entry)))]
+                              (merge accum (ordered-map {path
+                                                         {:extension {:name  (name (key entry))
+                                                                      :id    path
+                                                                      :entry (val entry)}}}))))]
     (reduce
       (fn [acc [k v]]
         (if (map? v)
@@ -30,9 +26,9 @@
       (ordered-map []) map)))
 
 
-
 (defn domain-resource->structure-definition
   [els]
+  els
   (map (fn [[el-key props]]
          (reduce
            (fn [acc [rule-key rule-func]]
@@ -40,14 +36,15 @@
                    (if (contains? props rule-key)
                      (rule-func rule-key (get props rule-key))
                      (if (contains? default-agenda rule-key) (rule-func)))))
-           (ordered-map {:id (->str-path el-key) :path (->str-path el-key)}) domain-resource-agenda))
+           (ordered-map {:id (->str-path el-key) :path (->str-path el-key)})
+           domain-resource-agenda))
        els))
 
 (defn extension-diff->structure-definition
   [els]
   (into [] (reduce (fn [acc [el-key props]]
-             (concat acc (parse-extension-diff el-key props)))
-           [] els)))
+                     (concat acc (parse-extension-diff el-key props)))
+                   [] els)))
 
 (defn extension-snapshot->structure-definition
   [els]
@@ -55,7 +52,7 @@
                      (concat acc (parse-extension-snapshot el-key props)))
                    [] els)))
 
-(defn prepare-parse-metadata
+(defn extract-resources-to-parse
   [profile-type
    profile-id
    diff-profile]
@@ -86,28 +83,27 @@
      :snapshot     (-> {}
                        (assoc :element (domain-resource->structure-definition snapshot)))
      :differential (-> {}
-                       (assoc :element (domain-resource->structure-definition differential)))
-     }))
+                       (assoc :element (domain-resource->structure-definition differential)))}))
 
 (defmethod structure-definition :Extension
   [{differential-elements :elements profile-type :profile-type type :type}
+   profile-id
    {resources :resources}]
   (let [basic-elements (get resources profile-type)
         snapshot-elements (merge basic-elements differential-elements)
         differential (into (ordered-map []) (flatten-profile differential-elements [profile-type]))
         snapshot (into (ordered-map []) (flatten-profile snapshot-elements [profile-type]))]
     {:resourceType profile-type
-     :id           "id"
+     :id           (name profile-id)
      :snapshot     (-> {}
-                       (assoc :element (extension-snapshot->structure-definition differential)))
+                       (assoc :element (extension-snapshot->structure-definition snapshot)))
      :differential (-> {}
-                       (assoc :element (extension-diff->structure-definition differential)))
-     }))
+                       (assoc :element (extension-diff->structure-definition differential)))}))
 
 (defn parsed-profile
   [profile-type
    profile-id
    {diffs :diff-profiles :as context}]
-  (let [parse-metadata (prepare-parse-metadata profile-type profile-id diffs)]
+  (let [parse-metadata (extract-resources-to-parse profile-type profile-id diffs)]
     (map (fn [meta]
-           (structure-definition meta context)) parse-metadata)))
+           (structure-definition meta profile-id context)) parse-metadata)))
