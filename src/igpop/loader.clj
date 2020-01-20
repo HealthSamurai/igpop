@@ -131,18 +131,30 @@
 (defn merge-in [m pth v]
   (update-in m pth (fn [x] (if x (merge x v) v))))
 
+(defn deep-merge
+  [& maps]
+  (letfn [(m [& xs]
+            (if (some #(and (map? %) (not (record? %))) xs)
+              (apply merge-with m xs)
+              (last xs)))]
+    (reduce m maps)))
+
 (defn build-profiles [ctx mode]
   (->> ctx
        :source
        (reduce
         (fn [acc [rt profiles]]
           (reduce (fn [acc [id profile]]
-                    (assoc-in acc [rt id]
-                              (cond
-                                (= mode "profiles") (enrich ctx [rt] profile)
-                                (= mode "resources") (get-in ctx (into [:base :profiles] [rt]))
-                                (= mode "diff-profiles") profile)
-                               )) acc profiles)
+                    (let [rich-profile (enrich ctx [rt] profile)
+                          resources (get-in ctx (into [:base :profiles] [rt]))
+                          snapshot (deep-merge resources rich-profile)]
+                      (assoc-in acc [rt id]
+                               (cond
+                                 (= mode "profiles") rich-profile
+                                 (= mode "resources") resources
+                                 (= mode "diff-profiles") profile
+                                 (= mode "snapshot") snapshot)
+                               ))) acc profiles)
           ) {})
        (assoc ctx (keyword mode))
        (get-inlined-valuesets)))
@@ -183,7 +195,7 @@
                                   (merge-in acc (:to insert) source))
                                 (do (println "TODO:" nm)
                                     acc))))) {}))]
-    (build-profiles (build-profiles (build-profiles (merge ctx user-data) "resources") "profiles") "diff-profiles")))
+    (build-profiles (build-profiles (build-profiles (build-profiles (merge ctx user-data) "resources") "profiles") "diff-profiles") "snapshot")))
 
 (defn safe-file [& pth]
   (let [file (apply io/file pth)]
