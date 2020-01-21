@@ -21,8 +21,7 @@
           :text-decoration "underline"
           :color "#3b454e"}
     [:.fa {:font-size "9px"
-           :opacity 0.7}]
-    ]
+           :opacity 0.7}]]
    [:.tp {:position "relative"
           :margin-top "5px"
           :z-index 10
@@ -109,9 +108,9 @@
        {:width "10px"
         :height "17px"
         :position "absolute"
-        :top "0px" 
-        :left "-1px" 
-        :border-bottom link-border 
+        :top "0px"
+        :left "-1px"
+        :border-bottom link-border
         :border-left link-border}]
       [:.el-title
        {:width (str left-width "px")
@@ -121,7 +120,46 @@
       [:.el-cnt {:margin-left "20px"}
        [:.el-title {:width (str (- left-width 20) "px")}]
        [:.el-cnt
-        [:.el-title {:width (str (- left-width 40) "px")}]]]])])
+        [:.el-title {:width (str (- left-width 40) "px")}]]]
+      ])
+
+   [:.navheader {:width "100%"
+                 :display "inline-block"
+                 }
+    [:.navbar {:margin "0px"
+               :display "flex"
+               :padding "0px"
+               :max-width "100%"
+               :pointer-events "auto"
+               :border-top-left-radius "3px"
+               :border-top-right-radius "3px"}
+     [:.navbutton {:color "rgb(157, 170, 182)"
+                   :border-color "rgb(230, 236, 241) rgb(230, 236, 241) rgb(255, 255, 255) rgb(230, 236, 241)"
+                   :border-style "solid"
+                   :border-width "1px"
+                   :border-image "none 100% / 1 / 0 stretch"
+                   :cursor "auto"
+                   :margin "0px"
+                   :flex "1 1 auto"
+                   :outline "currentcolor none medium"
+                   :padding "8px 0px"
+                   :background-color "rgb(245, 247, 249)"
+                   :transition "color 250ms ease-out 0s"
+                   :border-top-left-radius "3px"}]
+     [:.navbutton:hover {:color "rgb(36, 42, 49)"
+                         :cursor "pointer"}]
+     [:.navbutton:active {:color "red"
+                          :transition "color 50ms ease-out 0s"}]
+     [:.navtext {:padding "0 8px 0 8px"
+                 :flex "1 1 16px"
+                 :overflow "hidden"
+                 :max-width "100%"
+                 :text-overflow "ellipsis"
+                 :line-height "1.5"
+                 :font-weight "500"
+                 :font-family "Content-font, Roboto, sans-serif"
+                 :font-size "14px"}]]]
+   ])
 
 (def style-tag [:style (gc/css styles)])
 
@@ -255,28 +293,37 @@
              [:h1 rt " " [:span.sub (str/lower-case rt) "-" nm]]
              [:div.summary (:description profile)]
              [:hr]
-             [:br]
-             [:br]
-             [:div.profile
-              [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
-              (new-elements ctx (:elements profile))]
-             [:br]
-             [:br]
-             [:h3 "Examples"]
-             [:br]
-             (for [[id example] (:examples profile)]
-               [:div
-                [:h5 id]
-                [:pre.example [:code (clj-yaml.core/generate-string example)]]])
-             [:br]
-             [:h3 "Resource Content"]
-             [:br]
+             [:div.navheader
+              [:div.navbar
+              [:button.navbutton {:onClick "openTab('profile')"}
+               [:div.navtext "Profiles"]]
+              [:button.navbutton {:onClick "openTab('examples')"}
+               [:div.navtext "Examples"]]
+              [:button.navbutton {:onClick "openTab('resource')"}
+               [:div.navtext "Resource Content"]]] ]
+             [:div#profile.treecontainer
+              [:br]
+              [:div.profile
+               [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
+               (new-elements ctx (:elements profile))]]
+             [:div#examples.treecontainer {:style "display: none;"}
+              [:br]
+              [:h3 "Examples"]
+              [:br]
+              (for [[id example] (:examples profile)]
+                [:div
+                 [:h5 id]
+                 [:pre.example [:code (clj-yaml.core/generate-string example)]]])
+              ]
+             [:div#resource.treecontainer {:style "display:none"}
+              [:br]
+              [:h3 "Resource Content"]
              [:div.summary (:description resource)]
              [:hr]
              [:br]
              [:div.profile
               [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
-              (new-elements ctx (:elements resource))]])}))
+              (new-elements ctx (:elements resource))] ]])}))
 
 (defn profile-link [ctx rt nm pr]
   [:a.db-item {:href (u/href ctx "profiles" (name rt) (name nm) {:format "html"})}
