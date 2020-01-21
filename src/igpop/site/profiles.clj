@@ -237,7 +237,9 @@
   (->> profiles
        (mapv (fn [[rt nm]]
                {:display (name rt)
-                :href (u/href ctx "profiles" (name rt) "basic" {:format "html"})
+                :href (if (contains? (rt (:profiles ctx)) :basic)
+                        (u/href ctx "profiles" (name rt) "basic" {:format "html"})
+                        "javascript:void(0)")
                 :items (->> (keys nm)
                             (filter #(not (= :basic %)))
                             (map (fn [n]

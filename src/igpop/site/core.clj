@@ -19,9 +19,9 @@
 (defn welcome [ctx req]
   {:status 200
    :headers {"content-type" "text/html"}
-   :body (views/layout ctx
-          [:div#content
-           [:h1 "Hello"]])})
+   :body (views/layout
+          ctx
+          (igpop.site.docs/home-page ctx))})
 
 (defn handle-static [{meth :request-method uri :uri :as req}]
   (when (and (#{:get :head} meth)
@@ -197,8 +197,8 @@
     (dump-page ctx home ["profiles"] :index)
     (doseq [[rt prs] (:profiles ctx)]
       (doseq [[id pr] (if-not (some #(= % :basic) (keys prs))
-                        (assoc prs :basic {})
-                        prs)]
+                (assoc prs :basic {})
+                prs)]
         (dump-page ctx home ["profiles" (name rt) (name id) {:format "html"}])))
 
     (.mkdir (io/file home "build" "valuesets"))

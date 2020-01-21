@@ -35,18 +35,23 @@
 
 (def style-tag [:style (gc/css styles)])
 
+(defn docs-link [nm doc ctx]
+  [:a.db-item {:href (u/href ctx "docs" (name nm) {:format "html"})}
+   [:h5 (name nm)]
+   [:div.desc (when (:title doc) (subs (:title doc) 0 (min (count (:title doc)) 55)))]])
+
 (defn dashboard [ctx req]
   {:status 200
    :body (views/layout
           ctx
           style-tag
-          (views/menu (docs-to-menu ctx) req)
-          [:div#content]
-          #_(into [:div#content]
+          ;; (views/menu (docs-to-menu ctx) req)
+          ;; [:div#content]
+          (into [:div#db-content]
                 (->> (get-in ctx [:docs :pages])
                      (sort-by first)
                      (mapv (fn [[doc-id doc]]
-                             [:pre (pr-str doc-id doc)])))))})
+                             (docs-link doc-id doc ctx))))))})
 
 (defn doc-page [ctx {{doc-id :doc-id} :route-params :as req}]
   (let [doc (get-in ctx [:docs :pages (keyword doc-id)])]
@@ -58,3 +63,9 @@
             [:div#content
              [:pre ""]
              (markdown.core/md-to-html-string (:source doc))])}))
+
+(defn home-page [ctx]
+  (let [doc (get-in ctx [:docs :home :homepage])]
+     [:div#content
+      [:pre ""]
+      (markdown.core/md-to-html-string (:source doc))]))

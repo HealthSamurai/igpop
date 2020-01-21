@@ -163,7 +163,9 @@
                                                 file-path (.getPath f)]
                                             (cond
                                               (= "md" (last parts))
-                                              (assoc-in acc [:docs :pages id] (read-file :md file-path))
+                                              (if (= (first parts) "homepage")
+                                                (assoc-in acc [:docs :home id] (read-file :md file-path))
+                                                (assoc-in acc [:docs :pages id] (read-file :md file-path)))
                                               (= "yaml" (last parts))
                                               (let [res (read-file :yaml file-path)]
                                                 (update-in acc [:docs id] (fn [x] (if x (merge x res) res))))

@@ -39,9 +39,7 @@ $(document).ready(function(){
 
 $(".item").click(function (){
     $content = $(this).next();
-    if (findInCollection(this.classList, "active")){
-        $content.slideToggle(100, function () {});
-    }
+    $content.slideToggle(100, function () {});
 });
 
 
