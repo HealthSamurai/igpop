@@ -203,5 +203,6 @@
              [:script {:src (u/href ctx "static" "jquery-3.4.1.min.js")}]
              [:script {:src (u/href ctx "static" "collapse-structure.js")}]
              [:script {:src (u/href ctx "static" "lmenu-view.js")}]
+             [:script {:src (u/href ctx "static" "tabs.js")}]
              ]]))
 
