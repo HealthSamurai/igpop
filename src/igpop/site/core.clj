@@ -208,8 +208,11 @@
 
     (.mkdir (io/file home "build" "docs"))
     (dump-page ctx home ["docs"] :index)
-    (doseq [[id _] (get-in ctx [:docs :pages])]
-      (dump-page ctx home ["docs" (name id) {:format "html"}]))
+    (doseq [[doc-id doc] (get-in ctx [:docs :pages])]
+      (doseq [[cur _] (if-not (some #(= % :basic) (keys doc))
+                         (assoc doc :basic {})
+                         doc)]
+        (dump-page ctx home ["docs" (name doc-id) (name cur) {:format "html"}])))
 
     (doseq [f (str/split (get-static) #" ")]
       (when-not (or (= f "static-resources") (= f "static-resources\n"))
