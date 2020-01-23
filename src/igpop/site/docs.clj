@@ -16,9 +16,17 @@
                [:a {:href res-url :class (when (current-page uri res-url) "active")} (or (:title doc) doc-id)]))]))
 
 (defn docs-to-menu [{{pages :pages} :docs :as ctx}]
-  (map
+  (mapv
    (fn [[doc-id doc]]
-     {:display (or (:title doc) (name doc-id)) :href (u/href ctx "docs" (name doc-id) {:format "html"})}) pages))
+     {:display (name doc-id)#_(or (:title (:basic doc)) (name doc-id))
+      :href (if (contains? doc :basic)
+              (u/href ctx "docs" (name doc-id) "basic" {:format "html"})
+              "javascript:void(0)")
+      :items (->> (keys doc)
+                  (filter #(not (= :basic %)))
+                  (map (fn [n]
+                           {:display (name n)
+                            :href (u/href ctx "docs" (name doc-id) (name n) {:format "html"})})))}) pages))
 
 (def styles
   [[:.content :thead
@@ -35,12 +43,12 @@
 
 (def style-tag [:style (gc/css styles)])
 
-(defn docs-link [nm doc ctx]
-  [:a.db-item {:href (u/href ctx "docs" (name nm) {:format "html"})}
-   [:h5 (name nm)]
+(defn docs-link [doc-id cur doc ctx]
+  [:a.db-item {:href (u/href ctx "docs" (name doc-id) (name cur) {:format "html"})}
+   [:h5 (name doc-id) ":" (name cur)]
    [:div.desc (when (:title doc) (subs (:title doc) 0 (min (count (:title doc)) 55)))]])
 
-(defn dashboard [ctx req]
+(defn dashboard [ctx {{doc-id :doc-id cur :curr-doc} :route-params :as req}]
   {:status 200
    :body (views/layout
           ctx
@@ -50,11 +58,12 @@
           (into [:div#db-content]
                 (->> (get-in ctx [:docs :pages])
                      (sort-by first)
-                     (mapv (fn [[doc-id doc]]
-                             (docs-link doc-id doc ctx))))))})
+                     (mapcat (fn [[doc-id doc]]
+                             (->> doc
+                                  (mapv (fn [[cur dc]] (docs-link doc-id cur dc ctx)))))))))})
 
-(defn doc-page [ctx {{doc-id :doc-id} :route-params :as req}]
-  (let [doc (get-in ctx [:docs :pages (keyword doc-id)])]
+(defn doc-page [ctx {{curr-doc :curr-doc} :route-params {doc-id :doc-id} :route-params :as req}]
+  (let [doc (get-in ctx [:docs :pages (keyword doc-id) (keyword curr-doc)])]
     {:status 200
      :body (views/layout
             ctx

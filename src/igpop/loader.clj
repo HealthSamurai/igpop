@@ -170,19 +170,27 @@
                             (if (.isDirectory f)
                               (if (= nm "docs")
                                 (reduce (fn [acc f]
-                                          (let [parts (str/split (.getName f) #"\.")
-                                                id (keyword (first parts))
-                                                file-path (.getPath f)]
-                                            (cond
-                                              (= "md" (last parts))
-                                              (if (= (first parts) "homepage")
-                                                (assoc-in acc [:docs :home id] (read-file :md file-path))
-                                                (assoc-in acc [:docs :pages id] (read-file :md file-path)))
-                                              (= "yaml" (last parts))
-                                              (let [res (read-file :yaml file-path)]
-                                                (update-in acc [:docs id] (fn [x] (if x (merge x res) res))))
-                                              :else
-                                              acc)))
+                                          (if (.isDirectory f)
+                                            (reduce (fn [acc file]
+                                                      (let [parts (str/split (.getName file) #"\.")
+                                                            id (keyword (first parts))
+                                                            file-path (.getPath file)]
+                                                        (do (println (keys (:new (:pages (:docs acc)))))
+                                                            (assoc-in acc [:docs :pages (keyword (.getName f)) (keyword (first parts))] (read-file :md file-path)))))
+                                                      acc (.listFiles f))
+                                            (let [parts (str/split (.getName f) #"\.")
+                                                  id (keyword (first parts))
+                                                  file-path (.getPath f)]
+                                              (cond
+                                                (= "md" (last parts))
+                                                (if (= (first parts) "homepage") ;;Separate welcome page
+                                                  (assoc-in acc [:docs :home id] (read-file :md file-path))
+                                                  (assoc-in acc [:docs :pages (keyword (first parts)) :basic] (read-file :md file-path)))
+                                                (= "yaml" (last parts))
+                                                (let [res (read-file :yaml file-path)]
+                                                  (update-in acc [:docs id] (fn [x] (if x (merge x res) res))))
+                                                :else
+                                                acc))))
                                         acc (.listFiles f))
                                 (let [rt (keyword nm)]
                                   (reduce (fn [acc f]

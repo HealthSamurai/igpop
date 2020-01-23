@@ -117,7 +117,7 @@
    "ig.yaml" {:GET #'source}
    "lsp" {:GET #'lsp}
    "docs" {:GET #'igpop.site.docs/dashboard
-           [:doc-id] {:GET #'igpop.site.docs/doc-page}}
+          [:doc-id] {[:curr-doc] {:GET #'igpop.site.docs/doc-page}}}
    "valuesets" {:GET #'igpop.site.valuesets/valuesets-dashboard
                 [:valuset-id] {:GET #'igpop.site.valuesets/valueset}}
    "get-profile" {[:profile-id] {:GET #'get-profile}}

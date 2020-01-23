@@ -1,4 +1,7 @@
 ---
-title: Welcome Page
----
-# This is just a docs
+title: FHIR RU Core	
+---	
+
+ ## Welcome	
+
+ bla bla
