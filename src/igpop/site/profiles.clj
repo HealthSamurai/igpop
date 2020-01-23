@@ -13,6 +13,7 @@
 
 (def styles
   [:body
+   [:hr {:margin "25px 0 10px 0"}]
    [:.profile {:margin "0 20px"}]
    [:pre.example {:background-color "#f5f7f9"
                   :border "1px solid #f5f7f9"
@@ -123,9 +124,6 @@
         [:.el-title {:width (str (- left-width 40) "px")}]]]
       ])
 
-   [:.navheader {:width "100%"
-                 :display "inline-block"
-                 }
     [:.navbar {:margin "0px"
                :display "flex"
                :padding "0px"
@@ -134,7 +132,7 @@
                :border-top-left-radius "3px"
                :border-top-right-radius "3px"}
      [:.navbutton {:color "rgb(157, 170, 182)"
-                   :border-color "rgb(230, 236, 241) rgb(230, 236, 241) rgb(255, 255, 255) rgb(230, 236, 241)"
+                   :border-color "rgb(230, 236, 241) rgb(230, 236, 241) rgb(255, 255, 255) transparent"
                    :border-style "solid"
                    :border-width "1px"
                    :border-image "none 100% / 1 / 0 stretch"
@@ -144,21 +142,26 @@
                    :outline "currentcolor none medium"
                    :padding "8px 0px"
                    :background-color "rgb(245, 247, 249)"
-                   :transition "color 250ms ease-out 0s"
-                   :border-top-left-radius "3px"}]
+                   :transition "color 250ms ease-out 0s"}]
+     [:.navbutton.tabActive {:color "rgb(36, 42, 49)"
+                             :background-color "rgb(255, 255, 255)"}]
      [:.navbutton:hover {:color "rgb(36, 42, 49)"
                          :cursor "pointer"}]
      [:.navbutton:active {:color "red"
                           :transition "color 50ms ease-out 0s"}]
+     [:.navbutton:first-child {:border-left-color "rgb(230, 236, 241)"
+                               :border-top-left-radius "3px"}]
+     [:.navbutton:last-child {:border-right-color "rgb(230, 236, 241)"
+                              :border-top-right-radius "3px"}]
      [:.navtext {:padding "0 8px 0 8px"
                  :flex "1 1 16px"
                  :overflow "hidden"
                  :max-width "100%"
                  :text-overflow "ellipsis"
                  :line-height "1.5"
-                 :font-weight "500"
+                 :font-weight "600"
                  :font-family "Content-font, Roboto, sans-serif"
-                 :font-size "14px"}]]]
+                 :font-size "14px"}]]
    ])
 
 (def style-tag [:style (gc/css styles)])
@@ -286,7 +289,8 @@
 
 (defn profile [ctx {{rt :resource-type nm :profile} :route-params :as req}]
   (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])
-        resource (get-in ctx [:resources (keyword rt) (keyword nm)])]
+        resource (get-in ctx [:resources (keyword rt) (keyword nm)])
+        snapshot (get-in ctx [:snapshot (keyword rt) (keyword nm)])]
     {:status 200
      :body (views/layout ctx
             style-tag
@@ -295,19 +299,29 @@
              [:h1 rt " " [:span.sub (str/lower-case rt) "-" nm]]
              [:div.summary (:description profile)]
              [:hr]
-             [:div.navheader
-              [:div.navbar
-              [:button.navbutton {:onClick "openTab('profile')"}
+             [:div.navbar
+              [:button#profile-tab.navbutton.tabActive {:onClick "openTab('profile')"}
                [:div.navtext "Profiles"]]
-              [:button.navbutton {:onClick "openTab('examples')"}
+              [:button#snapshot-tab.navbutton {:onClick "openTab('snapshot')"}
+               [:div.navtext "Snapshot"]]
+              [:button#examples-tab.navbutton {:onClick "openTab('examples')"}
                [:div.navtext "Examples"]]
-              [:button.navbutton {:onClick "openTab('resource')"}
-               [:div.navtext "Resource Content"]]] ]
+              [:button#resource-tab.navbutton {:onClick "openTab('resource')"}
+               [:div.navtext "Resource Content"]]]
              [:div#profile.treecontainer
+              [:br]
+              [:h3 "Profile Differential"]
               [:br]
               [:div.profile
                [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
                (new-elements ctx (:elements profile))]]
+             [:div#snapshot.treecontainer {:style "display: none;"}
+              [:br]
+              [:h3 "Snapshot"]
+              [:br]
+              [:div.profile
+               [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
+               (new-elements ctx (:elements snapshot))]]
              [:div#examples.treecontainer {:style "display: none;"}
               [:br]
               [:h3 "Examples"]
@@ -315,17 +329,16 @@
               (for [[id example] (:examples profile)]
                 [:div
                  [:h5 id]
-                 [:pre.example [:code (clj-yaml.core/generate-string example)]]])
-              ]
+                 [:pre.example [:code (clj-yaml.core/generate-string example)]]])]
              [:div#resource.treecontainer {:style "display:none"}
               [:br]
               [:h3 "Resource Content"]
-             [:div.summary (:description resource)]
-             [:hr]
-             [:br]
-             [:div.profile
-              [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
-              (new-elements ctx (:elements resource))] ]])}))
+              [:div.summary (:description resource)]
+              [:hr]
+              [:br]
+              [:div.profile
+               [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
+               (new-elements ctx (:elements resource))] ]])}))
 
 (defn profile-link [ctx rt nm pr]
   [:a.db-item {:href (u/href ctx "profiles" (name rt) (name nm) {:format "html"})}
@@ -343,10 +356,3 @@
                       (fn [[rt profiles]]
                         (->> profiles
                              (mapv (fn [[nm pr]] (profile-link ctx rt nm pr)))))))))})
-
-
-
-
-
-
-
