@@ -175,8 +175,7 @@
                                                       (let [parts (str/split (.getName file) #"\.")
                                                             id (keyword (first parts))
                                                             file-path (.getPath file)]
-                                                        (do (println (keys (:new (:pages (:docs acc)))))
-                                                            (assoc-in acc [:docs :pages (keyword (.getName f)) (keyword (first parts))] (read-file :md file-path)))))
+                                                        (assoc-in acc [:docs :pages (keyword (.getName f)) (keyword (first parts))] (read-file :md file-path))))
                                                       acc (.listFiles f))
                                             (let [parts (str/split (.getName f) #"\.")
                                                   id (keyword (first parts))
