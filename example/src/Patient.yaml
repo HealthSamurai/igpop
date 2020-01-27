@@ -5,7 +5,7 @@ description:
   vocabularies and value sets SHALL be present in the resource when using this
   profile.
 elements:
-  extension:
+  Extension:
     race:
       description: US Core Race Extension
       elements:

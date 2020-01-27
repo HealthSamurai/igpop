@@ -240,7 +240,7 @@
 (defn get-children [nm el]
   (cond
     (:elements el) (:elements el)
-    (and (= :extension nm)) el
+    (and (= :Extension nm)) el
     (:union el) (->> (:union el)
                      (reduce (fn [acc tp]
                                (assoc acc tp (merge (or (get el (keyword tp)) {})
@@ -249,7 +249,7 @@
 (defn element-row [ctx nm el]
   [:div.el-header
    [:span.link]
-   (when (or (has-children? el) (= :extension nm))
+   (when (or (has-children? el) (= :Extension nm))
      [:span.down-link])
    (type-icon nm el)
    [:div.el-line
@@ -288,6 +288,7 @@
                                     :href (u/href ctx "profiles" (name rt)  (name n) {:format "html"})})))}))))
 
 (defn profile [ctx {{rt :resource-type nm :profile} :route-params :as req}]
+  ;; (clojure.pprint/pprint ctx)
   (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])
         resource (get-in ctx [:resources (keyword rt) (keyword nm)])
         snapshot (get-in ctx [:snapshot (keyword rt) (keyword nm)])]

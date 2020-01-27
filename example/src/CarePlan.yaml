@@ -5,7 +5,7 @@ description:
   SHALL be present in the resource when using this profile.
 
 elements:
-  subject: { required: true, refs: [ ./Patient ] } 
+  subject: { required: true, refs: [ ./Patient ] }
   text:
     elements:
       status:
@@ -22,12 +22,14 @@ elements:
   status:
     required: true
     type: code
-    valuset: { id: 'fhir:request-status' }
+    valueset: { id: 'fhir:request-status' }
   intent:
     required: true
-    valuset: { id: 'fhir:care-plan-intent' } 
+    valueset: { id: 'fhir:care-plan-intent' } 
   category:
     contains: { coding: [{ system: "http://hl7.org/fhir/us/core/CodeSystem/careplan-category", code: assess-plan }] }
+  extension:
+    type: Extension
 api:
   search:
     params:
