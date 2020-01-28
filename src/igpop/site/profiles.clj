@@ -261,8 +261,9 @@
        [:a.vs {:href (u/href ctx "valuesets" (:id vs))}
         [:span.fa.fa-tag]
         " "
-        (:id vs)]
-       )
+        (:id vs)])
+     (when-let [url (:url el)]
+       [:p [:b "URL: "] [:a {:href url} url]])
      ]]])
 
 (defn new-elements [ctx elements]
