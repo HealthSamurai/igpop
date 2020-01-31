@@ -116,10 +116,22 @@ elements:
           description: Define named slices for collection
           value:
             elements:
-               ref: 'elements.elements'
-               match: { required: true }
-        
-
+              ref: 'elements.elements'
+              constant:
+                description: Define value constraining slice element
+                value:
+                  elements:
+                    path: constant-value
+              exists:
+                description: Define occurrence of elements in slice
+                value:
+                  elements:
+                    path: exists-value
+              match:
+                description: Define pattern constraining slice element
+                value:
+                  elements:
+                    path: match-value
 ```
 
 ## Profiling
@@ -423,8 +435,7 @@ elements:
 
 Put constaints and extensions on collections:
 
-
-1. value	
+1. value
 
 This is the most commonly used discriminator type: 
 to decide based on the value of an element.
@@ -432,7 +443,7 @@ Elements used like this are mostly primitive types- code, uri.
 
 FHIR: fixed[x] - IGPOP: constant
 
-2. pattern	
+2. pattern
 
 This is mostly used with elements of type CodeableConcept
 where the elements are distinguished by the presence of a particular code but other codes are expected to be present, and are irrelevant for the slice matching process.
@@ -449,37 +460,42 @@ Used to match slices based on the whether the item conforms to the specified pro
 
 Composition.section.entry()
 
-
-pattern nad fixed value
-
+#### Examples
+Built in slicing for constant
 ```yaml
-
 # Patient.yaml
-elements:
-  identifier:
-    descrption: Идентификаторы пациента такие как паспорт, СНИЛС и т.д.
-    slices:
-      pasport:
-        match: { system: urn:fhir-ru:pasport }
-        description: Паспортные данные
-        required: true
-        elements:
-          value: { regexp: "XX-XX-XX" }
-          extensions:
-            serialNumber: { type: string }
-      snils:
-        match: { system: ..snils.. }
-            
-
+address:
+  constant:
+    home: "A communication address at a home"
+    work: "An office address"
+    temp: "A temporary address"
 ```
-
 Built in slicing for polymorphics
 
 ```yaml
 #Observation/.....yaml
 elements:
   value:
-    Quantity: {...}
-    string: {...}
+    union: [Quantity, CodeableConcept, string]
 
+```
+
+With Slices tag
+
+```yaml
+#Patient.yaml
+identifier:
+  description: "Идентификаторы пациента такие как паспорт, СНИЛС и т.д."
+  slices:
+    passport:
+      description: Паспортные данные
+      required: true
+      constant:
+        use: "official"
+      match:
+        value: XX-XX-XX
+        system: urn:fhir-ru:pasport
+    snils
+      match:
+        system: ..snils..
 ```
