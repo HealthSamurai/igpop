@@ -44,7 +44,5 @@
    {diffs :diff-profiles :as context}]
   (let [denormalized (parse/denormalize-document profile-type profile-id diffs)]
     (mapv (fn [meta]
-           (json-structure-def profile-id meta  context))
-         denormalized)
-    ;(json-structure-def profile-id (first denormalized) context)
-    ))
+            (json-structure-def profile-id meta context))
+          denormalized)))
