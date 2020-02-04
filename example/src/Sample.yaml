@@ -1,0 +1,90 @@
+description:
+  This profile includes all elements submitted and already implemented in igpop.
+elements:
+  Extension:
+    race:
+      description: US Core Race Extension
+      elements:
+        text: { required: true,  description: Race Text, type: string }
+        ombCategory:
+          collection: true
+          minItems: 1
+          type: Coding
+          valueset: { id: omb-race-category }
+        detailed:
+          collection: true
+          description: Extended race codes
+          type: Coding
+          valueset: { id: detailed-race }
+    birthsex:
+      type: code
+      valueset: { id: birthsex }
+  extension:
+    type: Extension
+    collection: true
+    description: Extension Slice:Unordered, Open by value:url
+    elements:
+      family-member-history-genetics-parent: {collection: true,
+                                              type: Complex,
+                                              description: Mother(s) & Father(s) - genetic & other,
+                                              url: http://hl7.org/fhir/StructureDefinition/family-member-history-genetics-parent,
+                                              valueCode: VV}
+      family-member-history-genetics-sibling: {collection: true,
+                                               type: Complex,
+                                               description: natural brother(s) & natural sister(s) - genetic & other,
+                                               url: http://hl7.org/fhir/StructureDefinition/family-member-history-genetics-sibling,
+                                               valueCode: BB}
+      family-member-history-genetics-observation: {collection: true,
+                                                   type: Reference(Observation),
+                                                   description: Genetic markers, ethnicity, etc.,
+                                                   url: http://hl7.org/fhir/StructureDefinition/family-member-history-genetics-observation,
+                                                   valueCode: CC}
+  identifier:
+    description: "Идентификаторы пациента такие как паспорт, СНИЛС и т.д."
+    slices:
+      passport:
+        description: Паспортные данные
+        required: true
+        match:
+          system.use.card: "official"
+        constant:
+          system.use.card: "..test"
+          value: "XX-XX-XX"
+          system: "urn:fhir-ru:pasport"
+      snils:
+        match:
+          system: "..snils.."
+        constant:
+          system: "..test"
+    elements:
+      type: {}
+      system: {elements: {use: {elements: {card: {}}}}}
+      value: {}
+      period: {}
+      assigner: {}
+  birthDate: {union: [dateTime, Period, Timing, instant]}
+# Unchecked samples zone ↓↓↓↓↓↓          
+  value:
+    constant: "bb"
+    maxItems: 0
+  name:
+    minItems: 1
+    description: A name associated with the patient
+    rule:
+      r1: 'family.count() + given.count() >= 1'
+    elements: { family: {}, given: {}}
+  telecom:
+    elements:
+      value:  { required: true }
+      system: { required: true,  valueset: {id: 'fhir:contact-point-system' }}
+  gender: { valueset: { id: 'fhir:administrative-gender' } }
+  address:
+    elements:
+      line: {}
+      city: {}
+      postalCode: { description: US Zip Codes }
+      state: { valueset: { id: us-core-usps-state } }
+  communication:
+    elements:
+      language: { required: true,  valueset: {id: simple-language }}
+
