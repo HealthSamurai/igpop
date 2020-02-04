@@ -39,8 +39,8 @@
           :text-align "center"
           :width "20px" :height "20px"
           :border-radius "20px"}
-    [:.fa {:padding-top "5px" :font-size "12px"}]
-    [:&.complex :&.obj {:border-radius "3px"}]
+    [:.fa {:padding-top "5px" :font-size "12px" :min-width "20px"}]
+    [:&.complex :&.obj {:border-radius "3px" :min-width "20px"}]
     [:&.profile {:margin-left "-10px" :border-radius "3px"}]]
 
    ;;[:.el-cnt.activeS {:height "0px"}]
@@ -117,11 +117,20 @@
        {:width (str left-width "px")
         :color "rgb(59, 69, 78)"
         :font-size "15px"}]
-      [:.desc {:flex 1}]
+      [:.desc {:flex 1
+               :min-width "370px"}]
       [:.el-cnt {:margin-left "20px"}
        [:.el-title {:width (str (- left-width 20) "px")}]
        [:.el-cnt
-        [:.el-title {:width (str (- left-width 40) "px")}]]]
+        [:.el-title {:width (str (- left-width 43) "px")}]
+        [:.el-cnt
+         [:.el-title {:width (str (- left-width 63) "px")}]
+         [:.el-cnt
+          [:.el-title {:width (str (- left-width 83) "px")}]
+          [:.el-cnt
+           [:.el-title {:width (str (- left-width 103) "px")}]]]]
+        ]
+       ]
       ])
 
     [:.navbar {:margin "0px"

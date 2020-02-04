@@ -26,6 +26,17 @@ elements:
   intent:
     required: true
     valueset: { id: 'fhir:care-plan-intent' } 
+    elements:
+      ru:
+        elements:
+          ru:
+            elements:
+              ru:
+                elements:
+                  ru:
+                    elements:
+                      ru:
+                        description: noice
   category:
     contains: { coding: [{ system: "http://hl7.org/fhir/us/core/CodeSystem/careplan-category", code: assess-plan }] }
   extension:
