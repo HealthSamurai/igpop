@@ -15,7 +15,7 @@ elements:
           collection: true
           description: Extended race codes
           type: Coding
-          valueset: { id: detailed-race }
+          valueset: { id: detailed-race, strength: Preferred }
     birthsex:
       type: code
       valueset: { id: birthsex }

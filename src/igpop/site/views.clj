@@ -30,6 +30,7 @@
       :grid-gap "0px"
       :height "100vh"
       :margin 0}
+     [:#welcome {:color "inherit"}]
      [:#header
       {:grid-area "header"
        :font-family "'Montserrat', sans-serif"
@@ -157,10 +158,11 @@
 
 (defn top-nav [ctx]
   [:div#header
-   [:h5
-    [:span.fa.fa-fire]
-    " "
-    (or (:title ctx) "ig.yaml:.title")]
+   [:a#welcome {:href (u/href ctx "")}
+    [:h5
+     [:span.fa.fa-fire]
+     " "
+     (or (:title ctx) "ig.yaml:.title")]]
    [:div#top-nav
     [:a {:href (u/href ctx "docs")} "Docs"]
     [:a {:href (u/href ctx "profiles")} "Profiles"]

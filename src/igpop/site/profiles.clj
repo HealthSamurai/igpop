@@ -213,14 +213,17 @@
    "string" [:span.fa.fa-pen]
    "markdown" [:span.fa.fa-pen]
    "Annotation" [:span.fa.fa-pen]
-   "ContactPoint" [:span.fa.fa-phone]})
+   "ContactPoint" [:span.fa.fa-phone]
+   "Extension" [:span.fa.fa-align-left]
+   "Complex" [:span.fa.fa-asterisk]})
 
 (defn type-icon [nm el]
   (if-let [tp (:type el)]
     [:span.tp {:class (str tp (when (Character/isUpperCase (first tp)) " complex"))}
-     (or (get type-symbols tp) (subs tp 0 1))]
+     (or (get type-symbols tp) (when (str/includes? (str (:type el)) "Reference") [:span.fa.fa-arrow-right]) (subs tp 0 1))]
     [:span.tp {:class "obj"} (cond
                                (= :extension nm) [:span.fa.fa-folder-plus]
+                               (= :Extension nm) [:span.fa.fa-align-left]
                                (:union el) [:span.fa.fa-question-circle]
                                (:slice el) [:span.fa.fa-layer-group]
                                (:elements el) [:span.fa.fa-folder]
@@ -299,10 +302,14 @@
      (when-let [d (:description el)]
        [:span d " "])
      (when-let [vs (:valueset el)]
-       [:a.vs {:href (u/href ctx "valuesets" (:id vs))}
-        [:span.fa.fa-tag]
-        " "
-        (:id vs)])]
+       [:span
+        [:a.vs {:href (u/href ctx "valuesets" (:id vs))}
+         [:span.fa.fa-tag]
+         " "
+         (:id vs)]
+        (if-let [s (:strength vs)]
+          [:b {:style "font-size: 12px"} "&nbsp" s]
+          [:b {:style "font-size: 12px"} "&nbspExtensible"])])
      (when-let [url (:url el)]
        [:div [:b "URL:&nbsp"] [:a.vs {:href url} url] " "])
      (when-let [constant (:constant el)]
@@ -310,7 +317,7 @@
      (when-let [match (:match el)]
        [:div [:b "Match:&nbsp"] match " "])
      (when-let [disabled (:disabled el)]
-       [:div [:b "Disabled"] " "])]]])
+       [:div [:b "Disabled"] " "])]]]])
 
 (defn new-elements [ctx elements]
   (->> elements
