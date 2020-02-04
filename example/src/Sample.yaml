@@ -22,7 +22,7 @@ elements:
   extension:
     type: Extension
     collection: true
-    description: Extension Slice:Unordered, Open by value:url
+    slice: Extension Slice:Unordered, Open by value:url
     elements:
       family-member-history-genetics-parent: {collection: true,
                                               type: Complex,
