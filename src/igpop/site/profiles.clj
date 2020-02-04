@@ -6,7 +6,6 @@
    [clj-yaml.core]
    [igpop.site.utils :as u]))
 
-
 (defn read-yaml [pth]
   (clj-yaml.core/parse-string
    (slurp pth)))
@@ -72,7 +71,7 @@
 
       [:.required {:color "red" :opacity 0.7 :margin "0 0.2em"}]
       [:.coll {:color "#888"}]
-      [:.desc {:color "#5b6975" :font-size "14px"}]
+      [:.desc {:color "#5b6975" :font-size "14px" :line-height "23px"}]
       [:.tp-link {:font-size "13px" :color "#909aa2"}]
       [:.el-header {:padding-left "10px"
                     :position "relative"
@@ -214,6 +213,7 @@
     [:span.tp {:class "obj"} (cond
                                (= :extension nm) [:span.fa.fa-folder-plus]
                                (:union el) [:span.fa.fa-question-circle]
+                               (:slice el) [:span.fa.fa-layer-group]
                                (:elements el) [:span.fa.fa-folder]
                                :else "?")]))
 
@@ -233,38 +233,75 @@
     [:span.tp-link.coll (str " [" (or (:minItems el) 0) ".." (or (:maxItems el) "*") "]")]))
 
 (defn has-children? [el]
-  (or 
+  (or
    (:elements el)
-   (:union el)))
+   (:union el
+   (:slices el))))
+
+(defn put-values [els vals mode]
+  (->> vals
+       (reduce-kv (fn [acc k v]
+                    (into acc (let [path (butlast
+                                          (reduce (fn [acc pth]
+                                                    (conj acc pth :elements))
+                                                  [] (map keyword (str/split (name k) #"\."))))]
+                                (if (get-in els path)
+                                  (u/deep-merge acc (assoc-in {} path {mode v}))
+                                  acc))))
+                  els)))
 
 (defn get-children [nm el]
   (cond
-    (:elements el) (:elements el)
+    (and (:elements el) (not (contains? el :slices))) (:elements el)
     (and (= :Extension nm)) el
     (:union el) (->> (:union el)
                      (reduce (fn [acc tp]
                                (assoc acc tp (merge (or (get el (keyword tp)) {})
-                                                    {:type tp}))) {}))))
+                                                    {:type tp}))) {}))
+    (:slices el)
+    (->> (:slices el)
+         (reduce-kv (fn [acc k v]
+                      (-> acc
+                          (assoc k (merge (assoc-in (dissoc v :match :constant) [:slice] {})
+                                          {:elements
+                                           (->> v
+                                                (reduce-kv (fn [acc k con]
+                                                             (u/deep-merge acc
+                                                                         (cond
+                                                                           (= k :constant)
+                                                                           (put-values (:elements el) con :constant)
+                                                                           (= k :match)
+                                                                           (put-values (:elements el) con :match)
+                                                                           )))
+                                                           (:elements el)))})))){}))))
 
+    ;;(update (:slices el) :passport dissoc :constant)))
+;; (update my-map :first-level dissoc :second-level)
 (defn element-row [ctx nm el]
   [:div.el-header
    [:span.link]
-   (when (or (has-children? el) (= :Extension nm))
+   (when (or (has-children? el) (= :Extension nm) (= :slices nm))
      [:span.down-link])
    (type-icon nm el)
    [:div.el-line
     [:div.el-title nm (required-span el) " " (type-span el) (collection-span el)]
     [:div.desc
+     [:div
      (when-let [d (:description el)]
        [:span d " "])
      (when-let [vs (:valueset el)]
        [:a.vs {:href (u/href ctx "valuesets" (:id vs))}
         [:span.fa.fa-tag]
         " "
-        (:id vs)])
+        (:id vs)])]
      (when-let [url (:url el)]
-       [:p [:b "URL: "] [:a {:href url} url]])
-     ]]])
+       [:div [:b "URL:&nbsp"] [:a.vs {:href url} url] " "])
+     (when-let [constant (:constant el)]
+       [:div [:b "Constant:&nbsp"] constant " "])
+     (when-let [match (:match el)]
+       [:div [:b "Match:&nbsp"] match " "])
+     (when-let [disabled (:disabled el)]
+       [:div [:b "Disabled"] " "])]]])
 
 (defn new-elements [ctx elements]
   (->> elements

@@ -28,26 +28,6 @@ elements:
     valueset: { id: 'fhir:care-plan-intent' } 
   category:
     contains: { coding: [{ system: "http://hl7.org/fhir/us/core/CodeSystem/careplan-category", code: assess-plan }] }
-  extension:
-    type: Extension
-    collection: true
-    description: Extension Slice:Unordered, Open by value:url
-    elements: {family-member-history-genetics-parent: {collection: true,
-                                                       type: Complex,
-                                                       description: Mother(s) & Father(s) - genetic & other,
-                                                       url: http://hl7.org/fhir/StructureDefinition/family-member-history-genetics-parent,
-                                                       valueCode: VV},
-               family-member-history-genetics-sibling: {collection: true,
-                                                        type: Complex,
-                                                        description: natural brother(s) & natural sister(s) - genetic & other,
-                                                        url: http://hl7.org/fhir/StructureDefinition/family-member-history-genetics-sibling,
-                                                        valueCode: BB},
-               family-member-history-genetics-observation: {collection: true,
-                                                            type: Reference(Observation),
-                                                            description: Genetic markers, ethnicity, etc.,
-                                                            url: http://hl7.org/fhir/StructureDefinition/family-member-history-genetics-observation,
-                                                            valueCode: CC}
-}
 api:
   search:
     params:

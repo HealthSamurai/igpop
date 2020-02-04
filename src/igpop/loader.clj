@@ -3,7 +3,8 @@
    [clj-yaml.core]
    [clojure.java.io :as io]
    [clojure.data.csv :as csv]
-   [clojure.string :as str]))
+   [clojure.string :as str]
+   [igpop.site.utils :as u]))
 
 (defn read-yaml [pth]
   (clj-yaml.core/parse-string (slurp pth)))
@@ -131,14 +132,6 @@
 (defn merge-in [m pth v]
   (update-in m pth (fn [x] (if x (merge x v) v))))
 
-(defn deep-merge
-  [& maps]
-  (letfn [(m [& xs]
-            (if (some #(and (map? %) (not (record? %))) xs)
-              (apply merge-with m xs)
-              (last xs)))]
-    (reduce m maps)))
-
 (defn build-profiles [ctx mode]
   (->> ctx
        :source
@@ -147,7 +140,7 @@
           (reduce (fn [acc [id profile]]
                     (let [rich-profile (enrich ctx [rt] profile)
                           resources (get-in ctx (into [:base :profiles] [rt]))
-                          snapshot (deep-merge resources rich-profile)]
+                          snapshot (u/deep-merge resources rich-profile)]
                       (assoc-in acc [rt id]
                                (cond
                                  (= mode "profiles") rich-profile

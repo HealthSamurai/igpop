@@ -174,7 +174,7 @@
                                                                (filter #(not (.isDirectory %)) (file-seq f))))
                                                 (if (not (some
                                                           (fn [el]
-                                                            (println el)
+                                                            ;;(println el)
                                                             (re-find (re-pattern (.getName f)) el))
                                                           acc))
                                                   (conj acc (.getName f))
