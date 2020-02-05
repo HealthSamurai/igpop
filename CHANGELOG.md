@@ -4,9 +4,55 @@ This log documents significant changes for each release.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- LSP to jar
+- LSP linter to console
+- Google analytics
+- Profile examples in a separate folder
+- Valuesets preview
+- Homepage to root directory
 - References to manifest elements ```{{project.title}}```
 - File name and ids ```{{project.id}}-{{lowercase(rt)}}```
 - Blockquotes for markdown docs 
+
+## [Draft]
+
+## [0.0.4] - 2020-02-04
+### Added
+ - Extensions
+ - Slices for constant and match
+ - URL, constant, valueset strength in element description
+ - Icons for slices, extensions, complex extensions
+ - UI home link
+ 
+### Changed
+ - Slices in spec
+ 
+### Fixed
+ - Icon for reference type
+
+## [0.0.3] - 2020-01-24
+### Added
+ - Snapshot generation
+ - Tabs for differential, snapshot, examples and resource content
+ - Homepage via separated file
+ - Nested docs
+ - Docs dashboard
+ 
+### Fixed
+ - Base profile view
+
+## [0.0.2] - 2020-01-18
+### Added
+ - Extensions in spec
+
+### Changed
+ - Publishing releases in npm instead of github
+ - Running igpop by script "igpop"
+
+### Fixed
+ - Paths to igpop-fhir-4.0.0 resources
+ - System for single concept in valuesets
+ - Spec
 
 ## [0.0.1] - 2019-12-16
 ### Added
