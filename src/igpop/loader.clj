@@ -155,6 +155,7 @@
 (defn load-defs [ctx pth]
   (let [manifest (read-yaml (str pth "/ig.yaml"))
         files (.listFiles (io/file (str pth "/src")))
+        homepage (first (filter #(= (.getName %) "homepage.md") files))
         user-data (->> files
                        (sort-by #(count (.getName %)))
                        (reduce
@@ -162,28 +163,30 @@
                           (let [nm (.getName f)]
                             (if (.isDirectory f)
                               (if (= nm "docs")
-                                (reduce (fn [acc f]
-                                          (if (.isDirectory f)
-                                            (reduce (fn [acc file]
-                                                      (let [parts (str/split (.getName file) #"\.")
-                                                            id (keyword (first parts))
-                                                            file-path (.getPath file)]
-                                                        (assoc-in acc [:docs :pages (keyword (.getName f)) (keyword (first parts))] (read-file :md file-path))))
-                                                      acc (.listFiles f))
-                                            (let [parts (str/split (.getName f) #"\.")
-                                                  id (keyword (first parts))
-                                                  file-path (.getPath f)]
-                                              (cond
-                                                (= "md" (last parts))
-                                                (if (= (first parts) "homepage") ;;Separate welcome page
-                                                  (assoc-in acc [:docs :home id] (read-file :md file-path))
-                                                  (assoc-in acc [:docs :pages (keyword (first parts)) :basic] (read-file :md file-path)))
-                                                (= "yaml" (last parts))
-                                                (let [res (read-file :yaml file-path)]
-                                                  (update-in acc [:docs id] (fn [x] (if x (merge x res) res))))
-                                                :else
-                                                acc))))
-                                        acc (.listFiles f))
+                                (let [fset (reduce conj #{} (.listFiles f))
+                                      files (keep #(when % %) (conj fset homepage))]
+                                  (reduce (fn [acc f]
+                                           (if (.isDirectory f)
+                                             (reduce (fn [acc file]
+                                                       (let [parts (str/split (.getName file) #"\.")
+                                                             id (keyword (first parts))
+                                                             file-path (.getPath file)]
+                                                         (assoc-in acc [:docs :pages (keyword (.getName f)) (keyword (first parts))] (read-file :md file-path))))
+                                                     acc (.listFiles f))
+                                             (let [parts (str/split (.getName f) #"\.")
+                                                   id (keyword (first parts))
+                                                   file-path (.getPath f)]
+                                               (cond
+                                                 (= "md" (last parts))
+                                                 (if (= (first parts) "homepage") ;;Separate welcome page
+                                                   (assoc-in acc [:docs :home id] (read-file :md file-path))
+                                                   (assoc-in acc [:docs :pages (keyword (first parts)) :basic] (read-file :md file-path)))
+                                                 (= "yaml" (last parts))
+                                                 (let [res (read-file :yaml file-path)]
+                                                   (update-in acc [:docs id] (fn [x] (if x (merge x res) res))))
+                                                 :else
+                                                 acc))))
+                                          acc files))
                                 (let [rt (keyword nm)]
                                   (reduce (fn [acc f]
                                             (if-let [insert (parse-name nm (.getName f))]
@@ -216,7 +219,6 @@
                          (let [rt (str/replace nm #"\.yaml$" "")]
                            (assoc-in acc [:valuesets (keyword rt)]
                                      (read-yaml (.getPath f))))
-
                          (and (str/ends-with? nm ".yaml"))
                          (let [rt (str/replace nm #"\.yaml$" "")]
                            (assoc-in acc [:profiles (keyword rt)] (read-yaml (.getPath f))))
