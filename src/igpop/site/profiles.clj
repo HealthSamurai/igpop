@@ -351,7 +351,9 @@
             style-tag
             (views/menu (profiles-to-menu ctx) req)
             [:div#content
-             [:h1 rt " " [:span.sub (str/lower-case rt) "-" nm]]
+             ;;[:h1 rt " " [:span.sub (str/lower-case rt) "-" nm]]
+             [:h1 rt " " [:span.sub (str/lower-case rt) "-" nm (if (not (:edit (:flags ctx)))
+                                                                 [:a.refbtn {:onclick "openEditor()"} "edit"])]]
              [:div.summary (:description profile)]
              [:hr]
              [:div.navbar

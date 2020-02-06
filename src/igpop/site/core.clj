@@ -153,7 +153,7 @@
 
 (defn dump-page [ctx home pth & [idx]]
   (let [href (apply u/href {} pth)
-        {body :body} (*dispatch ctx {:request-method :get :uri href})
+        {body :body} (*dispatch (assoc-in ctx [:flags :edit] false) {:request-method :get :uri href})
         [pth opts] (if (map? (last pth)) [(butlast pth) (last pth)] [pth {}])
         output (apply io/file (into [home "build"]
                                     (if idx
