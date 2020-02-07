@@ -352,7 +352,7 @@
             (views/menu (profiles-to-menu ctx) req)
             [:div#content
              ;;[:h1 rt " " [:span.sub (str/lower-case rt) "-" nm]]
-             [:h1 rt " " [:span.sub (str/lower-case rt) "-" nm (and (not (:no-edit (:flags ctx))) [:a.refbtn {:onclick "openEditor()"} "edit"])]]
+             [:h1 rt " " [:span.sub (str/lower-case rt) "-" nm (when (not (:no-edit (:flags ctx))) [:a.refbtn {:onclick "openEditor()"} "edit"])]]
              [:div.summary (:description profile)]
              [:hr]
              [:div.navbar
