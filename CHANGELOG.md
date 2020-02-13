@@ -15,6 +15,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Blockquotes for markdown docs 
 
 ## [Draft]
+### Added
+- Monaco for dev
+
+### Changed
+- homepage.md moved to /src
 
 ## [0.0.4] - 2020-02-04
 ### Added
