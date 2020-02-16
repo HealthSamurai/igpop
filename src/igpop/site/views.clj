@@ -189,6 +189,12 @@
 (defn layout [ctx & content]
   (hc/html [:html
             [:head
+             [:script {:async "async" :src "https://www.googletagmanager.com/gtag/js?id=UA-158366190-1"}]
+             [:script "window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+                              gtag('js', new Date());
+
+                              gtag('config', 'UA-158366190-1');"]
              [:meta {:charset "utf-8"}]
              [:link {:rel "stylesheet"
                      :href "https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
