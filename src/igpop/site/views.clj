@@ -194,7 +194,8 @@
               function gtag(){dataLayer.push(arguments);}
                               gtag('js', new Date());
 
-                              gtag('config', 'UA-158366190-1');"]
+                              gtag('config', 'UA-158366190-1');
+                              gtag('config', 'UA-158366190-2');"]
              [:meta {:charset "utf-8"}]
              [:link {:rel "stylesheet"
                      :href "https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
