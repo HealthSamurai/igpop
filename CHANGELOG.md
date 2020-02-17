@@ -4,17 +4,17 @@ This log documents significant changes for each release.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- LSP to jar
+
 - LSP linter to console
-- Google analytics
 - Profile examples in a separate folder
 - Valuesets preview
-- Homepage to root directory
 - References to manifest elements ```{{project.title}}```
 - File name and ids ```{{project.id}}-{{lowercase(rt)}}```
 - Blockquotes for markdown docs 
 
 ## [Draft]
+
+## [0.1.0] - 2020-02-17
 ### Added
 - Monaco for dev
 
