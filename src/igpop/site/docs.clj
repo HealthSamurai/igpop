@@ -26,7 +26,8 @@
                   (filter #(not (= :basic %)))
                   (map (fn [n]
                            {:display (name n)
-                            :href (u/href ctx "docs" (name doc-id) (name n) {:format "html"})})))}) pages))
+                            :href (u/href ctx "docs" (name doc-id) (name n) {:format "html"})}))
+                  (sort-by :display))}) pages))
 
 (def styles
   [[:.content :thead
