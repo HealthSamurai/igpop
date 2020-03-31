@@ -18,14 +18,14 @@
 (defn docs-to-menu [{{pages :pages} :docs :as ctx}]
   (mapv
    (fn [[doc-id doc]]
-     {:display (name doc-id)#_(or (:title (:basic doc)) (name doc-id))
+     {:display (or (:title (:basic doc)) (name doc-id))
       :href (if (contains? doc :basic)
               (u/href ctx "docs" (name doc-id) "basic" {:format "html"})
               "javascript:void(0)")
       :items (->> (keys doc)
                   (filter #(not (= :basic %)))
                   (map (fn [n]
-                           {:display (name n)
+                         {:display (or (:title (n doc)) (name n))
                             :href (u/href ctx "docs" (name doc-id) (name n) {:format "html"})}))
                   (sort-by :display))}) pages))
 
