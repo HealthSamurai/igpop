@@ -158,8 +158,7 @@
 
 (defn top-nav [ctx]
   (let [docs (:pages (:docs ctx))
-        dd nil
-        doc-folder (last (keys (into (sorted-map) dd)))
+        doc-folder (last (keys (into (sorted-map) docs)))
         basic-exists? (if (some? doc-folder)
                         (if (:basic (doc-folder docs)) :basic))
         doc-instance (if (some? doc-folder)
