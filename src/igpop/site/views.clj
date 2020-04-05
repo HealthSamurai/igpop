@@ -165,7 +165,7 @@
      (or (:title ctx) "ig.yaml:.title")]]
    [:div#top-nav
     [:a {:href (u/generate-docs-href ctx)} "Docs"]
-    [:a {:href (u/href ctx "profiles")} "Profiles"]
+    [:a {:href (u/generate-profiles-href ctx)} "Profiles"]
     [:a {:href (u/href ctx "valuesets")} "ValueSets"]]])
 
 

@@ -27,6 +27,19 @@
                    (href ctx "docs"))]
     doc-link))
 
+(defn generate-profiles-href [ctx]
+  (let [profiles (:source ctx)
+        profile-folder (first (keys (into (sorted-map) profiles)))
+        basic-exists? (if (some? profile-folder)
+                        (if (:basic (profile-folder profiles)) :basic))
+        doc-instance (if (some? profile-folder)
+                       (or basic-exists?
+                           (first (keys (into (sorted-map) (profile-folder profiles))))))
+        profile-link (if (and profile-folder doc-instance)
+                   (href ctx  "profiles" (name profile-folder) (str (name doc-instance) ".html"))
+                   (href ctx "profiles"))]
+    profile-link))
+
 (defn deep-merge
   [& maps]
   (letfn [(m [& xs]
