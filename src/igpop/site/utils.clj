@@ -47,6 +47,14 @@
                    (href ctx "profiles"))]
     profile-link))
 
+(defn generate-valueset-href [ctx]
+  (let [valuesets (:valuesets ctx)
+        valueset-instance (first (keys (sort-by first valuesets)))
+        valueset-link (if valueset-instance
+                        (href ctx "valuesets" (str (name valueset-instance) ".html"))
+                        (href ctx "valuesets"))]
+    valueset-link))
+
 (defn deep-merge
   [& maps]
   (letfn [(m [& xs]
