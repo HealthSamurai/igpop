@@ -14,6 +14,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Draft]
 
+## [0.2.0] - 2020-04-06
+### Added
+- The ability to create custom columns in valuesets
+
+### Changed
+- Docs, profiles and valuesets menu links lead to the first items of the each section instead of dashboards
+
+### Fixed
+- Docs menu items titles
+- Docs menu items order
+
 ## [0.1.0] - 2020-02-17
 ### Added
 - Monaco for dev
