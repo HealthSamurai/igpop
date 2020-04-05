@@ -28,7 +28,7 @@
                         (if (:basic (doc-folder docs)) :basic))
         doc-instance (if (some? doc-folder)
                        (or basic-exists?
-                           (last (keys (into (sorted-map) (doc-folder docs))))))
+                           (first (keys (into (sorted-map) (doc-folder docs))))))
         doc-link (if (and doc-folder doc-instance)
                    (href ctx  "docs" (name doc-folder) (str (name doc-instance) ".html"))
                    (href ctx "docs"))]
