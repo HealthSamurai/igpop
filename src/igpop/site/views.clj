@@ -157,16 +157,27 @@
     [:.summary {:color "#74818D"}]]))
 
 (defn top-nav [ctx]
-  [:div#header
-   [:a#welcome {:href (u/href ctx "")}
-    [:h5
-     [:span.fa.fa-fire]
-     " "
-     (or (:title ctx) "ig.yaml:.title")]]
-   [:div#top-nav
-    [:a {:href (u/href ctx "docs")} "Docs"]
-    [:a {:href (u/href ctx "profiles")} "Profiles"]
-    [:a {:href (u/href ctx "valuesets")} "ValueSets"]]])
+  (let [docs (:pages (:docs ctx))
+        dd nil
+        doc-folder (last (keys (into (sorted-map) dd)))
+        basic-exists? (if (some? doc-folder)
+                        (if (:basic (doc-folder docs)) :basic))
+        doc-instance (if (some? doc-folder)
+                      (or basic-exists?
+                          (last (keys (into (sorted-map) (doc-folder docs))))))
+        doc-link (if (and doc-folder doc-instance)
+                   (u/href ctx  "docs" (name doc-folder) (str (name doc-instance) ".html"))
+                   (u/href ctx "docs"))]
+       [:div#header
+        [:a#welcome {:href (u/href ctx "")}
+         [:h5
+          [:span.fa.fa-fire]
+          " "
+          (or (:title ctx) "ig.yaml:.title")]]
+        [:div#top-nav
+         [:a {:href doc-link} "Docs"]
+         [:a {:href (u/href ctx "profiles")} "Profiles"]
+         [:a {:href (u/href ctx "valuesets")} "ValueSets"]]]))
 
 
 (defn current-page [uri res-url]

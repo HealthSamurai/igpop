@@ -54,8 +54,8 @@
    :body (views/layout
           ctx
           style-tag
-          ;; (views/menu (docs-to-menu ctx) req)
-          ;; [:div#content]
+          #_(views/menu (docs-to-menu ctx) req)
+          #_[:div#content]
           (into [:div#db-content]
                 (->> (get-in ctx [:docs :pages])
                      (sort-by first)
