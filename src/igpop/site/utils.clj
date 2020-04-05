@@ -16,7 +16,14 @@
 
 (defn generate-docs-href [ctx]
   (let [docs (:pages (:docs ctx))
-        doc-folder (last (keys (into (sorted-map) docs)))
+        doc-folder (:folder
+                    (first
+                     (sort-by :title
+                      (->>
+                       docs
+                       (map (fn [[doc-id doc]]
+                               {:title (keyword (or (:title (:basic doc)) (name doc-id)))
+                                :folder doc-id}))))))
         basic-exists? (if (some? doc-folder)
                         (if (:basic (doc-folder docs)) :basic))
         doc-instance (if (some? doc-folder)
