@@ -219,8 +219,15 @@
 
 (defn type-icon [nm el]
   (if-let [tp (:type el)]
-    [:span.tp {:class (str tp (when (Character/isUpperCase (first tp)) " complex"))}
-     (or (get type-symbols tp) (when (str/includes? (str (:type el)) "Reference") [:span.fa.fa-arrow-right]) (subs tp 0 1))]
+    [:span.tp {:class
+               (if (not-empty tp)
+                 (str tp (when (Character/isUpperCase (first tp)) " complex"))
+                 (str tp))}
+     (or
+      (get type-symbols tp)
+      (when (str/includes? (str (:type el)) "Reference") [:span.fa.fa-arrow-right])
+      (if (not-empty tp) (subs tp 0 1))
+      "?")]
     [:span.tp {:class "obj"} (cond
                                (= :extension nm) [:span.fa.fa-folder-plus]
                                (= :Extension nm) [:span.fa.fa-align-left]
