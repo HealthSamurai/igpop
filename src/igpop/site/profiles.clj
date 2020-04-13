@@ -310,7 +310,7 @@
        [:span d " "])
      (when-let [vs (:valueset el)]
        [:span
-        [:a.vs {:href (u/href ctx "valuesets" (:id vs))}
+        [:a.vs {:href (u/href ctx "valuesets" (str (:id vs) ".html"))}
          [:span.fa.fa-tag]
          " "
          (:id vs)]
