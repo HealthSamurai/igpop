@@ -286,12 +286,13 @@
                                            (->> v
                                                 (reduce-kv (fn [acc k con]
                                                              (u/deep-merge acc
-                                                                         (cond
-                                                                           (= k :constant)
-                                                                           (put-values (:elements el) con :constant)
-                                                                           (= k :match)
-                                                                           (put-values (:elements el) con :match)
-                                                                           )))
+                                                                           (cond
+                                                                             (= k :constant)
+                                                                             (put-values (:elements el) con :constant)
+                                                                             (= k :match)
+                                                                             (put-values (:elements el) con :match)
+                                                                             (= k :elements)
+                                                                             con)))
                                                            (:elements el)))})))){}))))
 
     ;;(update (:slices el) :passport dissoc :constant)))
