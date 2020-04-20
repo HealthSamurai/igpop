@@ -56,11 +56,14 @@ elements:
           system: "..snils.."
         constant:
           system: "..test"
+        elements:
+          period:
+            description: "Overriden snils description"
     elements:
       type: {}
       system: {elements: {use: {elements: {card: {}}}}}
       value: {}
-      period: {}
+      period: {description: "Common description for all slices"}
       assigner: {}
   birthDate: {union: [dateTime, Period, Timing, instant]}
 # Unchecked samples zone ↓↓↓↓↓↓          
