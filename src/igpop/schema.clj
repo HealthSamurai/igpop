@@ -1,15 +1,6 @@
 (ns igpop.schema
-  (:require [flatland.ordered.map :refer :all]))
-
-(defn dissoc-in [m [k & ks :as keys]]
-  (if ks
-    (if-let [nextmap (get m k)]
-      (let [newmap (dissoc-in nextmap ks)]
-        (if (seq newmap)
-          (assoc m k newmap)
-          (dissoc m k)))
-      m)
-    (dissoc m k)))
+  (:require [flatland.ordered.map :refer :all]
+            [igpop.site.utils     :as    utils]))
 
 (defn keys-in [m]
   (letfn [(children [node]
@@ -141,7 +132,7 @@
                                                                                   pth)) :properties)) (get-fhir-complex-def t ctx) (not (= t :array)))
                                               (make-ref (name t) profile-name)
                                               (make-ref (name t))))
-                 (dissoc-in (conj (vec (if (= :items (last pth))
+                 (utils/dissoc-in (conj (vec (if (= :items (last pth))
                                          (butlast pth)
                                          pth)) :properties)))
              profile))
