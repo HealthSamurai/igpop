@@ -18,7 +18,7 @@ elements:
           valueset: { id: detailed-race, strength: Preferred }
     birthsex:
       type: code
-      valueset: { id: birthsex }
+      valueset: {url: 'http://hl7.org/fhir/2018Sep/valueset-birth-sex.html', id: birthsex }
   extension:
     type: Extension
     collection: true

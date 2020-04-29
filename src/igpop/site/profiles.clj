@@ -310,14 +310,16 @@
      (when-let [d (:description el)]
        [:span d " "])
      (when-let [vs (:valueset el)]
-       [:span
-        [:a.vs {:href (u/href ctx "valuesets" (str (:id vs) ".html"))}
-         [:span.fa.fa-tag]
-         " "
-         (:id vs)]
-        (if-let [s (:strength vs)]
-          [:b {:style "font-size: 12px"} "&nbsp" s]
-          [:b {:style "font-size: 12px"} "&nbspExtensible"])])
+       (let [href (or (:url vs)
+                      (u/href ctx "valuesets" (str (:id vs) ".html")))]
+         [:span
+         [:a.vs {:href href}
+          [:span.fa.fa-tag]
+          " "
+          (or (:url vs) (:id vs))]
+         (if-let [s (:strength vs)]
+           [:b {:style "font-size: 12px"} "&nbsp" s]
+           [:b {:style "font-size: 12px"} "&nbspExtensible"])]))
      (when-let [url (:url el)]
        [:div [:b "URL:&nbsp"] [:a.vs {:href url} url] " "])
      (when-let [constant (:constant el)]

@@ -87,7 +87,7 @@ elements:
         valueset:
           elements:
              id: { type: 'string', description: 'valueset id' }
-             url: { type: 'url' }
+             url: { type: 'url' , description: 'external valueset link'}
              strength: { type: 'code', enum: ['extensible', 'required'], default: 'extensible' }
         constant: { type: any }
         match: { type: any }
