@@ -269,33 +269,56 @@
                                   acc))))
                   els)))
 
-(defn get-children [nm el]
-  (cond
-    (and (:elements el) (not (contains? el :slices))) (:elements el)
-    (and (= :Extension nm)) el
-    (:union el) (->> (:union el)
-                     (reduce (fn [acc tp]
-                               (assoc acc tp (merge (or (get el (keyword tp)) {})
-                                                    {:type tp}))) {}))
-    (:slices el)
-    (->> (:slices el)
-         (reduce-kv (fn [acc k v]
-                      (-> acc
-                          (assoc k (merge (assoc-in (dissoc v :match :constant) [:slice] {})
-                                          {:elements
-                                           (->> v
-                                                (reduce-kv (fn [acc k con]
-                                                             (u/deep-merge acc
-                                                                           (cond
-                                                                             (= k :constant)
-                                                                             (put-values (:elements el) con :constant)
-                                                                             (= k :match)
-                                                                             (put-values (:elements el) con :match)
-                                                                             (= k :elements)
-                                                                             con)))
-                                                           (:elements el)))})))){}))))
+(defn dissoc-in [m [k & ks :as keys]]
+  (if ks
+    (if-let [nextmap (get m k)]
+      (let [newmap (dissoc-in nextmap ks)]
+        (if (seq newmap)
+          (assoc m k newmap)
+          (assoc m k {})))
+      m)
+    (dissoc m k)))
 
-    ;;(update (:slices el) :passport dissoc :constant)))
+(defn build-path [dissoc-path]
+  (map keyword (str/split (str/replace (name dissoc-path) #"\." " elements ") #" ")))
+
+(defn get-children [nm el]
+  (letfn [(constant-match-rewrite [el v]
+            (let [const-match
+                  (reduce-kv (fn [acc k con]
+                               (u/deep-merge acc
+                                             (cond
+                                               (= k :constant)
+                                               (put-values (:elements el) con :constant)
+                                               (= k :match)
+                                               (put-values (:elements el) con :match)
+                                               (= k :elements)
+                                               con)))
+                             (:elements el)
+                             v)]
+              (if (:exists v)
+                (reduce-kv (fn [acc path v]
+                             (when-not v
+                               (dissoc-in acc (build-path path))))
+                           const-match
+                           (:exists v))
+                const-match)))]
+   (cond
+     (and (:elements el) (not (contains? el :slices))) (:elements el)
+     (and (= :Extension nm)) el
+     (:union el) (->> (:union el)
+                      (reduce (fn [acc tp]
+                                (assoc acc tp (merge (or (get el (keyword tp)) {})
+                                                     {:type tp}))) {}))
+     (:slices el)
+     (->> (:slices el)
+          (reduce-kv (fn [acc k v]
+                       (-> acc
+                           (assoc k (merge (assoc-in (dissoc v :match :constant :exists) [:slice] {})
+                                           {:elements (constant-match-rewrite el v)})))){})))))
+
+
+;;(update (:slices el) :passport dissoc :constant)))
 ;; (update my-map :first-level dissoc :second-level)
 (defn element-row [ctx nm el]
   [:div.el-header

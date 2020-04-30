@@ -56,6 +56,8 @@ elements:
           system: "..snils.."
         constant:
           system: "..test"
+        exists:
+          system.use: false
         elements:
           period:
             description: "Overriden snils description"
