@@ -275,7 +275,9 @@
       (let [newmap (dissoc-in nextmap ks)]
         (if (seq newmap)
           (assoc m k newmap)
-          (assoc m k {})))
+          (if (= k :elements)
+            (dissoc m k)
+            (assoc m k {}))))
       m)
     (dissoc m k)))
 
