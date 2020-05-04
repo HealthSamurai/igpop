@@ -46,26 +46,35 @@ elements:
         description: Паспортные данные
         required: true
         match:
-          system.use.card: "official"
+          type.coding.code: "official"
         constant:
-          system.use.card: "..test"
+          type.coding.display: "..test"
           value: "XX-XX-XX"
           system: "urn:fhir-ru:pasport"
+        union:
+          period: [Range]
       snils:
         match:
           system: "..snils.."
         constant:
-          system: "..test"
+          value: "..test"
         exists:
-          system.use: false
+          type.coding.code: false
+        union:
+          period: [Period]
         elements:
           period:
             description: "Overriden snils description"
     elements:
-      type: {}
-      system: {elements: {use: {elements: {card: {}}}}}
+      type:
+        elements:
+          coding:
+            elements:
+              code: {}
+              display: {}
+      system: {}
       value: {}
-      period: {description: "Common description for all slices"}
+      period: {description: "Common description for all slices", union: [Period, Range]}
       assigner: {}
   birthDate: {union: [dateTime, Period, Timing, instant]}
 # Unchecked samples zone ↓↓↓↓↓↓          
