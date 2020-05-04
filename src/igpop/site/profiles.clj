@@ -258,16 +258,22 @@
    (:slices el))))
 
 (defn put-values [els vals mode]
-  (->> vals
-       (reduce-kv (fn [acc k v]
-                    (into acc (let [path (butlast
-                                          (reduce (fn [acc pth]
-                                                    (conj acc pth :elements))
-                                                  [] (map keyword (str/split (name k) #"\."))))]
-                                (if (get-in els path)
-                                  (u/deep-merge acc (assoc-in {} path {mode v}))
-                                  acc))))
-                  els)))
+  (reduce-kv (fn [acc k v]
+               (into acc (let [path (butlast
+                                     (reduce (fn [acc pth]
+                                               (conj acc pth :elements))
+                                             [] (map keyword (str/split (name k) #"\."))))]
+                           (if (get-in els path)
+                             (let [type-instead-of-union? (and (= mode :union)
+                                                               (instance? clojure.lang.LazySeq v)
+                                                               (= 1 (count v)))]
+                               (u/deep-merge acc (assoc-in {} path
+                                                           (if type-instead-of-union?
+                                                             {:type (first v) :union nil}
+                                                             {mode v}))))
+                             acc))))
+             els
+             vals))
 
 (defn dissoc-in [m [k & ks :as keys]]
   (if ks
@@ -294,6 +300,8 @@
                                                (put-values (:elements el) con :constant)
                                                (= k :match)
                                                (put-values (:elements el) con :match)
+                                               (= k :union)
+                                               (put-values (:elements el) con :union)
                                                (= k :elements)
                                                con)))
                              (:elements el)
