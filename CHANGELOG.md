@@ -24,7 +24,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 - Valueset references in profiles
-- Empty element type nullpointer bug
+- Empty element type bug
 
 ## [0.2.0] - 2020-04-06
 ### Added
