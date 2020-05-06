@@ -126,12 +126,17 @@ elements:
                 description: Define occurrence of elements in slice
                 value:
                   elements:
-                    path: exists-value
+                    path: {type: boolean, default: true, description: 'Elements along this path would be removed if false'}
               match:
                 description: Define pattern constraining slice element
                 value:
                   elements:
                     path: match-value
+              union:
+                description: Define type constraining slice element
+                value:
+                  elements:
+                    path: types-array
 ```
 
 ## Profiling
