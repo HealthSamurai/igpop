@@ -14,6 +14,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Draft]
 
+## [0.3.0] - 2020-05-06
+### Added
+- Exists and union(type) discriminators to slices
+- Links to external valuesets by :url key
+
+### Changed
+- Overriding slice item elements with it's own nested elements
+
+### Fixed
+- Valueset references in profiles
+- Empty element type nullpointer bug
+
 ## [0.2.0] - 2020-04-06
 ### Added
 - The ability to create custom columns in valuesets
