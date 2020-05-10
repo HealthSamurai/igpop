@@ -2,28 +2,51 @@
   (:require [igpop.site.views :as views]
             [igpop.site.utils :as u]))
 
-(defn render-table [{concepts :concepts system-common :system :as vs}]
+(defn get-custom-columns [{concept :concepts :as vs}]
+  (vec
+   (disj
+    (set
+     (->> concept
+          (reduce (fn [coll item]
+                    (concat coll
+                            (->> item
+                                 (reduce-kv (fn [s k v]
+                                              (conj s k)) #{})
+                                 ))) []))) :system :code :display :definition)))
+
+(defn render-table [columns {concepts :concepts system-common :system :as vs}]
   (conj [:div.table
-         [:div.row.th.first-line
-          [:div.column
-           [:div.th "Code"]]
-          [:div.column
-           [:div.th "System"]]
-          [:div.column
-           [:div.th "Display"]]
-          [:div.column
-           [:div.th "Definition"]]]] (map (fn [{code :code system :system display :display definition :definition :as cpt}]
-                                    [:div.row
-                                     [:div.column
-                                      code]
-                                     [:div.column
-                                      (if system
-                                        system
-                                        system-common)]
-                                     [:div.column
-                                      display]
-                                     [:div.column
-                                      definition]]) concepts)))
+         (conj [:div.row.th.first-line
+                [:div.column
+                 [:div.th "Code"]]
+                [:div.column
+                 [:div.th "System"]]
+                [:div.column
+                 [:div.th "Display"]]
+                [:div.column
+                 [:div.th "Definition"]]]
+               (->> columns
+                    (map (fn [custom-column]
+                           [:div.column
+                            [:div.th (name custom-column)]]))))]
+
+        (->> concepts
+             (map (fn [{code :code system :system display :display definition :definition :as cpt}]
+                    (conj [:div.row
+                           [:div.column
+                            code]
+                           [:div.column
+                            (if system
+                              system
+                              system-common)]
+                           [:div.column
+                            display]
+                           [:div.column
+                            definition]]
+                          (->> columns
+                               (map (fn [custom-column]
+                                      [:div.column
+                                       (custom-column cpt)])))))))))
 
 (defn valuesets-to-menu [{valuesets :valuesets :as ctx}]
   (map (fn [itm]
@@ -45,7 +68,7 @@
              [:div.summary description]
              [:hr]
              [:br]
-             (render-table vs)])}))
+             (render-table (get-custom-columns vs) vs)])}))
 
 (defn valuesets-dashboard [ctx {{vs :resource-type nm :profile} :route-params :as req}]
   {:status 200

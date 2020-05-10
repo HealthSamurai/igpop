@@ -16,9 +16,18 @@
                [:a {:href res-url :class (when (current-page uri res-url) "active")} (or (:title doc) doc-id)]))]))
 
 (defn docs-to-menu [{{pages :pages} :docs :as ctx}]
-  (map
+  (mapv
    (fn [[doc-id doc]]
-     {:display (or (:title doc) (name doc-id)) :href (u/href ctx "docs" (name doc-id) {:format "html"})}) pages))
+     {:display (or (:title (:basic doc)) (name doc-id))
+      :href (if (contains? doc :basic)
+              (u/href ctx "docs" (name doc-id) "basic" {:format "html"})
+              "javascript:void(0)")
+      :items (->> (keys doc)
+                  (filter #(not (= :basic %)))
+                  (map (fn [n]
+                         {:display (or (:title (n doc)) (name n))
+                            :href (u/href ctx "docs" (name doc-id) (name n) {:format "html"})}))
+                  (sort-by :display))}) pages))
 
 (def styles
   [[:.content :thead
@@ -35,26 +44,38 @@
 
 (def style-tag [:style (gc/css styles)])
 
-(defn dashboard [ctx req]
+(defn docs-link [doc-id cur doc ctx]
+  [:a.db-item {:href (u/href ctx "docs" (name doc-id) (name cur) {:format "html"})}
+   [:h5 (name doc-id) ":" (name cur)]
+   [:div.desc (when (:title doc) (subs (:title doc) 0 (min (count (:title doc)) 55)))]])
+
+(defn dashboard [ctx {{doc-id :doc-id cur :curr-doc} :route-params :as req}]
   {:status 200
    :body (views/layout
           ctx
           style-tag
-          (views/menu (docs-to-menu ctx) req)
-          [:div#content]
-          #_(into [:div#content]
+          #_(views/menu (docs-to-menu ctx) req)
+          #_[:div#content]
+          (into [:div#db-content]
                 (->> (get-in ctx [:docs :pages])
                      (sort-by first)
-                     (mapv (fn [[doc-id doc]]
-                             [:pre (pr-str doc-id doc)])))))})
+                     (mapcat (fn [[doc-id doc]]
+                             (->> doc
+                                  (mapv (fn [[cur dc]] (docs-link doc-id cur dc ctx)))))))))})
 
-(defn doc-page [ctx {{doc-id :doc-id} :route-params :as req}]
-  (let [doc (get-in ctx [:docs :pages (keyword doc-id)])]
+(defn doc-page [ctx {{curr-doc :curr-doc} :route-params {doc-id :doc-id} :route-params :as req}]
+  (let [doc (get-in ctx [:docs :pages (keyword doc-id) (keyword curr-doc)])]
     {:status 200
      :body (views/layout
             ctx
             style-tag
             (views/menu (docs-to-menu ctx) req)
             [:div#content
-             [:pre (pr-str (:title (dissoc doc :source)))]
+             [:pre ""]
              (markdown.core/md-to-html-string (:source doc))])}))
+
+(defn home-page [ctx]
+  (let [doc (get-in ctx [:docs :home :homepage])]
+     [:div#content
+      [:pre ""]
+      (markdown.core/md-to-html-string (:source doc))]))

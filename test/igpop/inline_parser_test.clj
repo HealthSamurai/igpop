@@ -5,7 +5,7 @@
    [clojure.test :refer :all]
    [zprint.core :as zp]))
 
-(deftest test-inline-parser 
+(deftest test-inline-parser
   (testing "inline parse"
 
     (is (= (sut/inline-type "{}") :map))
@@ -65,7 +65,7 @@
      [{:type :key
        :value :abc}
       " 1"])
-    
+
 
     (matcho/match
      (sut/do-read " { }" 0 1)
@@ -102,15 +102,15 @@
          :type :kv,
          :value {:type :str,:value "hello"}}]}])
 
-    (matcho/match
-     (sut/do-read "{ valueset { id : x}}" 0 1)
-     [{:type :map
-       :value [{:type :kv
-                :key :valueset
-                :value {:type :map
-                        :value [{:type :kv
-                                 :key :id
-                                 :value {:value "x"}}]}}]}])
+    ;; (matcho/match
+    ;;  (sut/do-read "{ valueset { id : x}}" 0 1)
+    ;;  [{:type :map
+    ;;    :value [{:type :kv
+    ;;             :key :valueset
+    ;;             :value {:type :map
+    ;;                     :value [{:type :kv
+    ;;                              :key :id
+    ;;                              :value {:value "x"}}]}}]}])
 
 
 

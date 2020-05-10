@@ -2,16 +2,6 @@
   (:require [igpop.validation :as sut]
             [clojure.test :refer :all]))
 
-(deftest test-validation
-
-
-  (sut/validate )
-
-
-
-
-
-
-
-  )
-
+;; (deftest test-validation
+;;   (sut/validate )
+;;   )

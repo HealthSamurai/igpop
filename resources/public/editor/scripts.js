@@ -3,10 +3,9 @@ const currentTheme = localStorage.getItem('theme');
 
 if (currentTheme) {
     document.documentElement.setAttribute('data-theme', currentTheme);
-  
-    if (currentTheme === 'dark') {
-        toggleSwitch.checked = true;
-    }
+    //if (currentTheme === 'light') {
+      //  toggleSwitch.checked = true;
+    //}
 }
 
 function switchTheme(e) {
@@ -15,11 +14,11 @@ function switchTheme(e) {
         localStorage.setItem('theme', 'dark');
         monaco.editor.setTheme('vs-dark');
     }
-    else {        
+    else {
         document.documentElement.setAttribute('data-theme', 'light');
         localStorage.setItem('theme', 'light');
         monaco.editor.setTheme('vs');
-    }    
+    }
 }
 
 toggleSwitch.addEventListener('change', switchTheme, false);
@@ -30,11 +29,11 @@ function saveProfile () {
     xhr.setRequestHeader('Content-Type', 'text/x-yaml');
     xhr.send(monaco.editor.getModels()[0].getValue());
     if (xhr.status != 200) {
-        alert("File not found!"); 
+        alert("File not found!");
       } else {
-        alert(xhr.responseText); 
+        alert(xhr.responseText);
       }
-}   
+}
 
 function docReady(fn) {
     // see if DOM is already available
@@ -44,7 +43,7 @@ function docReady(fn) {
     } else {
         document.addEventListener("DOMContentLoaded", fn);
     }
-}    
+}
 
 function exit() {
     let url = window.location.href;

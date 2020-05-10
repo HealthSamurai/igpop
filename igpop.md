@@ -87,7 +87,7 @@ elements:
         valueset:
           elements:
              id: { type: 'string', description: 'valueset id' }
-             url: { type: 'url' }
+             url: { type: 'url' , description: 'external valueset link'}
              strength: { type: 'code', enum: ['extensible', 'required'], default: 'extensible' }
         constant: { type: any }
         match: { type: any }
@@ -116,10 +116,27 @@ elements:
           description: Define named slices for collection
           value:
             elements:
-               ref: 'elements.elements'
-               match: { required: true }
-        
-
+              ref: 'elements.elements'
+              constant:
+                description: Define value constraining slice element
+                value:
+                  elements:
+                    path: constant-value
+              exists:
+                description: Define occurrence of elements in slice
+                value:
+                  elements:
+                    path: {type: boolean, default: true, description: 'Elements along this path would be removed if false'}
+              match:
+                description: Define pattern constraining slice element
+                value:
+                  elements:
+                    path: match-value
+              union:
+                description: Define type constraining slice element
+                value:
+                  elements:
+                    path: types-array
 ```
 
 ## Profiling
@@ -231,7 +248,6 @@ FHIR:
 
 ```
 
-
 IGPOP:
 
 ```yaml
@@ -259,7 +275,7 @@ type:
 
 ```
 
-IGPOP
+IGPOP:
 ```yaml
 elements:
   subject:
@@ -270,7 +286,6 @@ elements:
 7. Binding to a value set 
 
 FHIR:
-
 ```yaml
 ---
 path: Encounter.participant.type
@@ -282,14 +297,14 @@ binding:
 
 ```
 
+IGPOP:
 ```yaml
 # Encounter.yaml
 ...
 participant:
   elements:
-    type: 
-      description: Role of participant in encounter.
-      valueset:  { id: encounter-participant-type } #default strength: extensible 
+    type:
+      valueset:  { id: encounter-participant-type description: Role of participant in encounter. } #default strength: extensible 
 
 ```
 
@@ -298,7 +313,6 @@ participant:
 + vs.<vs-id>.csv
 
 8. Refined definitions, comments etc
-
 
 ```yaml
 name:
@@ -315,7 +329,6 @@ name:
 9. Providing more specific or additional mappings
 
 FHIR:
-
 ```yaml
 mapping:
 - identity:
@@ -356,10 +369,42 @@ elements:
 ## Extensions
 
 FHIR: 
- extension definition
- slice in profile
+```yaml
 
-IGPOP
+- path: Patient.extension
+  slicing:
+    # by default
+    discriminator:
+      - type: value
+        path: url
+    ordered: false
+    rules: open
+  short:
+    This profile sets minimum expectations for the Patient resource to record,
+    search and fetch basic demographics and other administrative information about
+    an individual patient. It identifies which core elements, extensions,
+    vocabularies and value sets SHALL be present in the resource when using this
+    profile.
+    
+- path: Patient.extension:race
+  short: US Core Race Extension
+  sliceName: race
+  type:
+    - code: Extension
+      profile:
+        - <base_url>/Patient.extension:race.html
+  ...
+  
+- path: Patient.extension:birthsex
+  sliceName: birthsex
+  binding:
+    strength: extensible
+    valueSet: <base_url>/valuesets/birthsex.html
+  ...
+
+```
+
+IGPOP:
 ```yaml
 
 description:
@@ -395,8 +440,7 @@ elements:
 
 Put constaints and extensions on collections:
 
-
-1. value	
+1. value
 
 This is the most commonly used discriminator type: 
 to decide based on the value of an element.
@@ -404,7 +448,7 @@ Elements used like this are mostly primitive types- code, uri.
 
 FHIR: fixed[x] - IGPOP: constant
 
-2. pattern	
+2. pattern
 
 This is mostly used with elements of type CodeableConcept
 where the elements are distinguished by the presence of a particular code but other codes are expected to be present, and are irrelevant for the slice matching process.
@@ -421,37 +465,42 @@ Used to match slices based on the whether the item conforms to the specified pro
 
 Composition.section.entry()
 
-
-pattern nad fixed value
-
+#### Examples
+Built in slicing for constant
 ```yaml
-
 # Patient.yaml
-elements:
-  identifier:
-    descrption: Идентификаторы пациента такие как паспорт, СНИЛС и т.д.
-    slices:
-      pasport:
-        match: { system: urn:fhir-ru:pasport }
-        description: Паспортные данные
-        required: true
-        elements:
-          value: { regexp: "XX-XX-XX" }
-          extensions:
-            serialNumber: { type: string }
-      snils:
-        match: { system: ..snils.. }
-            
-
+address:
+  constant:
+    home: "A communication address at a home"
+    work: "An office address"
+    temp: "A temporary address"
 ```
-
 Built in slicing for polymorphics
 
 ```yaml
 #Observation/.....yaml
 elements:
   value:
-    Quantity: {...}
-    string: {...}
+    union: [Quantity, CodeableConcept, string]
 
+```
+
+With Slices tag
+
+```yaml
+#Patient.yaml
+identifier:
+  description: "Идентификаторы пациента такие как паспорт, СНИЛС и т.д."
+  slices:
+    passport:
+      description: Паспортные данные
+      required: true
+      constant:
+        use: "official"
+      match:
+        value: XX-XX-XX
+        system: urn:fhir-ru:pasport
+    snils
+      match:
+        system: ..snils..
 ```

@@ -30,6 +30,7 @@
       :grid-gap "0px"
       :height "100vh"
       :margin 0}
+     [:#welcome {:color "inherit"}]
      [:#header
       {:grid-area "header"
        :font-family "'Montserrat', sans-serif"
@@ -157,14 +158,15 @@
 
 (defn top-nav [ctx]
   [:div#header
-   [:h5
-    [:span.fa.fa-fire]
-    " "
-    (or (:title ctx) "ig.yaml:.title")]
+   [:a#welcome {:href (u/href ctx "")}
+    [:h5
+     [:span.fa.fa-fire]
+     " "
+     (or (:title ctx) "ig.yaml:.title")]]
    [:div#top-nav
-    [:a {:href (u/href ctx "docs")} "Docs"]
-    [:a {:href (u/href ctx "profiles")} "Profiles"]
-    [:a {:href (u/href ctx "valuesets")} "ValueSets"]]])
+    [:a {:href (u/generate-docs-href ctx)} "Docs"]
+    [:a {:href (u/generate-profiles-href ctx)} "Profiles"]
+    [:a {:href (u/generate-valueset-href ctx )} "ValueSets"]]])
 
 
 (defn current-page [uri res-url]
@@ -187,13 +189,20 @@
 (defn layout [ctx & content]
   (hc/html [:html
             [:head
+             [:script {:async "async" :src "https://www.googletagmanager.com/gtag/js?id=UA-158366190-1"}]
+             [:script "window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+                              gtag('js', new Date());
+
+                              gtag('config', 'UA-158366190-1');
+                              gtag('config', 'UA-158366190-2');"]
              [:meta {:charset "utf-8"}]
              [:link {:rel "stylesheet"
                      :href "https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
                      :integrity "sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS"
                      :crossorigin "anonymous"}]
 
-             [:link {:rel "icon" :href (u/href ctx "static" "fire-solid.png")}] 
+             [:link {:rel "icon" :href (u/href ctx "static" "fire-solid.png")}]
              [:link {:href "//cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" :rel "stylesheet"}]
              [:link {:href "//fonts.googleapis.com/css?family=Montserrat|Roboto&display=swap" :rel "stylesheet"}]
              [:style style]
@@ -203,5 +212,6 @@
              [:script {:src (u/href ctx "static" "jquery-3.4.1.min.js")}]
              [:script {:src (u/href ctx "static" "collapse-structure.js")}]
              [:script {:src (u/href ctx "static" "lmenu-view.js")}]
+             [:script {:src (u/href ctx "static" "tabs.js")}]
              ]]))
 

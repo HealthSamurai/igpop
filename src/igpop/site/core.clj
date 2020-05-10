@@ -19,9 +19,9 @@
 (defn welcome [ctx req]
   {:status 200
    :headers {"content-type" "text/html"}
-   :body (views/layout ctx
-          [:div#content
-           [:h1 "Hello"]])})
+   :body (views/layout
+          ctx
+          (igpop.site.docs/home-page ctx))})
 
 (defn handle-static [{meth :request-method uri :uri :as req}]
   (when (and (#{:get :head} meth)
@@ -117,7 +117,7 @@
    "ig.yaml" {:GET #'source}
    "lsp" {:GET #'lsp}
    "docs" {:GET #'igpop.site.docs/dashboard
-           [:doc-id] {:GET #'igpop.site.docs/doc-page}}
+          [:doc-id] {[:curr-doc] {:GET #'igpop.site.docs/doc-page}}}
    "valuesets" {:GET #'igpop.site.valuesets/valuesets-dashboard
                 [:valuset-id] {:GET #'igpop.site.valuesets/valueset}}
    "get-profile" {[:profile-id] {:GET #'get-profile}}
@@ -167,16 +167,29 @@
     (spit (.getPath output) body)))
 
 (defmacro get-static []
-  (let [r (clojure.string/join " " (for [f (->> (str (System/getProperty "user.dir") "/resources" "/public")
-                                                clojure.java.io/file
-                                                file-seq
-                                                (filter #(not (.isDirectory %))))]
-                                     (.getName f)))]
+  (let [r (clojure.string/join " "  (reduce (fn [acc f]
+                                              (if (.isDirectory f)
+                                                (into acc (map (fn [el]
+                                                                 (str (.getName f) "/" (.getName el)))
+                                                               (filter #(not (.isDirectory %)) (file-seq f))))
+                                                (if (not (some
+                                                          (fn [el]
+                                                            ;;(println el)
+                                                            (re-find (re-pattern (.getName f)) el))
+                                                          acc))
+                                                  (conj acc (.getName f))
+                                                  acc)))
+                                            []
+                                            (->> (str (System/getProperty "user.dir") "/resources" "/public")
+                                                 clojure.java.io/file
+                                                 file-seq
+                                                 (filter #(not (= (.getName %) "public"))))))]
     `~r))
 
 (defn build [home base-url]
   (let [ctx (-> (igpop.loader/load-project home)
-                (assoc :base-url base-url))]
+                (assoc :base-url base-url)
+                (assoc-in [:flags :no-edit] true))]
     (.mkdir (io/file home "build"))
     (.mkdir (io/file home "build" "static"))
     (.mkdir (io/file home "build" "profiles"))
@@ -185,8 +198,8 @@
     (dump-page ctx home ["profiles"] :index)
     (doseq [[rt prs] (:profiles ctx)]
       (doseq [[id pr] (if-not (some #(= % :basic) (keys prs))
-                        (assoc prs :basic {})
-                        prs)]
+                (assoc prs :basic {})
+                prs)]
         (dump-page ctx home ["profiles" (name rt) (name id) {:format "html"}])))
 
     (.mkdir (io/file home "build" "valuesets"))
@@ -196,12 +209,15 @@
 
     (.mkdir (io/file home "build" "docs"))
     (dump-page ctx home ["docs"] :index)
-    (doseq [[id _] (get-in ctx [:docs :pages])]
-      (dump-page ctx home ["docs" (name id) {:format "html"}]))
+    (doseq [[doc-id doc] (get-in ctx [:docs :pages])]
+      (doseq [[cur _] (if-not (some #(= % :basic) (keys doc))
+                         (assoc doc :basic {})
+                         doc)]
+        (dump-page ctx home ["docs" (name doc-id) (name cur) {:format "html"}])))
 
     (doseq [f (str/split (get-static) #" ")]
       (when-not (or (= f "static-resources") (= f "static-resources\n"))
-        (io/copy (io/input-stream (io/resource (str "public/" f))) (io/file home "build" "static" f))))
+        (io/copy (io/input-stream (io/resource (str "public/" f))) (io/file home "build" "static" (last (str/split f #"/"))))))
     ))
 
 (comment

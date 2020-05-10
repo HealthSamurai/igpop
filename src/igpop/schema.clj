@@ -1,15 +1,6 @@
 (ns igpop.schema
-  (:require [flatland.ordered.map :refer :all]))
-
-(defn dissoc-in [m [k & ks :as keys]]
-  (if ks
-    (if-let [nextmap (get m k)]
-      (let [newmap (dissoc-in nextmap ks)]
-        (if (seq newmap)
-          (assoc m k newmap)
-          (dissoc m k)))
-      m)
-    (dissoc m k)))
+  (:require [flatland.ordered.map :refer :all]
+            [igpop.site.utils     :as    utils]))
 
 (defn keys-in [m]
   (letfn [(children [node]
@@ -21,6 +12,9 @@
     (->> (keys m)
          (map vector)
          (mapcat #(tree-seq branch? children %)))))
+
+(defn cast-to-ordered-map [m eln]
+  (update-in m [eln] ordered-map))
 
 (defn get-concepts [{valuesets :valuesets :as ctx} props]
   (if-let [vs (get props :valueset)]
@@ -56,9 +50,6 @@
     (assoc-in acc [eln :enum] concepts)
     acc))
 
-(defn cast-to-ordered-map [m eln]
-  (update-in m [eln] ordered-map))
-
 (defn attach-card-restrictions [acc eln props]
   (let [with-restrictions (cond
                             (and (:maxItems props) (:minItems props))
@@ -83,9 +74,7 @@
                     (:union props)
                     (assoc-in acc [eln :type] (vec (:union props)))
                     (:type props)
-                    (assoc-in acc [eln :type] (:type props))
-                    (:collection props)
-                    (attach-card-restrictions (assoc-in acc [eln :type] "array") eln props))]
+                    (assoc-in acc [eln :type] (:type props)))]
     (if with-type
       (cast-to-ordered-map with-type eln)
       acc)))
@@ -99,25 +88,55 @@
   (-> profile keys first name str))
 
 (defn attach-prid [prid type]
-  (keyword (str (name prid) "-" (name type))))
+  (when type
+    (keyword (str (name prid) "-" (name type)))))
 
-(defn get-type-pths [profile]
-  (let [paths (filter (fn [el] (some #(= % :type) el)) (keys-in profile))]
-    paths))
+(defn get-type-pths [profile k]
+  (let [paths (filter (fn [el] (some #(= % k) el)) (keys-in profile))]
+    paths)
+  )
+
+(defn make-ref
+  ([type]
+   (str "#/definitions/" type))
+  ([type prid]
+   (str "#/definitions/"  prid "-" type)))
+
+(defn type->ref [profile pth]
+  (update-in profile pth clojure.set/rename-keys {:type :$ref}))
+
+(defn get-fhir-complex-def [type {{complex :complex} :definitions :as ctx}]
+  (when-let [def (get complex (keyword type))]
+    def))
+
+(defn get-fhir-primitive-def [type {{primitive :primitive} :definitions :as ctx}]
+  (when-let [def (get primitive (keyword type))]
+    def))
 
 (defn replace-props [profile definitions ctx]
-  (let [paths (get-type-pths profile)
+  (let [paths (filter #(and (not (coll? (get-in profile %))) (not (= (nth % 3) :properties))) (get-type-pths profile :$ref))
         profile-name (make-prid profile)]
-    (apply merge (for [pth paths]
-                   (let [t (keyword (get-in profile pth))
-                         prid (attach-prid profile-name t)
-                         pth (-> pth butlast vec)]
-                     (when (or (contains? definitions t) (contains? definitions prid))
-                       (-> profile
-                           (update-in pth clojure.set/rename-keys {:type :$ref})
-                           (dissoc-in (conj (if (= :items (last pth))
-                                              (butlast pth)
-                                              pth) :properties)))))))))
+    (loop [profile profile
+           paths paths]
+      (if (not paths)
+        profile
+        (recur
+         (let [t (keyword (get-in profile (first paths)))
+               prid (attach-prid profile-name t)
+               pth (-> (first paths) butlast vec)]
+           (if (or (contains? definitions t) (contains? definitions prid))
+             (-> profile
+                 (type->ref pth)
+                 (assoc-in (conj pth :$ref) (if (and (get-in profile (conj (vec (if (= :items (last pth))
+                                                                                  (butlast pth)
+                                                                                  pth)) :properties)) (get-fhir-complex-def t ctx) (not (= t :array)))
+                                              (make-ref (name t) profile-name)
+                                              (make-ref (name t))))
+                 (utils/dissoc-in (conj (vec (if (= :items (last pth))
+                                         (butlast pth)
+                                         pth)) :properties)))
+             profile))
+         (next paths))))))
 
 (defn element-to-schema [acc [eln props] ctx]
   (if (map? props)
@@ -130,19 +149,6 @@
             (attach-required eln (:elements props))
             (assoc-in [eln :properties] (reduce (fn [acc el] (element-to-schema acc el ctx)) acc (:elements props))))
         acc'))))
-
-
-
-(defn get-fhir-complex-def [type {{complex :complex} :definitions :as ctx}]
-  (when-let [def (get complex (keyword type))]
-    def))
-
-(defn get-fhir-primitive-def [type {{primitive :primitive} :definitions :as ctx}]
-  (when-let [def (get primitive (keyword type))]
-    def))
-
-(defn make-ref [type prid]
-  (str "#/definitions/" prid "/" type))
 
 (defn enrich-element-def [element-def ctx]
   (let [name-with-prid (-> element-def
@@ -174,7 +180,7 @@
                 (extract-refs acc el)) acc (:properties props))
       acc)))
 
-(defn get-refered-def [props ctx]
+(defn get-refered [props ctx]
   (let [refered-types (reverse (set (extract-refs [] (first (seq props)))))]
     (mapv (fn [el]
             (if-let [def (get-fhir-complex-def el ctx)]
@@ -182,29 +188,76 @@
               (assoc (ordered-map {}) el (get-fhir-primitive-def el ctx)))) refered-types)))
 
 (defn extract-element-def [props ctx prid]
-  (let [t (if (= (keyword (:type props)) :array)
-            (-> props
-                (get-in [:items :type])
-                keyword)
-            (keyword (:type props)))
-        fhir-def (get-fhir-complex-def t ctx)
-        properties (:properties props)]
-    (cond
-      (and properties fhir-def)
-      (let [t' (attach-prid prid t)]
-        (assoc {} t' (-> props
-                         (dissoc :items)
-                         (dissoc :type))))
-      fhir-def
-      (assoc {} t fhir-def))))
+  (when (:properties props)
+    (let [t (cond
+              (= (keyword (:type props)) :array)
+              (-> props
+                  (get-in [:items :type])
+                  keyword)
+              (coll? (:type props))
+              (map #(keyword %) (:type props))
+              :else
+              (keyword (:type props)))
+          fhir-def (if (coll? t)
+                     (map #(get-fhir-complex-def % ctx) t)
+                     (get-fhir-complex-def t ctx))
+          properties (:properties props)]
+      (cond
+        (and (not (coll? t)) properties fhir-def)
+        (let [t' (attach-prid prid t)]
+          (assoc {} t' (-> props
+                           (dissoc :items)
+                           (dissoc :type))))
+        fhir-def
+        (if (coll? t)
+          (map #(assoc {} % fhir-def) t)
+          (assoc {} t fhir-def))))))
 
-(defn extract-simple-types [props ctx definitions]
-  (let [paths (get-type-pths props)]
-    (into (empty definitions) (concat definitions (for [pth paths]
+(defn get-def [t ctx definitions]
+  (when (and t) (not (contains? definitions t))
+        (if-let [primitive (get-fhir-primitive-def t ctx)]
+          (assoc {} t primitive)
+          (if-let [complex (get-fhir-complex-def t ctx)]
+            (assoc {} t complex)))))
+
+(defn process-unions [props ctx definitions]
+  (let [paths (filter #(coll? (get-in props %)) (get-type-pths props :type))]
+    (apply (comp distinct concat) (for [pth paths]
+                                    (let [t (get-in props pth)]
+                                      (apply (comp distinct concat) (map (fn [el]
+                                                                           (let [def (get-def el ctx definitions)
+                                                                                 refered (get-refered def ctx)]
+                                                                             (conj refered def))) t)))))))
+
+(defn attach-references [pr-schema definitions]
+  (let [paths (filter #(not (map? (get-in pr-schema %))) (get-type-pths pr-schema :type))
+        profile-name (make-prid pr-schema)]
+    (loop [pr-schema pr-schema
+           paths paths]
+      (if (not paths)
+        pr-schema
+        (recur
+         (let [t (get-in pr-schema (first paths))
+               prid (attach-prid profile-name (keyword t))
+               pth (-> (first paths) butlast vec)]
+           (if (or (contains? definitions (keyword t)) (coll? t) (contains? definitions prid))
+             (cond-> pr-schema
+               (coll? t)
+               (assoc-in (conj pth :type) (mapv #(assoc {} :$ref (make-ref %)) t))
+               (not (coll? t))
+               (->
+                (type->ref pth)
+                (assoc-in (conj pth :$ref) (make-ref t))))
+             pr-schema))
+         (next paths))))))
+
+(defn extract-fhir-types [props ctx definitions]
+  (let [paths (get-type-pths props :type)
+        unions (process-unions props ctx definitions)]
+    (into (empty definitions) (concat unions definitions (for [pth paths]
                                                     (let [t (-> props (get-in pth) keyword)]
-                                                      (when (not (contains? definitions t))
-                                                        (if-let [primitive (get-fhir-primitive-def t ctx)]
-                                                          (assoc {} t primitive)))))))))
+                                                      (when (not (contains? (into {} definitions) (attach-prid (first pth) t)))
+                                                        (get-def t ctx definitions))))))))
 
 (defn shape-up-definitions [pr-schema ctx]
   (let [profile-name (-> pr-schema keys first)
@@ -214,30 +267,22 @@
                                 (let [enriched-def (enrich-element-def def ctx)
                                       k (first (keys enriched-def))
                                       v (get enriched-def k)]
-                                  (vec (concat acc (conj (get-refered-def {k v} ctx) {k v}))))
+                                  (vec (into acc (conj (get-refered {k v} ctx) {k v}))))
                                 acc)) [] props)]
-    (extract-simple-types pr-schema ctx definitions)))
+    (extract-fhir-types pr-schema ctx definitions)))
 
 (defn profile-to-schema [rt prn props ctx]
   (let [pr-schema (assoc (ordered-map {}) (keyword (str (name rt) (when (not (= "basic" (name prn)))
                                                                     (str "_" (name prn)))))
-                         (let [els (get props :elements)
-                               properties (assoc (ordered-map {}) :properties (ordered-map (into {} (map (fn [el] (element-to-schema (ordered-map {}) el ctx)) els))))]
+                         (let [base {:resourceType {:description (str "This is a " (name rt) " resource")
+                                                    :const (name rt)}
+                                     :id (make-ref "id")}
+                               els (get props :elements)
+                               properties (assoc (ordered-map {})
+                                                 :description (:description props)
+                                                 :properties (ordered-map (into base (map (fn [el] (element-to-schema (ordered-map {}) el ctx)) els))))]
                            (if-let [required-elements (get-required els)]
                              (assoc properties :required required-elements))))
-        definitions (ordered-map (into {} (shape-up-definitions pr-schema ctx)))]
-    (assoc {} :definitions (conj definitions pr-schema))))
-
-;;deprecated
-(defn generate-schema [{profiles :profiles :as ctx}]
-  (let [m {:$schema "http://json-schema.org/draft-07/schema#"
-           :$id (str "baseurl" "/" ".json")}]
-    (assoc m :definitions
-           (into {} (apply concat (for [[rt prls] profiles]
-                                    (for [[prn props] prls]
-                                      (assoc {} (keyword (str (name rt) (when (not (= "basic" (name prn)))
-                                                                          (str "_" (name prn)))))
-                                             (let [els (get props :elements)]
-                                               (if-let [rqrd (get-required els)]
-                                                 (assoc {} :required rqrd :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))
-                                                 (assoc {} :properties (into {} (map (fn [el] (element-to-schema {} el ctx)) els)))))))))))))
+        definitions (assoc (ordered-map (into {} (shape-up-definitions pr-schema ctx))) :id (get-fhir-primitive-def :id ctx))
+        with-refs (attach-references pr-schema definitions)]
+    (assoc {} :definitions (conj definitions (replace-props with-refs definitions ctx)))))
