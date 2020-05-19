@@ -2,7 +2,8 @@
   (:require [clj-yaml.core :as yaml]
             [clojure.java.io :as io]
             [igpop.site.core :as site]
-            [clojure.set])
+            [clojure.set]
+            [igpop.lsp.core :as lsp])
   (:gen-class))
 
 (defmulti run (fn [nm & args] (keyword nm)))
@@ -15,7 +16,9 @@
    "build"    {:fn :build
                :desc "USAGE: igpop build {your_baseurl} EXAMPLE: igpop build /igpop"}
    "dev"      {:fn :dev
-               :desc "-p to setup a port (default is 8899)"}})
+               :desc "-p to setup a port (default is 8899)"}
+   "lsp"      {:fn :lsp
+               :desc "-p to setup a port (default is 7345)"}})
 
 (defmethod run
   :help
@@ -46,6 +49,18 @@
       (site/start (System/getProperty "user.dir") (Integer. port))
       (and (< i 0) (= "dev" port))
       (site/start (System/getProperty "user.dir") 8899)
+      :else
+      (run :help))))
+
+(defmethod run
+  :lsp
+  [& args]
+  (println "LSP..." args)
+  (let [i (.indexOf args "-p")
+        port (last args)]
+    (cond
+      (and (> i 0) (not (= "-p" port))) (lsp/start (System/getProperty "user.dir") (Integer. port))
+      (and (< i 0) (= "lsp" port)) (lsp/start (System/getProperty "user.dir") 7345)
       :else
       (run :help))))
 

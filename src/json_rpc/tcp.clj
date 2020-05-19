@@ -4,11 +4,16 @@
             [cheshire.core])
   (:import
    [java.nio.channels
+    AsynchronousChannelGroup
     AsynchronousServerSocketChannel
     AsynchronousSocketChannel
     SocketChannel
     CompletionHandler
     AsynchronousCloseException]
+   [java.util.concurrent
+    Executors
+    TimeUnit]
+   [java.lang Long]
    [java.net InetSocketAddress]
    [java.nio.charset StandardCharsets]
    [java.nio ByteBuffer]))
@@ -132,16 +137,18 @@
       (read-channel (:handler @ctx) sc conns))))
 
 (defn start [ctx]
-  (let [port (:port @ctx)
+  (let [{:keys [port block?]} @ctx
         _ (assert port (str ":port required, got " @ctx))
-        assc (AsynchronousServerSocketChannel/open)
+        group (AsynchronousChannelGroup/withThreadPool (Executors/newSingleThreadExecutor))
+        assc (AsynchronousServerSocketChannel/open group)
         sa  (InetSocketAddress. port)
         listener (.bind assc sa)
         conns (atom #{})]
     (println "tcp server started at  " port)
     (.accept listener nil (handler listener ctx conns))
+    (while block? (.awaitTermination group (Long/MAX_VALUE) (TimeUnit/SECONDS)))
     (swap! ctx (fn [ctx]
-                 (-> 
+                 (->
                   (update ctx :lsp assoc :sock assc :conns conns)
                   (assoc :_sefl ctx)))))
   ctx)

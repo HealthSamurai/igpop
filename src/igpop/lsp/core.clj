@@ -199,6 +199,26 @@
 ;;   [ctx msg]
 ;;   {:result {}})
 
+(defn start [^String home ^Integer port]
+  (let [log-file "/tmp/igpop-lsp.log"
+        xlog (fn  [msg]
+               (with-open [w (io/writer log-file :append true)]
+                 (.write w msg)
+                 (.write w "\n")))]
+
+    (json-rpc.core/start (atom {:type :tcp
+                                :block? true
+                                :port port
+                                :json-rpc {:request (fn [_ msg]
+                                                      (xlog (str "-> " (:method msg) " " (:id msg)))
+                                                      (xlog (zp/zprint-str msg)))
+                                           :response (fn [_ resp]
+                                                       (xlog (str "<- " (:id resp)))
+                                                       (xlog (zp/zprint-str resp)))
+                                           :notify (fn [_ note]
+                                                     (xlog (str "<! " (:method note)))
+                                                     (xlog (zp/zprint-str note)))}
+                                :manifest (igpop.loader/load-project home)}))))
 
 
 
