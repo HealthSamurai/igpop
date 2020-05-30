@@ -6,87 +6,66 @@ const { spawn } = require('child_process');
 
 function activate(context) {
   let client;
-  let tcpServerOptions = () => new Promise((resolve, reject) => {
-    const server = net.createServer(socket => {
-      console.log('Process connected');
-      socket.on('end', () => {
-        console.log('Process disconnected');
-      });
-      server.close();
-      resolve({ reader: socket, writer: socket });
+  const server = net.createServer(socket => {
+    console.log('Process connected');
+    socket.on('end', () => {
+      console.log('Process disconnected');
     });
-    // Listen on random port
-    server.listen(0, '127.0.0.1', () => {
-      console.log('Starting server')
-      const port = (server.address()).port;
-      var path = "/usr/bin/java"
-      var args = ["-jar", "/home/flawless/projects/igpop/target/igpop.jar",
-                  "lsp", "-p", port];
-      const childProcess = spawn(path, args, {cwd: '/home/flawless/projects/igpop/example'} );
-      console.log('Server spawned')
-      childProcess.stderr.on('data', chunk => {
-        const str = chunk.toString();
-        console.log('Igpop Language Server:', str);
-        client.outputChannel.appendLine(str);
+    server.close();
+    resolve({ reader: socket, writer: socket });
+  });
+  // Listen on random port
+  let createAndRunServer = function(){
+    return new Promise((resolve, reject) => {
+      let port;
+      server.listen(0, '127.0.0.1', () => {
+        console.log('Starting server')
+        const port = server.address().port;
+        var path = "/usr/bin/java"
+        var args = ["-jar", "/home/flawless/projects/igpop/target/igpop.jar",
+                    "lsp", "-p", port];
+        server.close(() => {
+          client.serverProcess = spawn(path, args, {cwd: '/home/flawless/projects/igpop/example'} );
+          resolve(port);
+          client.serverProcess.on('exit', (code, signal) => {
+            if (code !== 0) {
+              console.log(`Language server exited ` + (signal ? `from signal ${signal}` : `with exit code ${code}`));
+            }
+          });
+          console.log(`Server spawned on port ${port}`)
+        });
       });
-      childProcess.on('exit', (code, signal) => {
-        client.outputChannel.appendLine(`Language server exited ` + (signal ? `from signal ${signal}` : `with exit code ${code}`));
-        if (code !== 0) {
-          client.outputChannel.show();
-        }
+    });
+  };
+  let serverOptions = (args => {
+    return new Promise((resolve, reject) => {
+      let lspserver
+      let connect = (client, port) => {
+        client.connect(port, "127.0.0.1", () => {
+          console.log('connected');
+          resolve({
+            reader: client,
+            writer: client
+          });
+        });
+      }
+      client = new net.Socket();
+      lspserver = createAndRunServer();
+      lspserver.then((port) => {
+        connect(client, port);
+        client.on('error', () => {
+          console.log('socket closed, try reconnect');
+          let reconnectLoop = setInterval(() => {
+            try {
+              client.end();
+            } finally {}
+            connect(client, port)
+            clearInterval(reconnectLoop);
+          }, 5000);
+        });
       });
-      return childProcess;
     });
   });
-    // let serverOptions = {
-    //     run: {
-    //       port: 7345,
-    //       transport: lsp.TransportKind.socket,
-    //       command: "java",
-    //       args: ["--jar", "/home/flawless/projects/igpop/target/igpop.jar", "lsp"]
-    //     },
-    //     debug: {
-    //         port: 7345,
-    //         transport: lsp.TransportKind.socket,
-    //         command: "bash",
-    //         args: ["-c", "sleep 10000"]
-    //         // options: debugOptions
-    //     }
-    // };
-
-
-        // let serverOptions = function(args){
-        //     return new Promise(function(resolve, reject){
-        //         var client = new net.Socket();
-        //         var result = {}
-        //         client.connect(7345, "127.0.0.1", function() {
-        //            console.log('connected');
-        //            result.reader = client;
-        //            result.reader = client;
-        //            resolve({
-        //                 reader: client,
-        //                 writer: client
-        //             });
-        //         });
-        //         client.on('closed', () => {
-        //            console.log('socket closed, try reconnect');
-        //            setTimeout(()=>{
-        //               try {
-        //                   client.end();
-        //               } finally {}
-        //               client = new net.Socket();
-        //               client.connect(7345, "127.0.0.1", function() {
-        //                 console.log('Re-connected');
-        //                 result.reader = client;
-        //                 result.reader = client;
-        //               });
-
-        //            }, 2000);
-
-        //         });
-        //     });
-
-        // };
 
   let clientOptions = {
     documentSelector: [{ scheme: 'file', language: 'igpop' }],
@@ -98,7 +77,7 @@ function activate(context) {
       ]
     }
   };
-  client = new lsp.LanguageClient('igpop', 'Language Server Igpop', tcpServerOptions, clientOptions);
+  client = new lsp.LanguageClient('igpop', 'Language Server Igpop', serverOptions, clientOptions);
   client.start();
   context.subscriptions.push(client);
 
@@ -112,6 +91,8 @@ function activate(context) {
 }
 exports.activate = activate;
 function deactivate() {
+  console.log("Deactivated Extension");
+  client.serverProcess.kill();
   if (!client) {
     return undefined;
   }
