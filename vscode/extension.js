@@ -1,4 +1,3 @@
-const path = require("path");
 const vscode = require('vscode');
 const lsp = require('vscode-languageclient');
 const net = require('net');
@@ -23,19 +22,24 @@ function activate(context) {
     return new Promise((resolve, reject) => {
       let port;
       server.listen(0, '127.0.0.1', () => {
-        console.log('Starting server')
+        console.log('Spawning igpop Language Server...')
         const port = server.address().port;
         var path = getPath();
         var args = ["lsp", "-p", port];
         server.close(() => {
             client.serverProcess = spawn(path, args, {cwd: vscode.workspace.rootPath} );
           resolve(port);
+          client.serverProcess.stderr.on('data', chunk => {
+            const str = chunk.toString();
+            console.log('igpop Language Server:', str);
+            client.outputChannel.appendLine(str);
+          });
           client.serverProcess.on('exit', (code, signal) => {
             if (code !== 0) {
-              console.log(`Language server exited ` + (signal ? `from signal ${signal}` : `with exit code ${code}`));
+              console.log(`igpop Language Server exited ` + (signal ? `from signal ${signal}` : `with exit code ${code}`));
             }
           });
-          console.log(`Server spawned on port ${port}`)
+          console.log(`igpop Language Server process spawned on port ${port}`)
         });
       });
     });
@@ -84,10 +88,8 @@ function activate(context) {
   client.start();
   context.subscriptions.push(client);
 
-  console.log('Congratulations, your extension "hello" is now active!');
-
-  let disposable = vscode.commands.registerCommand('extension.helloWorld', function () {
-    vscode.window.showInformationMessage('Hello World!');
+  let disposable = vscode.commands.registerCommand('extension.igpop-lsp', function () {
+    vscode.window.showInformationMessage('Enable igpop LSP extension');
   });
 
   context.subscriptions.push(disposable);
