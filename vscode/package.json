@@ -1,32 +1,44 @@
 {
-    "name": "lsp-sample",
-    "description": "A language server example",
-    "author": "Microsoft Corporation",
+    "name": "igpop-lsp",
+    "description": "A igpop Language Server",
+    "author": "nobody",
     "license": "MIT",
     "version": "1.0.0",
     "repository": {
         "type": "git",
         "url": ""
     },
-    "publisher": "vscode-samples",
+    "publisher": "flawless",
     "categories": [],
     "engines": {
         "vscode": "^1.33.0"
     },
     "activationEvents": [
-        "*"
+        "onCommand:extension.sayLSP",
+        "workspaceContains:ig.yaml"
     ],
     "main": "./extension.js",
     "dependencies": {
+        "vsce": "^1.75.0",
         "vscode-languageclient": "^5.2.1"
     },
     "contributes": {
         "commands": [
             {
-                "command": "extension.helloWorld",
-                "title": "Hello World"
+                "command": "extension.igpop-lsp",
+                "title": "igpop Language Server"
             }
         ],
+        "configuration": {
+            "title": "igpop LSP",
+            "properties": {
+                "igpoplsp.path": {
+                    "type": ["string", "null"],
+                    "default": null,
+                    "description": "Path to igpop executable. Default null"
+                }
+            }
+        },
         "languages": [
             {
                 "id": "igpop",
@@ -34,10 +46,10 @@
                     "igpop"
                 ],
                 "extensions": [
-                  ".igpop",
-                  ".igp",
-                  ".yaml",
-                  ".yml"
+                    ".igpop",
+                    ".igp",
+                    ".yaml",
+                    ".yml"
                 ],
                 "configuration": "./language-configuration.json"
             }

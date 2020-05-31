@@ -4,6 +4,10 @@ const lsp = require('vscode-languageclient');
 const net = require('net');
 const { spawn } = require('child_process');
 
+function getPath() {
+    return vscode.workspace.getConfiguration('igpoplsp').get('path');
+}
+
 function activate(context) {
   let client;
   const server = net.createServer(socket => {
@@ -21,11 +25,10 @@ function activate(context) {
       server.listen(0, '127.0.0.1', () => {
         console.log('Starting server')
         const port = server.address().port;
-        var path = "/usr/bin/java"
-        var args = ["-jar", "/home/flawless/projects/igpop/target/igpop.jar",
-                    "lsp", "-p", port];
+        var path = getPath();
+        var args = ["lsp", "-p", port];
         server.close(() => {
-          client.serverProcess = spawn(path, args, {cwd: '/home/flawless/projects/igpop/example'} );
+            client.serverProcess = spawn(path, args, {cwd: vscode.workspace.rootPath} );
           resolve(port);
           client.serverProcess.on('exit', (code, signal) => {
             if (code !== 0) {
