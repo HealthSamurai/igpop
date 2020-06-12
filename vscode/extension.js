@@ -8,37 +8,38 @@ function getPath() {
 }
 
 function activate(context) {
+  let server;
   let client;
-  const server = net.createServer(socket => {
+  const srv = net.createServer(socket => {
     console.log('Process connected');
     socket.on('end', () => {
       console.log('Process disconnected');
     });
-    server.close();
+    srv.close();
     resolve({ reader: socket, writer: socket });
   });
   // Listen on random port
   let createAndRunServer = function(){
     return new Promise((resolve, reject) => {
       let port;
-      server.listen(0, '127.0.0.1', () => {
+      srv.listen(0, '127.0.0.1', () => {
         console.log('Spawning igpop Language Server...')
-        const port = server.address().port;
+        const port = srv.address().port;
         var path = getPath();
         var args = ["lsp", "-p", port];
-        server.close(() => {
-            client.serverProcess = spawn(path, args, {cwd: vscode.workspace.rootPath} );
+        srv.close(() => {
+          server = spawn(path, args, {cwd: vscode.workspace.rootPath} );
           resolve(port);
-          client.serverProcess.stderr.on('data', chunk => {
+          server.stderr.on('data', chunk => {
             const str = chunk.toString();
             console.log('igpop Language Server:', str);
             client.outputChannel.appendLine(str);
           });
-          client.serverProcess.on('exit', (code, signal) => {
+          server.on('exit', (code, signal) => {
             if (code !== 0) {
               console.log(`igpop Language Server exited ` + (signal ? `from signal ${signal}` : `with exit code ${code}`));
             }
-          });
+          })
           console.log(`igpop Language Server process spawned on port ${port}`)
         });
       });
@@ -97,7 +98,7 @@ function activate(context) {
 exports.activate = activate;
 function deactivate() {
   console.log("Deactivated Extension");
-  client.serverProcess.kill();
+  server.kill();
   if (!client) {
     return undefined;
   }
