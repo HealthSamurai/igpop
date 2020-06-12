@@ -7,47 +7,44 @@ function getPath() {
     return vscode.workspace.getConfiguration('igpoplsp').get('path');
 }
 
-function activate(context) {
-  let server;
-  let client;
-  const srv = net.createServer(socket => {
+var srvProcess;
+const server = new Promise((resolve, reject) => {
+  let port;
+  let srv = net.createServer(socket => {
     console.log('Process connected');
     socket.on('end', () => {
       console.log('Process disconnected');
     });
     srv.close();
-    resolve({ reader: socket, writer: socket });
   });
-  // Listen on random port
-  let createAndRunServer = function(){
-    return new Promise((resolve, reject) => {
-      let port;
-      srv.listen(0, '127.0.0.1', () => {
-        console.log('Spawning igpop Language Server...')
-        const port = srv.address().port;
-        var path = getPath();
-        var args = ["lsp", "-p", port];
-        srv.close(() => {
-          server = spawn(path, args, {cwd: vscode.workspace.rootPath} );
-          resolve(port);
-          server.stderr.on('data', chunk => {
-            const str = chunk.toString();
-            console.log('igpop Language Server:', str);
-            client.outputChannel.appendLine(str);
-          });
-          server.on('exit', (code, signal) => {
-            if (code !== 0) {
-              console.log(`igpop Language Server exited ` + (signal ? `from signal ${signal}` : `with exit code ${code}`));
-            }
-          })
-          console.log(`igpop Language Server process spawned on port ${port}`)
-        });
+
+  srv.listen(0, '127.0.0.1', () => {
+    console.log('Spawning igpop Language Server...')
+    const port = srv.address().port;
+    var path = getPath();
+    var args = ["lsp", "-p", port];
+    srv.close(() => {
+      srvProcess = spawn(path, args, {cwd: vscode.workspace.rootPath} );
+      resolve(port);
+      srvProcess.stderr.on('data', chunk => {
+        const str = chunk.toString();
+        console.log('igpop Language Server:', str);
+        client.outputChannel.appendLine(str);
       });
+      srvProcess.on('exit', (code, signal) => {
+        if (code !== 0) {
+          console.log(`igpop Language Server exited ` + (signal ? `from signal ${signal}` : `with exit code ${code}`));
+        }
+      })
+      console.log(`igpop Language Server process spawned on port ${port}`)
     });
-  };
+  });
+});
+
+function activate(context) {
+  let client = new net.Socket();
   let serverOptions = (args => {
     return new Promise((resolve, reject) => {
-      let lspserver
       let connect = (client, port) => {
         client.connect(port, "127.0.0.1", () => {
           console.log('connected');
@@ -57,19 +54,16 @@ function activate(context) {
           });
         });
       }
-      client = new net.Socket();
-      lspserver = createAndRunServer();
-      lspserver.then((port) => {
+      server.then((port) => {
         connect(client, port);
         client.on('error', () => {
           console.log('socket closed, try reconnect');
-          let reconnectLoop = setInterval(() => {
+          setTimeout(() => {
             try {
               client.end();
             } finally {}
             connect(client, port)
-            clearInterval(reconnectLoop);
-          }, 5000);
+          }, 1000);
         });
       });
     });
@@ -85,9 +79,9 @@ function activate(context) {
       ]
     }
   };
-  client = new lsp.LanguageClient('igpop', 'Language Server Igpop', serverOptions, clientOptions);
-  client.start();
-  context.subscriptions.push(client);
+  languageClient = new lsp.LanguageClient('igpop', 'Language Server Igpop', serverOptions, clientOptions);
+  languageClient.start();
+  context.subscriptions.push(languageClient);
 
   let disposable = vscode.commands.registerCommand('extension.igpop-lsp', function () {
     vscode.window.showInformationMessage('Enable igpop LSP extension');
@@ -98,7 +92,7 @@ function activate(context) {
 exports.activate = activate;
 function deactivate() {
   console.log("Deactivated Extension");
-  server.kill();
+  srvProcess.kill();
   if (!client) {
     return undefined;
   }
