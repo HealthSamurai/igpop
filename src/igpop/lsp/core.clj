@@ -1,14 +1,13 @@
 (ns igpop.lsp.core
-  (:require
-   [igpop.parser]
-   [igpop.loader]
-   [zprint.core]
-   [igpop.lsp.suggest]
-   [json-rpc.core :refer [proc]]
-   [clojure.java.io :as io]
-   [igpop.lsp.validation]
-   [zprint.core :as zp]))
-
+  (:require [clojure.java.io :as io]
+            igpop.loader
+            igpop.lsp.suggest
+            igpop.lsp.validation
+            igpop.parser
+            [json-rpc.core :refer [proc]]
+            [zprint.core :as zp])
+  (:import java.nio.channels.AsynchronousChannelGroup
+           [java.util.concurrent Executors TimeUnit]))
 
 (defmethod
   proc
@@ -20,8 +19,8 @@
                                       ;; and TextDocumentSyncKind.Incremental. If omitted it defaults to TextDocumentSyncKind.None.
                                       ;; number;
                                       ;; None = 0;
-	                                    ;; Full = 1;
-	                                    ;; Incremental = 2;
+                                        ;; Full = 1;
+                                        ;; Incremental = 2;
                                       :change 1
                                       ;; If present will save notifications are sent to the server. If omitted the notification should not be
                                       ;; sent.
@@ -59,25 +58,25 @@
                    ;; :foldingRangeProvider true ;;| FoldingRangeProviderOptions | (FoldingRangeProviderOptions & TextDocumentRegistrationOptions & StaticRegistrationOptions);
                    ;; The server provides go to declaration support.
                    ;; :declarationProvider true ;; | (TextDocumentRegistrationOptions & StaticRegistrationOptions);
-	                 ;; The server provides execute command support.
-	                 ;; :executeCommandProvider ExecuteCommandOptions;
-	                 ;; Workspace specific server capabilities
+                     ;; The server provides execute command support.
+                     ;; :executeCommandProvider ExecuteCommandOptions;
+                     ;; Workspace specific server capabilities
 
                    :workspace {
-		                           ;;The server supports workspace folder.
-		                           :workspaceFolders {
-			                                            ;;* The server has support for workspace folders
-			                                            :supported true
-			                                            ;; Whether the server wants to receive workspace folder
-			                                            ;; change notifications.
+                                   ;;The server supports workspace folder.
+                                   :workspaceFolders {
+                                                        ;;* The server has support for workspace folders
+                                                        :supported true
+                                                        ;; Whether the server wants to receive workspace folder
+                                                        ;; change notifications.
                                         ;
-			                                            ;; If a strings is provided the string is treated as a ID
-			                                            ;; under which the notification is registered on the client
-			                                            ;; side. The ID can be used to unregister for these events
-			                                            ;; using the `client/unregisterCapability` request.
-			                                            :changeNotifications true ;;: string | boolean;
-		                                              }
-	                             }
+                                                        ;; If a strings is provided the string is treated as a ID
+                                                        ;; under which the notification is registered on the client
+                                                        ;; side. The ID can be used to unregister for these events
+                                                        ;; using the `client/unregisterCapability` request.
+                                                        :changeNotifications true ;;: string | boolean;
+                                                      }
+                                 }
                    }
 
     }})
@@ -204,10 +203,10 @@
         xlog (fn  [msg]
                (with-open [w (io/writer log-file :append true)]
                  (.write w msg)
-                 (.write w "\n")))]
+                 (.write w "\n")))
+        group (AsynchronousChannelGroup/withThreadPool (Executors/newSingleThreadExecutor))]
 
     (json-rpc.core/start (atom {:type :tcp
-                                :block? true
                                 :port port
                                 :json-rpc {:request (fn [_ msg]
                                                       (xlog (str "-> " (:method msg) " " (:id msg)))
@@ -218,7 +217,9 @@
                                            :notify (fn [_ note]
                                                      (xlog (str "<! " (:method note)))
                                                      (xlog (zp/zprint-str note)))}
-                                :manifest (igpop.loader/load-project home)}))))
+                                :manifest (igpop.loader/load-project home)})
+                         group)
+    (.awaitTermination group (Long/MAX_VALUE) (TimeUnit/SECONDS))))
 
 
 
@@ -254,6 +255,3 @@
   (json-rpc.core/stop ctx)
 
   )
-
-
-

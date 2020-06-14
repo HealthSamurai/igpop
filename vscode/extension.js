@@ -65,6 +65,12 @@ function activate(context) {
             connect(client, port)
           }, 1000);
         });
+        client.on('connect', () => {
+          console.log('client connected');
+          client.on('error', () => {
+            console.log('disconnected')
+          });
+        });
       });
     });
   });
