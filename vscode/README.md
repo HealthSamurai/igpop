@@ -2,12 +2,12 @@
 
 ## Installing
 
-- Download extension file igpop-lsp-x.y.z.vsix
+- Download extension file igpop-lsp-x.y.z.vsix and igpop executable
 - Run VSCode
 - Go to Extensions view though Views menu
 - Press three points sign on top of view then chose Install from VSIX, select downloaded file
 - Wait for installation process complete
-- [Optional] If you have igpop executable, you may specify path to it from extension config, else executable will be downloaded automaticlly
+- Specify path to igpop executable in extension config. To open config press gear sign on extansion pane.
 
 ## Usage
 
