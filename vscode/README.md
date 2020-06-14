@@ -7,7 +7,7 @@
 - Go to Extensions view though Views menu
 - Press three points sign on top of view then chose Install from VSIX, select downloaded file
 - Wait for installation process complete
-- [Optional] If you have igpop executable, you may specify path to it from extension config
+- [Optional] If you have igpop executable, you may specify path to it from extension config, else executable will be downloaded automaticlly
 
 ## Usage
 
