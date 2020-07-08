@@ -1,8 +1,8 @@
-(ns user (:require [cider-nrepl.main]))
+(ns user #_(:require [cider-nrepl.main]))
 
 (defn -main [& args]
-  (-> (Thread/currentThread)
+  #_(-> (Thread/currentThread)
       (.setName "cider"))
-  (cider-nrepl.main/init
+  #_(cider-nrepl.main/init
    ["refactor-nrepl.middleware/wrap-refactor"
     "cider.nrepl/cider-middleware"]))

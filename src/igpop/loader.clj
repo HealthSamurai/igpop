@@ -116,7 +116,8 @@
       (loop [[l & ls] (rest lines)
              meta-lines []]
         (cond
-          (nil? l) [{:error "Expected second --- to close metadata"} content]
+          (nil? l)
+          [{:error "Expected second --- to close metadata"} content]
           (str/starts-with? l "---")
           [(clj-yaml.core/parse-string (str/join "\n" meta-lines)) (str/join "\n" ls)]
           :else

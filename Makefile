@@ -7,7 +7,7 @@ VERSION = $(shell cat VERSION)
 DATE = $(shell date)
 
 repl:
-	clojure -A:test:nrepl -R:test:nrepl -e "(-main)" -r
+	clj -A:test:nrepl -m nrepl.cmdline --middleware "[cider.nrepl/cider-middleware refactor-nrepl.middleware/wrap-refactor]"
 
 clear:
 	rm -rf target && clojure -A:build

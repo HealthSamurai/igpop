@@ -3,8 +3,22 @@
    [igpop.site.views :as views]
    [clojure.string :as str]
    [garden.core :as gc]
-   [markdown.core :as md]
-   [igpop.site.utils :as u]))
+   [igpop.site.utils :as u])
+  (:import
+   org.commonmark.parser.Parser
+   java.util.Arrays
+   org.commonmark.renderer.html.HtmlRenderer
+   org.commonmark.ext.gfm.tables.TablesExtension))
+
+(defn parse-markdown [s]
+  (let [exts (Arrays/asList (to-array [(TablesExtension/create)]))
+        parser (-> (Parser/builder)
+                   (.extensions exts)
+                   .build)
+        renderer (-> (HtmlRenderer/builder)
+                     (.extensions exts)
+                     .build)]
+    (.render renderer (.parse parser s))))
 
 (defn current-page [uri res-url]
   (= uri res-url))
@@ -72,10 +86,10 @@
             (views/menu (docs-to-menu ctx) req)
             [:div#content
              [:pre ""]
-             (markdown.core/md-to-html-string (:source doc))])}))
+             (parse-markdown (:source doc))])}))
 
 (defn home-page [ctx]
   (let [doc (get-in ctx [:docs :home :homepage])]
      [:div#content
       [:pre ""]
-      (markdown.core/md-to-html-string (:source doc))]))
+      (parse-markdown (:source doc))]))
