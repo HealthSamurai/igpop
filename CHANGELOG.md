@@ -14,6 +14,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Draft]
 
+## [0.3.1] - 2020-07-09
+### Fixed
+- Markdown parsing multiple code block and tables ([commonmark-java](https://github.com/atlassian/commonmark-java) was used Tables extension)
+
+
 ## [0.3.0] - 2020-05-06
 ### Added
 - Exists and union(type) discriminators to slices
