@@ -11,14 +11,15 @@
    org.commonmark.ext.gfm.tables.TablesExtension))
 
 (defn parse-markdown [s]
-  (let [exts (Arrays/asList (to-array [(TablesExtension/create)]))
-        parser (-> (Parser/builder)
-                   (.extensions exts)
-                   .build)
-        renderer (-> (HtmlRenderer/builder)
+  (when s
+    (let [exts (Arrays/asList (to-array [(TablesExtension/create)]))
+          parser (-> (Parser/builder)
                      (.extensions exts)
-                     .build)]
-    (.render renderer (.parse parser s))))
+                     .build)
+          renderer (-> (HtmlRenderer/builder)
+                       (.extensions exts)
+                       .build)]
+      (.render renderer (.parse parser s)))))
 
 (defn current-page [uri res-url]
   (= uri res-url))
