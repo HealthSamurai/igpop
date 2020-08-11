@@ -132,7 +132,7 @@
         req (assoc req :uri uri)]
     (if-let [{handler :match params :params} (route-map.core/match [meth uri] #'routes)]
       (handler ctx (assoc req :route-params params))
-      {:status 200 :body "Ok"})))
+      {:status 404 :body "Not Found"})))
 
 (defn dispatch [ctx {uri :uri meth :request-method :as req}]
   (or
