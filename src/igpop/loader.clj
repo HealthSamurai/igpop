@@ -9,16 +9,16 @@
 (defn read-yaml [pth]
   (clj-yaml.core/parse-string (slurp pth)))
 
-(defn get-inlined-valuesets [{profiles :profiles valuesets :valuesets :as ctx}]
-  (assoc ctx :valuesets (merge valuesets (:valuesets (reduce (fn [acc [rt prls]]
-                                                                      (reduce (fn [acc [id {elements :elements :as pr}]]
-                                                                                (reduce (fn [acc [eln el]]
-                                                                                          (if (get-in el [:valueset :concepts])
-                                                                                            (let [vs (:valueset el)
-                                                                                                  vs-cnt (select-keys vs (for [[k v] vs :when (not (= k :id))]
-                                                                                                                           k))]
-                                                                                              (assoc-in acc [:valuesets (keyword (:id vs))] vs-cnt))
-                                                                                            acc)) acc elements)) acc prls)) {} profiles)))))
+(defn get-inlined-valuesets [{:keys [profiles valuesets] :as ctx}]
+  (->> (vals profiles)
+       (mapcat vals)
+       (mapcat :elements)
+       (map val)
+       (map :valueset)
+       (filter :concepts)
+       (map (juxt (comp keyword :id) #(dissoc % :id)))
+       (into valuesets)
+       (assoc ctx :valuesets)))
 
 (defn enrich [ctx pth obj]
   (let [base (-> (get-in ctx (into [:base :profiles] pth)) (dissoc :elements))]
@@ -52,7 +52,7 @@
        (and
         (= 3 (count parts))
         (= "vs" (first parts))
-        (= "yaml" (nth parts 2)))
+        (= "yaml" (last parts)))
 
        {:to [:valuesets (keyword (second parts))]
         :format :yaml}
@@ -60,7 +60,7 @@
        (and
         (= 3 (count parts))
         (= "vs" (first parts))
-        (= "csv" (nth parts 2)))
+        (= "csv" (last parts)))
 
        {:to [:valuesets (keyword (second parts)) :concepts]
         :format :csv}
@@ -154,8 +154,7 @@
        (get-inlined-valuesets)))
 
 (defn load-defs [ctx pth]
-  (let [manifest (read-yaml (str pth "/ig.yaml"))
-        files (.listFiles (io/file (str pth "/src")))
+  (let [files (.listFiles (io/file (str pth "/src")))
         homepage (first (filter #(= (.getName %) "homepage.md") files))
         user-data (->> files
                        (sort-by #(count (.getName %)))
@@ -164,15 +163,15 @@
                           (let [nm (.getName f)]
                             (if (.isDirectory f)
                               (if (= nm "docs")
-                                (let [fset (reduce conj #{} (.listFiles f))
-                                      files (keep #(when % %) (conj fset homepage))]
+                                (let [fset (into #{} (.listFiles f))
+                                      files (filter some? (conj fset homepage))]
                                   (reduce (fn [acc f]
                                            (if (.isDirectory f)
                                              (reduce (fn [acc file]
                                                        (let [parts (str/split (.getName file) #"\.")
                                                              id (keyword (first parts))
                                                              file-path (.getPath file)]
-                                                         (assoc-in acc [:docs :pages (keyword (.getName f)) (keyword (first parts))] (read-file :md file-path))))
+                                                         (assoc-in acc [:docs :pages (keyword (.getName f)) id] (read-file :md file-path))))
                                                      acc (.listFiles f))
                                              (let [parts (str/split (.getName f) #"\.")
                                                    id (keyword (first parts))
@@ -181,7 +180,7 @@
                                                  (= "md" (last parts))
                                                  (if (= (first parts) "homepage") ;;Separate welcome page
                                                    (assoc-in acc [:docs :home id] (read-file :md file-path))
-                                                   (assoc-in acc [:docs :pages (keyword (first parts)) :basic] (read-file :md file-path)))
+                                                   (assoc-in acc [:docs :pages id :basic] (read-file :md file-path)))
                                                  (= "yaml" (last parts))
                                                  (let [res (read-file :yaml file-path)]
                                                    (update-in acc [:docs id] (fn [x] (if x (merge x res) res))))
@@ -199,9 +198,13 @@
                                 (let [source (read-file (:format insert) (.getPath f))]
                                   ;; (println "..." insert)
                                   (merge-in acc (:to insert) source))
-                                (do (println "TODO:" nm)
+                                (do (println "TODO:" f)
                                     acc))))) {}))]
-    (build-profiles (build-profiles (build-profiles (build-profiles (merge ctx user-data) "resources") "profiles") "diff-profiles") "snapshot")))
+    (-> (merge ctx user-data)
+        (build-profiles "resources")
+        (build-profiles "profiles")
+        (build-profiles "diff-profiles")
+        (build-profiles "snapshot"))))
 
 (defn safe-file [& pth]
   (let [file (apply io/file pth)]

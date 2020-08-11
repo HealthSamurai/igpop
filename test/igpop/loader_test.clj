@@ -4,6 +4,38 @@
             [clojure.java.io :as io]
             [matcho.core :as matcho]))
 
+(def project-path (.getPath (io/resource "test-project")))
+
+(deftest read-yaml-test
+  (let [result (sut/read-yaml (io/file project-path "ig.yaml"))]
+    (is (map? result))
+    (is (= "Test project" (:description result)))))
+
+(deftest get-inlined-valuesets-test
+  (let [inlined-valueset {:id "inlined-valueset"
+                          :concepts [{:code "test1", :display "Test1"}
+                                     {:code "test2", :display "Test2"}]}
+        test-profile {:basic
+                      {:elements
+                       {:id {:description "Test id", :type "string"}
+                        :gender {:description "male | female | other | unknown"
+                                 :type "code"
+                                 :valueset {:id "fhir:administrative-genders"}}
+                        :testElement {:description "Element with inlined valueset"
+                                      :type "code"
+                                      :valueset inlined-valueset}}}}
+        profiles {:TestProfile test-profile}
+        result (sut/get-inlined-valuesets {:profiles profiles, :valuesets {}})]
+    (is (contains? result :valuesets) "Result should contain valuesets.")
+    (is (not-empty (:valuesets result)) "Extracted valueset should not be empty.")
+    (is (contains? (:valuesets result) :inlined-valueset)
+        "Inlined valueset should be found among valuesets.")
+    (is (= (dissoc inlined-valueset :id)
+           (get-in result [:valuesets :inlined-valueset]))
+        "Extracted valueset should not contain its id.")
+    (is (not (contains? (:valuesets result) :fhir:administrative-genders))
+        "Non-inlined valueset should not be added to valuesets.")))
+
 (deftest test-loader
   (testing "parse-name"
 
@@ -34,8 +66,6 @@
 
 
     )
-
-  (def project-path (.getPath (io/resource "test-project")))
 
   (def project (sut/load-project project-path))
 
