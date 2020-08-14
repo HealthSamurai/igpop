@@ -15,24 +15,33 @@
   [prefix key]
   (str prefix "." (name key)))
 
+(defn flatten-extension
+  [path ext]
+  (->> ext
+       (map (juxt (comp (partial str path ":") name key) #(dissoc (val %) :elements)))
+       (into (ordered-map))))
+
 (defn flatten-profile
-  [map prefix]
+  [m prefix]
   (reduce-kv
    (fn [acc k v]
-     (if (map? v)
-       (if (contains? v :elements)
-         (merge (merge acc (ordered-map {(get-path prefix k) (dissoc v :elements)})) (flatten-profile (:elements v) (get-path prefix k)) )
-         (merge acc (ordered-map {(get-path prefix k) v})))
-       (merge acc (ordered-map {(get-path prefix k) v}))))
-   (ordered-map []) map))
+     (let [path (get-path prefix k)]
+       (cond
+         (= :extension k)          (merge acc (flatten-extension path v))
+         (and
+          (map? v)
+          (contains? v :elements)) (merge (assoc acc path (dissoc v :elements))
+                                          (flatten-profile (:elements v) path))
+         :else                     (assoc acc path v))))
+   (ordered-map) m))
 
 (defn capitalize-first
   [s]
   (str (str/capitalize (subs s 0 1)) (subs s 1)))
 
 (defn constants
-  [k v]
-  {(keyword (str "fixed" (capitalize-first (last (clojure.string/split (name k) #"\."))))) v})
+  [element-id v]
+  {(keyword (str "fixed" (capitalize-first (last (str/split element-id #"\."))))) v})
 
 (def constraint-struct
   '(:requirements :severity :human :expression :xpath :source))
@@ -103,25 +112,32 @@
                                  (= k :strength) {k v})))
                        (ordered-map {:strength "extensible"}) map)})
 
+(defn prop->sd [id path prop-k v]
+  (cond
+    (#{:disabled :required :minItems :maxItems} prop-k) (cardinality prop-k v)
+    (#{:comment :definition :requirements :mustSupport} prop-k) {prop-k v}
+    (= prop-k :constant) (constants id v)
+    (= prop-k :constraints) (fhirpath-rule v)
+    (= prop-k :union) (polymorphic-types id path v)
+    (= prop-k :refers) (refers v)
+    (= prop-k :valueset) (valueset v)
+    (= prop-k :mappings) (mapping v)
+    (= prop-k :description) {:short v}))
+
+(defn element->sd [[el-key props]]
+  (let [id (name el-key)
+        colon-idx (or (str/index-of id ":") (count id))
+        path (subs id 0 colon-idx)
+        base (ordered-map {:id id :path path})]
+    (->> props
+         (map (juxt key val))
+         (map (partial apply prop->sd id path))
+         (reduce into base)
+         add-defaults)))
+
 (defn elements-to-sd
   [els]
-  (map (fn [[el-key props]]
-         (add-defaults
-          (reduce-kv
-           (fn [acc prop-k v]
-             (into acc
-                   (cond
-                     (#{:disabled :required :minItems :maxItems} prop-k) (cardinality prop-k v)
-                     (#{:comment :definition :requirements :mustSupport} prop-k) {prop-k v}
-                     (= prop-k :constant) (constants el-key v)
-                     (= prop-k :constraints) (fhirpath-rule v)
-                     (= prop-k :union) (polymorphic-types (:id acc) (:path acc) v)
-                     (= prop-k :refers) (refers v)
-                     (= prop-k :valueset) (valueset v)
-                     (= prop-k :mappings) (mapping v)
-                     (= prop-k :description) {:short v})))
-           (ordered-map {:id (name el-key) :path (name el-key)}) props)))
-       els))
+  (map element->sd els))
 
 (defn generate-differential
   [rt prn props]
@@ -159,9 +175,6 @@
 
 ;; ----------------------------- PLAYGROUND ----------------------------
 
-;; TODO: move this to `ns` macro
-(require '[clojure.string :as s])
-
 (set! *warn-on-reflection* true)
 
 ;; ---------------------------------------------------------------------
@@ -173,7 +186,7 @@
   (str (.toUpperCase (subs s 0 1)) (subs s 1)))
 
 (defn to-sd-path [parts]
-  (s/join "." (map name parts)))
+  (str/join "." (map name parts)))
 
 (defn poly-name-to-path-x
   "Convert path `parts` to path-x of polymorphic value
