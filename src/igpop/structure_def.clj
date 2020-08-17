@@ -1,5 +1,5 @@
 (ns igpop.structure-def
-  (:require [flatland.ordered.map :refer :all]
+  (:require [flatland.ordered.map :refer [ordered-map]]
             [clojure.string :as str]))
 
 (defn name-that-profile
@@ -7,38 +7,41 @@
   (str (name rt) (when (not (= "basic" (name prn)))
                    (str "_" (name prn)))))
 
-(defn generate-snapshot
-  []
-  (-> {}
-      (assoc :element [(-> {})])))
-
 (defn element-processing
   [acc el parent-name]
-  (-> {}
-      (assoc :id (str parent-name "." (name el)))))
+  {:id (str parent-name "." (name el))})
 
 (defn get-path
   [prefix key]
   (str prefix "." (name key)))
 
+(defn flatten-extension
+  [path ext]
+  (->> ext
+       (map (juxt (comp (partial str path ":") name key) #(dissoc (val %) :elements)))
+       (into (ordered-map))))
+
 (defn flatten-profile
-  [map prefix]
+  [m prefix]
   (reduce-kv
    (fn [acc k v]
-     (if (map? v)
-       (if (contains? v :elements)
-         (merge (merge acc (ordered-map {(get-path prefix k) (dissoc v :elements)})) (flatten-profile (:elements v) (get-path prefix k)) )
-         (merge acc (ordered-map {(get-path prefix k) v})))
-       (merge acc (ordered-map {(get-path prefix k) v}))))
-   (ordered-map []) map))
+     (let [path (get-path prefix k)]
+       (cond
+         (= :extension k)          (merge acc (flatten-extension path v))
+         (and
+          (map? v)
+          (contains? v :elements)) (merge (assoc acc path (dissoc v :elements))
+                                          (flatten-profile (:elements v) path))
+         :else                     (assoc acc path v))))
+   (ordered-map) m))
 
 (defn capitalize-first
   [s]
-  (str (clojure.string/capitalize (subs s 0 1)) (subs s 1)))
+  (str (str/capitalize (subs s 0 1)) (subs s 1)))
 
 (defn constants
-  [k v]
-  {(keyword (str "fixed" (capitalize-first (last (clojure.string/split (name k) #"\."))))) v})
+  [element-id v]
+  {(keyword (str "fixed" (capitalize-first (last (str/split element-id #"\."))))) v})
 
 (def constraint-struct
   '(:requirements :severity :human :expression :xpath :source))
@@ -75,11 +78,11 @@
 
 (defn cardinality
   [k v]
-  (cond
-    (= k :required) (if (= true v) {:min 1})
-    (= k :disabled) (if (= true v) {:max 0})
-    (= k :minItems) {:min v}
-    (= k :maxItems) {:max v}))
+  (condp = k
+    :required (when v {:min 1})
+    :disabled (when v {:max 0})
+    :minItems {:min v}
+    :maxItems {:max v}))
 
 (defn add-defaults
   [map]
@@ -109,61 +112,68 @@
                                  (= k :strength) {k v})))
                        (ordered-map {:strength "extensible"}) map)})
 
+(defn prop->sd [id path prop-k v]
+  (cond
+    (#{:disabled :required :minItems :maxItems} prop-k) (cardinality prop-k v)
+    (#{:comment :definition :requirements :mustSupport} prop-k) {prop-k v}
+    (= prop-k :constant) (constants id v)
+    (= prop-k :constraints) (fhirpath-rule v)
+    (= prop-k :union) (polymorphic-types id path v)
+    (= prop-k :refers) (refers v)
+    (= prop-k :valueset) (valueset v)
+    (= prop-k :mappings) (mapping v)
+    (= prop-k :description) {:short v}))
+
+(defn element->sd [[el-key props]]
+  (let [id (name el-key)
+        colon-idx (or (str/index-of id ":") (count id))
+        path (subs id 0 colon-idx)
+        base (ordered-map {:id id :path path})]
+    (->> props
+         (map (juxt key val))
+         (map (partial apply prop->sd id path))
+         (reduce into base)
+         add-defaults)))
+
 (defn elements-to-sd
   [els]
-  (map (fn [[el-key props]]
-         (add-defaults
-          (reduce-kv
-           (fn [acc prop-k v]
-             (into acc
-                   (cond
-                     (some #(= prop-k %) '(:disabled :required :minItems :maxItems)) (cardinality prop-k v)
-                     (= prop-k :constant) (constants el-key v)
-                     (= prop-k :constraints) (fhirpath-rule v)
-                     (= prop-k :union) (polymorphic-types (:id acc) (:path acc) v)
-                     (= prop-k :refers) (refers v)
-                     (= prop-k :valueset) (valueset v)
-                     (= prop-k :description) {:short v}
-                     (= prop-k :comment) {:comment v}
-                     (= prop-k :definition) {:definition v}
-                     (= prop-k :requirements) {:requirements v}
-                     (= prop-k :mappings) (mapping v)
-                     (= prop-k :mustSupport) {:mustSupport v})))
-           (ordered-map {:id (name el-key) :path (name el-key)}) props)))
-       els))
+  (map element->sd els))
 
 (defn generate-differential
   [rt prn props]
-  (-> {}
-      (assoc :element (-> {rt (dissoc props :elements)}
-                          ordered-map
-                          (into (flatten-profile (:elements props) (name rt)))
-                          elements-to-sd))))
+  (let [flat-profile (flatten-profile (:elements props) (name rt))
+        element (ordered-map {rt (dissoc props :elements)})
+        elements (merge element flat-profile)]
+    {:element (elements-to-sd elements)}))
+
+(defn generate-snapshot
+  [rt profile]
+  (let [flat-profile (flatten-profile (:elements profile) (name rt))
+        element (ordered-map {rt (dissoc profile :elements)})
+        elements (merge element flat-profile)]
+    {:element (elements-to-sd elements)}))
 
 (defn generate-structure
-  [{diffs :diff-profiles profiles :profiles :as ctx}]
+  [{diffs :diff-profiles snapshot :snapshot :as ctx}]
   (let [m {:resourceType "Bundle"
            :id "resources"
            :meta {:lastUpdated (java.util.Date.)}
            :type "collection"}]
-    (assoc m :entry
-           (into [] (apply concat (for [[rt prls] diffs]
-                                    (for [[prn props] prls]
-                                      (-> {}
-                                          (assoc :fullUrl (str "baseUrl" "/" (name-that-profile rt prn)))
-                                          (assoc :resource (-> {}
-                                                               (assoc :resourceType "StructureDefinition")
-                                                               (assoc :id (name prn))
-                                                               (assoc :description (:description props))
-                                                               (assoc :type (name rt))
-                                                               (assoc :snapshot (generate-snapshot))
-                                                               (assoc :differential (generate-differential rt prn props))))))))))))
+    (->> diffs
+         (mapcat (fn [[rt prls]] (for [[prn props] prls] [rt prn props])))
+         (map (fn [[rt prn props]]
+                {:fullUrl  (str "baseUrl" "/" (name-that-profile rt prn))
+                 :resource {:resourceType "StructureDefinition"
+                            :id (name prn)
+                            :description (:description props)
+                            :type (name rt)
+                            :snapshot (generate-snapshot rt (get-in snapshot [rt prn]))
+                            :differential (generate-differential rt prn props)}}))
+         (into [])
+         (assoc m :entry))))
 
 
 ;; ----------------------------- PLAYGROUND ----------------------------
-
-;; TODO: move this to `ns` macro
-(require '[clojure.string :as s])
 
 (set! *warn-on-reflection* true)
 
@@ -176,7 +186,7 @@
   (str (.toUpperCase (subs s 0 1)) (subs s 1)))
 
 (defn to-sd-path [parts]
-  (s/join "." (map name parts)))
+  (str/join "." (map name parts)))
 
 (defn poly-name-to-path-x
   "Convert path `parts` to path-x of polymorphic value
@@ -191,8 +201,9 @@
 
 ;; ---------------------------------------------------------------------
 
-(defn process-description [item]
+(defn process-description
   "Rename :description key to :human"
+  [item]
   (-> item
       (assoc :human (:description item))
       (dissoc :description)))
@@ -230,8 +241,9 @@
     ;; TODO: make more generic  dispatch (instead of `cond->`)
     ))
 
-(defn process-constraints [item]
+(defn process-constraints
   "Process 'constraint' igpop logic on item"
+  [item]
   (-> item
       (assoc :constraint (mapv ig-constraint->sd-constraint (:constraints item)))
       (dissoc :constraints)))
@@ -248,8 +260,9 @@
 ;;   - disabled true
 ;;   - required true
 ;;   - min and max
-(defn process-cardinality [item]
+(defn process-cardinality
   "Process 'cardinality' igpop logic on item"
+  [item]
   (cond-> item
     (:disabled item) (assoc :max 0)
     (:required item) (assoc :min 1)
@@ -297,8 +310,9 @@
 ;; - path: Observation.valueString
 ;; ```
 
-(defn process-valueset [item]
+(defn process-valueset
   "Move valueset key-val to `:binding` attribute"
+  [item]
   (-> item
       ;; what keys also need to put into :binding?
       (update :binding merge (select-keys item [:valueset]))
@@ -326,8 +340,9 @@
                (mapv (partial poly-value-item new-path) union-defined)))))
 
 ;; TODO: make more generic  dispatch (instead of `cond->`)
-(defn ig-item->sd-item [ctx item-name item]
+(defn ig-item->sd-item
   "Convert `ig-pop-item` to `structure-definition-item`"
+  [ctx item-name item]
   (cond-> item
     :default                   (assoc :path (to-sd-path (conj (:path ctx) item-name)))
     (nil? (:mustSupport item)) (assoc :mustSupport true)
