@@ -3,7 +3,10 @@
             [clojure.java.io :as io]
             [cheshire.core :as json]
             [flatland.ordered.map :refer [ordered-map]])
-  (:import [java.util.zip ZipEntry ZipOutputStream]))
+  (:import [java.net URLEncoder]
+           [java.util.zip ZipOutputStream ZipEntry]))
+
+(defn- url-encode [s] (URLEncoder/encode s "UTF-8"))
 
 (defn- take-while+
   [pred coll]
@@ -36,7 +39,7 @@
   "Convert an element's property to Structure Definition property."
   {:arglists '([element id path prop value])}
   (fn [_ _ _ prop _] prop)
-  {:hierarchy #'prop-hierarchy})
+  :hierarchy #'prop-hierarchy)
 
 (defmethod prop->sd :default [_ _ _ prop value] {prop value})
 
@@ -74,9 +77,11 @@
 (defmethod prop->sd :refers
   [_ _ _ _ value]
   (->> value
-       (filter (comp (partial = :resourceType) key))
-       (map val)
-       (map #(str "https://healthsamurai.github.io/igpop/profiles/" % "/basic.html"))
+       (filter :resourceType)
+       (map (juxt :resourceType :profile))
+       (map (partial map url-encode))
+       ;TODO take the base URL from the project ctx
+       (map (partial apply format "https://healthsamurai.github.io/igpop/profiles/%s/%s.html"))
        (map vector)
        (mapv (partial assoc (ordered-map {:code "Reference"}) :targetProfile))
        (assoc {} :type)))
@@ -100,18 +105,19 @@
 
 (defn path->id [path]
   (->> path
-       (mapcat #(if (= :Extension %) [% ":"] [% "."]))
+       (mapcat #(if (= :Extension %) ["extension" ":"] [(name %) "."]))
        drop-last
-       (map name)
-       str))
+       (apply str)))
 
 (defn path->str [path]
   (->> path
        (take-while+ (partial not= :Extension))
-       (map name)
+       (map #(if (= :Extension %) "extension" (name %)))
        (str/join ".")))
 
-(defn el->sd [path element]
+(defn element->sd
+  "Convert an igpop element to its Structure Definition representation."
+  [path element]
   (let [id (path->id path)
         path (path->str path)
         result (ordered-map
@@ -138,14 +144,15 @@
 (defmethod flatten-element :Extension
   [path element]
   (->> element
-       (map (juxt (comp (partial conj path) key) val))
+       (map (juxt (comp (partial conj path) key)
+                  (comp #(dissoc % :elements) val)))
        (map (partial apply flatten-element))
        (into {})))
 
 (defn convert [type element]
   (->> (flatten-element [type] element)
        (map (juxt key val))
-       (mapv (partial apply el->sd))))
+       (mapv (partial apply element->sd))))
 
 (defn profile->structure-definition
   "Transforms IgPop profile to a structure definition."
@@ -178,12 +185,12 @@
   {:arglists '([type ig-ctx & [opts]])}
   (fn [type & _] type))
 
-(defn node-js-package-meta [ctx]
+(defn npm-meta [ctx]
   (assoc
    (select-keys ctx [:version :license :title :author :url])
    :name (:id ctx)
    :type "fihr.ig"
-   :date "";ISO timestamp
+   :date "";20201015144352
    :canonical (:url ctx)
    :fihrVersions [(:fhir ctx)]
    :dependencies {};lib to version
@@ -192,7 +199,7 @@
 
 ;; Generate a set of JSON Structure Definition files and zip them up.
 ;; Returns zip `File`.
-(defmethod generate-package! :node-js
+(defmethod generate-package! :npm
   [_ ig-ctx & [opts]]
   (let [bundle (project->bundle ig-ctx)
         resources (map :resource (:entry bundle))
@@ -207,6 +214,6 @@
           (json/generate-stream resource writer)
           (.closeEntry output)))
       (.putNextEntry output (ZipEntry. "package.json"))
-      (json/generate-stream (node-js-package-meta ig-ctx) writer)
+      (json/generate-stream (npm-meta ig-ctx) writer)
       (.closeEntry output))
     file))
