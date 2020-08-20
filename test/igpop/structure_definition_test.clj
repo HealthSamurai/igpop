@@ -1,6 +1,7 @@
 (ns igpop.structure-definition-test
   (:require [clojure.test :refer [deftest is testing]]
             [clojure.java.io :as io]
+            [matcho.core :as matcho]
             [igpop.loader :as loader]
             [igpop.structure-definition :as sd]))
 
@@ -112,7 +113,7 @@
    {:Extension {:race {:description "US Core Race Extension"
                        :elements {:text {:required true,  :description "Race Text", :type "string"}
                                   :ombCategory {:collection true :type "Coding" :valueset {:id "detailed-race"}}}}
-                :birthsex {:type "code", :valuest {:id "birthsex"}}}
+                :birthsex {:type "code", :valueset {:id "birthsex"}}}
     :identifier {:min 1
                  :elements {:system {:required true}
                             :value {:required true
@@ -131,24 +132,33 @@
                               (get-in patient [:elements :Extension]))))))
 
 (deftest convert-test
-  (let [result (sd/convert :Patient patient)]
-    (is (= 6 (count result)))
-    (is (= {:id "Patient"
-            :path "Patient"
-            :mustSupport true
-            :short "Patient profile"}
-           (first result)))
-    (is (= {:id "Patient.extension:race"
-            :path "Patient.extension"
-            :mustSupport true
-            :short "US Core Race Extension"}
-           (second result)))
-    (is (= {:id "Patient.identifier.value"
-            :path "Patient.identifier.value"
-            :mustSupport true
-            :min 1
-            :short "Description"}
-           (last result)))))
+  (matcho/match
+   (sd/convert :Patient patient)
+    [{:id "Patient"
+      :path "Patient"
+      :mustSupport true
+      :short "Patient profile"}
+     {:id "Patient.extension:race"
+      :path "Patient.extension"
+      :mustSupport true
+      :short "US Core Race Extension"}
+     {:id "Patient.extension:birthsex"
+      :path "Patient.extension"
+      :mustSupport true
+      :binding {}}
+     {:id "Patient.identifier"
+      :path "Patient.identifier"
+      :mustSupport true
+      :min 1}
+     {:id "Patient.identifier.system"
+      :path "Patient.identifier.system"
+      :mustSupport true
+      :min 1}
+     {:id "Patient.identifier.value"
+      :path "Patient.identifier.value"
+      :mustSupport true
+      :min 1
+      :short "Description"}]))
 
 (deftest profile->structure-definition-test
   (let [result (sd/profile->structure-definition :Patient :basic patient patient)]
