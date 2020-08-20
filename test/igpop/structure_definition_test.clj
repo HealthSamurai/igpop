@@ -28,7 +28,11 @@
       (is (= {:fixedSystem "email"} (sd/prop->sd element id path :constant "email"))
           "Constant should result in corresponding `fixedX` restriction."))
     (testing "constraints"
-      )
+      (let [constraint {:ele-1 {:description "All FHIR elements"}
+                        :ext-1 {:expression "Must have either" :severity "init"}}]
+        (is (= {:constraint [{:key "ele-1", :severity "error", :human "All FHIR elements"}
+                             {:key "ext-1", :severity "init", :expression "Must have either"}]}
+               (sd/prop->sd element id path :constraints constraint)))))
     (testing "union"
       (is (= {:id "ActivityDefinition.subject[x]"
               :path "ActivityDefinition.subject[x]"

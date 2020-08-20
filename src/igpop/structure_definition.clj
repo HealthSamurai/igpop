@@ -61,10 +61,18 @@
        (conj (list value))
        (apply assoc {})))
 
+(defn- convert-constraint [[k rules]]
+  (let [d (:description rules)
+        s (:severity rules "error")
+        props (select-keys rules [:requirements :expression :xpath :source])
+        props (assoc props :severity s)
+        props (if d (assoc props :human d) props)]
+    (into (ordered-map :key (name k)) props)))
+
 (defmethod prop->sd :constraints
   [_ _ _ _ value]
   (->> value
-       ;(mapv ) ;TODO needs implementation
+       (mapv convert-constraint)
        (assoc {} :constraint)))
 
 (defmethod prop->sd :union
