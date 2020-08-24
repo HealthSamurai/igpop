@@ -1,0 +1,13 @@
+{
+  "name": "adverse-event-profile",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "homepage": "https://github.com/HealthSamurai/test#readme",
+  "dependencies": {
+    "igpop": "^0.3.0",
+    "igpop-fhir-4.0.0": "^0.0.2-rc5"
+  }
+}
