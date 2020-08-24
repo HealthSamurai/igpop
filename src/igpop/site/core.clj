@@ -5,9 +5,9 @@
    [igpop.site.profiles]
    [igpop.site.valuesets]
    [igpop.site.docs]
+   [igpop.site.packages]
    [igpop.site.views :as views]
    [igpop.structure-definition :as sd]
-   [org.httpkit.server]
    [ring.middleware.head]
    [ring.util.codec]
    [ring.util.response]
@@ -128,10 +128,15 @@
                [:resource-type] {:GET #'igpop.site.profiles/profile
                                  [:profile] {:GET #'igpop.site.profiles/profile}}}})
 
+(defn dynamic-routes [ctx]
+ (let [m (sd/npm-manifest ctx)]
+   {(str (:name m) ".zip") {:GET #'igpop.site.packages/npm-package}}))
+
 (defn *dispatch [ctx {uri :uri meth :request-method :as req}]
   (let [uri (str/replace uri #"\.html$" "")
-        req (assoc req :uri uri)]
-    (if-let [{handler :match params :params} (route-map.core/match [meth uri] #'routes)]
+        req (assoc req :uri uri)
+        r (merge (deref #'routes) (dynamic-routes ctx))]
+    (if-let [{handler :match params :params} (route-map.core/match [meth uri] r)]
       (handler ctx (assoc req :route-params params))
       {:status 404 :body "Not Found"})))
 

@@ -1,5 +1,6 @@
 (ns igpop.site.utils
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [igpop.structure-definition :refer [npm-manifest]]))
 
 (defn href [ctx & pth]
   (let [[pth opts] (if (map? (last pth))
@@ -54,6 +55,10 @@
                         (href ctx "valuesets" (str (name valueset-instance) ".html"))
                         (href ctx "valuesets"))]
     valueset-link))
+
+(defn generate-package-href [ctx]
+  (let [manifest (npm-manifest ctx)]
+    (str (:name manifest) ".zip")))
 
 (defn deep-merge
   [& maps]

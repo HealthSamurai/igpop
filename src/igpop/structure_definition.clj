@@ -196,7 +196,6 @@
 (defn npm-manifest [ctx]
   (let [manifest (io/file (:home ctx) "package.json")
         data (json/parse-stream (io/reader manifest) true)]
-    (println "data: " data)
     (-> data
         (merge (select-keys ctx [:version :license :title :author :url]))
         (assoc
