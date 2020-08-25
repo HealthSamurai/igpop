@@ -58,7 +58,7 @@
 
 (defn generate-package-href [ctx]
   (let [manifest (npm-manifest ctx)]
-    (str (:name manifest) ".zip")))
+    (href ctx (:name manifest) {:format "zip"})))
 
 (defn deep-merge
   [& maps]
