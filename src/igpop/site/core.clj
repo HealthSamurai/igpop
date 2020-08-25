@@ -5,8 +5,9 @@
    [igpop.site.profiles]
    [igpop.site.valuesets]
    [igpop.site.docs]
+   [igpop.site.packages]
    [igpop.site.views :as views]
-   [org.httpkit.server]
+   [igpop.structure-definition :as sd]
    [ring.middleware.head]
    [ring.util.codec]
    [ring.util.response]
@@ -127,10 +128,15 @@
                [:resource-type] {:GET #'igpop.site.profiles/profile
                                  [:profile] {:GET #'igpop.site.profiles/profile}}}})
 
+(defn dynamic-routes [ctx]
+ (let [m (sd/npm-manifest ctx)]
+   {(str (:name m) ".zip") {:GET #'igpop.site.packages/npm-package}}))
+
 (defn *dispatch [ctx {uri :uri meth :request-method :as req}]
   (let [uri (str/replace uri #"\.html$" "")
-        req (assoc req :uri uri)]
-    (if-let [{handler :match params :params} (route-map.core/match [meth uri] #'routes)]
+        req (assoc req :uri uri)
+        r (merge (deref #'routes) (dynamic-routes ctx))]
+    (if-let [{handler :match params :params} (route-map.core/match [meth uri] r)]
       (handler ctx (assoc req :route-params params))
       {:status 404 :body "Not Found"})))
 
@@ -189,11 +195,11 @@
 (defn build [home base-url]
   (let [ctx (-> (igpop.loader/load-project home)
                 (assoc :base-url base-url)
-                (assoc-in [:flags :no-edit] true))]
-    (.mkdir (io/file home "build"))
-    (.mkdir (io/file home "build" "static"))
-    (.mkdir (io/file home "build" "profiles"))
-
+                (assoc-in [:flags :no-edit] true))
+        build-dir (io/file home "build")]
+    (.mkdir build-dir)
+    
+    (.mkdir (io/file build-dir "profiles"))
     (dump-page ctx home [] :index)
     (dump-page ctx home ["profiles"] :index)
     (doseq [[rt prs] (:profiles ctx)]
@@ -202,23 +208,23 @@
                 prs)]
         (dump-page ctx home ["profiles" (name rt) (name id) {:format "html"}])))
 
-    (.mkdir (io/file home "build" "valuesets"))
+    (.mkdir (io/file build-dir "valuesets"))
     (dump-page ctx home ["valuesets"] :index)
     (doseq [[id _] (get-in ctx [:valuesets])]
       (dump-page ctx home ["valuesets" (name id) {:format "html"}]))
 
-    (.mkdir (io/file home "build" "docs"))
+    (.mkdir (io/file build-dir "docs"))
     (dump-page ctx home ["docs"] :index)
     (doseq [[doc-id doc] (get-in ctx [:docs :pages])]
-      (doseq [[cur _] (if-not (some #(= % :basic) (keys doc))
-                         (assoc doc :basic {})
-                         doc)]
+      (doseq [[cur _] (if (:basic doc) doc (assoc doc :basic {}))]
         (dump-page ctx home ["docs" (name doc-id) (name cur) {:format "html"}])))
 
+    (.mkdir (io/file build-dir "static"))
     (doseq [f (str/split (get-static) #" ")]
       (when-not (or (= f "static-resources") (= f "static-resources\n"))
-        (io/copy (io/input-stream (io/resource (str "public/" f))) (io/file home "build" "static" (last (str/split f #"/"))))))
-    ))
+        (io/copy (io/input-stream (io/resource (str "public/" f)))
+                 (io/file build-dir "static" (last (str/split f #"/"))))))
+    (sd/generate-package! :npm ctx)))
 
 (comment
 

@@ -190,28 +190,28 @@
 (defmulti generate-package!
   "Generate a Structure Definitions package of specified type.
    Returns the path to generated package."
-  {:arglists '([type ig-ctx & [opts]])}
+  {:arglists '([type ig-ctx & {:as opts}])}
   (fn [type & _] type))
 
-(defn npm-meta [ctx]
-  (assoc
-   (select-keys ctx [:version :license :title :author :url])
-   :name (:id ctx)
-   :type "fihr.ig"
-   :date "";20201015144352
-   :canonical (:url ctx)
-   :fihrVersions [(:fhir ctx)]
-   :dependencies {};lib to version
-   :directories {};name to path
-   ))
+(defn npm-manifest [ctx]
+  (let [manifest (io/file (:home ctx) "package.json")
+        data (json/parse-stream (io/reader manifest) true)]
+    (-> data
+        (merge (select-keys ctx [:version :license :title :author :url]))
+        (assoc
+         :type "fihr.ig"
+         :date (java.util.Date.)
+         :canonical (:url ctx)
+         :fihrVersions [(:fhir ctx)]))))
 
 ;; Generate a set of JSON Structure Definition files and zip them up.
 ;; Returns zip `File`.
 (defmethod generate-package! :npm
-  [_ ig-ctx & [opts]]
+  [_ ig-ctx & {:as opts}]
   (let [bundle (project->bundle ig-ctx)
         resources (map :resource (:entry bundle))
-        file (or (:file opts) (io/file (:home ig-ctx) "build" "package.zip"))]
+        manifest (npm-manifest ig-ctx)
+        file (or (:file opts) (io/file (:home ig-ctx) "build" (str (:name manifest) ".zip")))]
     (io/make-parents file)
     (with-open [output (ZipOutputStream. (io/output-stream file))
                 writer (io/writer output)]
@@ -222,6 +222,6 @@
           (json/generate-stream resource writer)
           (.closeEntry output)))
       (.putNextEntry output (ZipEntry. "package.json"))
-      (json/generate-stream (npm-meta ig-ctx) writer)
+      (json/generate-stream manifest writer)
       (.closeEntry output))
     file))
