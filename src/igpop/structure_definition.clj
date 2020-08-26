@@ -172,10 +172,21 @@
    :snapshot {:element (convert type snapshot)}
    :differential {:element (convert type diff)}})
 
+(defn ig-vs->valueset
+  "Trnsforms IgPop valueset to a canonical valuest."
+  [[id body]]
+  {:resourceType "ValueSet"
+   :id (name id)
+   :name (->> (str/split (name id) #"-") (map capitalize) (apply str))
+   :title (str/replace (name id) "-" " ")
+   :status (:status body "active")
+   :date (:date body (java.util.Date.))
+   :compose {:include {:concept (:concepts body)}}})
+
 (defn project->bundle
   "Transforms IgPop project to a bundle of structure definitions."
   [ctx]
-  (let [{:keys [valuesets diff-profiles snapshot]} ctx
+  (let [{:keys [diff-profiles snapshot]} ctx
         result {:resourceType "Bundle"
                 :id "resources"
                 :meta {:lastUpdated (java.util.Date.)}
@@ -183,7 +194,7 @@
     (->> diff-profiles
          (mapcat (fn [[type prls]] (for [[id diff] prls] [type id diff])))
          (mapv (fn [[type id diff]]
-                 {:fullUrl  (str "baseUrl" "/" (name-that-profile type id)) ;TODO infer baseUrl from the context
+                 {:fullUrl  (str (:base-url ctx) "/" (name-that-profile type id))
                   :resource (profile->structure-definition type id diff (get-in snapshot [type id]))}))
          (assoc result :entry))))
 
@@ -208,7 +219,8 @@
 ;; Returns zip `File`.
 (defmethod generate-package! :npm
   [_ ig-ctx & {:as opts}]
-  (let [bundle (project->bundle ig-ctx)
+  (let [{:keys [valuesets]} ig-ctx
+        bundle (project->bundle ig-ctx)
         resources (map :resource (:entry bundle))
         manifest (npm-manifest ig-ctx)
         file (or (:file opts) (io/file (:home ig-ctx) "build" (str (:name manifest) ".zip")))]
@@ -216,10 +228,16 @@
     (with-open [output (ZipOutputStream. (io/output-stream file))
                 writer (io/writer output)]
       (doseq [resource resources]
-        (let [entry-name (str (:type resource) "-" (:id resource) ".json")
+        (let [entry-name (str "StructureDefinition/" (:type resource) "-" (:id resource) ".json")
               entry (ZipEntry. entry-name)]
           (.putNextEntry output entry)
           (json/generate-stream resource writer)
+          (.closeEntry output)))
+      (doseq [vs valuesets]
+        (let [entry-name (str "ValueSet/" (name (key vs)) ".json")
+              entry (ZipEntry. entry-name)]
+          (.putNextEntry output entry)
+          (json/generate-stream (ig-vs->valueset vs) writer)
           (.closeEntry output)))
       (.putNextEntry output (ZipEntry. "package.json"))
       (json/generate-stream manifest writer)

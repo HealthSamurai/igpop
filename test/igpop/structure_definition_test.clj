@@ -168,6 +168,21 @@
     (is (contains? (:differential result) :element))
     (is (= 6 (-> (:differential result) :element count)))))
 
+(deftest ig-vs->valueset-test
+  (let [valueset (first 
+                  {:survey-status
+                   {:concepts
+                    [{:code "req-det", :display "Requested detailed investigation"}
+                     {:code "N/A", :display "No further cooperation is available"}]}})]
+    (matcho/match
+     (sd/ig-vs->valueset valueset)
+     {:resourceType "ValueSet"
+      :id "survey-status"
+      :name "SurveyStatus"
+      :title "survey status"
+      :status "active"
+      :compose {:include {:concept (:concepts (val valueset))}}})))
+
 (deftest project->bundle-test
   (let [project-path (.getPath (io/resource "test-project"))
         project (loader/load-project project-path)
