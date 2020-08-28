@@ -22,12 +22,6 @@
   [^String s]
   (str (.toUpperCase (subs s 0 1)) (subs s 1)))
 
-(defn- name-that-profile
-  [type id]
-  (if (= :basic id)
-    (name type)
-    (str (name type) "_" (name id))))
-
 (def prop-hierarchy
   (-> (make-hierarchy)
       (derive :disabled ::cardinality)
@@ -113,14 +107,15 @@
 
 (defn path->id [path]
   (->> path
-       (mapcat #(if (= :Extension %) ["extension" ":"] [(name %) "."]))
+       (mapcat #(if (= :extension %) [% ":"] [% "."]))
        drop-last
+       (map name)
        (apply str)))
 
 (defn path->str [path]
   (->> path
-       (take-while+ (partial not= :Extension))
-       (map #(if (= :Extension %) "extension" (name %)))
+       (take-while+ (partial not= :extension))
+       (map name)
        (str/join ".")))
 
 (defn element->sd
@@ -149,7 +144,7 @@
        (map (partial apply flatten-element))
        (into {path (dissoc element :elements)})))
 
-(defmethod flatten-element :Extension
+(defmethod flatten-element :extension
   [path element]
   (->> element
        (map (juxt (comp (partial conj path) key)
@@ -162,21 +157,43 @@
        (map (juxt key val))
        (mapv (partial apply element->sd))))
 
+(defn extension->structure-definition
+  "Transforms IgPop extension to a structure definition."
+  [prefix context-type id diff snapshot]
+  {:resourceType "StructureDefinition"
+   :id (str/join "-" [prefix (name context-type) (name id)])
+   :description (or (:description diff) (:description snapshot))
+   :type "Extension"
+   :context [{:type "element", :expression (name context-type)}]
+   :snapshot {:element (convert :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
+   :differential {:element (convert :Extension (if (:elements diff) diff {:elements {:value diff}}))}})
+
 (defn profile->structure-definition
   "Transforms IgPop profile to a structure definition."
-  [type id diff snapshot]
+  [prefix type id diff snapshot]
   {:resourceType "StructureDefinition"
-   :id (name id)
+   :id (str prefix "-" (name type) (when (not= :basic id) (str "-" (name id))))
    :description (or (:description diff) (:description snapshot))
    :type (name type)
    :snapshot {:element (convert type snapshot)}
    :differential {:element (convert type diff)}})
 
+(defn ig-profile->structure-definitions
+  "Transforms IgPop profile into a set of structure definitions."
+  [prefix type id diff snapshot]
+  (let [profile (profile->structure-definition prefix type id diff snapshot)
+        extensions (->> (get-in diff [:elements :extension])
+                        (map (juxt key val (comp #(get-in snapshot %) #(conj [:elements :extension] %) key)))
+                        (map (partial apply extension->structure-definition prefix type)))]
+    (->> (cons profile extensions)
+         (filter some?)
+         (into []))))
+
 (defn ig-vs->valueset
   "Trnsforms IgPop valueset to a canonical valuest."
-  [[id body]]
+  [prefix [id body]]
   {:resourceType "ValueSet"
-   :id (name id)
+   :id (str prefix "-" (name id))
    :name (->> (str/split (name id) #"-") (map capitalize) (apply str))
    :title (str/replace (name id) "-" " ")
    :status (:status body "active")
@@ -186,16 +203,23 @@
 (defn project->bundle
   "Transforms IgPop project to a bundle of structure definitions."
   [ctx]
-  (let [{:keys [diff-profiles snapshot]} ctx
+  (let [{:keys [valuesets diff-profiles snapshot]} ctx
+        vsets (->> valuesets
+                   (map (partial ig-vs->valueset (:id ctx)))
+                   (map (fn [x] {:fullUrl (str (:base-url ctx) "/" (:id x))
+                                 :resource x})))
+        profiles (->> diff-profiles
+                      (mapcat (fn [[type prls]] (for [[id diff] prls] [type id diff (get-in snapshot [type id])])))
+                      (mapcat (partial apply ig-profile->structure-definitions (:id ctx)))
+                      (map (fn [sd]
+                             {:fullUrl  (str (:base-url ctx) "/" (:id sd))
+                              :resource sd})))
         result {:resourceType "Bundle"
                 :id "resources"
                 :meta {:lastUpdated (java.util.Date.)}
                 :type "collection"}]
-    (->> diff-profiles
-         (mapcat (fn [[type prls]] (for [[id diff] prls] [type id diff])))
-         (mapv (fn [[type id diff]]
-                 {:fullUrl  (str (:base-url ctx) "/" (name-that-profile type id))
-                  :resource (profile->structure-definition type id diff (get-in snapshot [type id]))}))
+    (->> (concat vsets profiles)
+         (into [])
          (assoc result :entry))))
 
 (defmulti generate-package!
@@ -219,8 +243,7 @@
 ;; Returns zip `File`.
 (defmethod generate-package! :npm
   [_ ig-ctx & {:as opts}]
-  (let [{:keys [valuesets]} ig-ctx
-        bundle (project->bundle ig-ctx)
+  (let [bundle (project->bundle ig-ctx)
         resources (map :resource (:entry bundle))
         manifest (npm-manifest ig-ctx)
         file (or (:file opts) (io/file (:home ig-ctx) "build" (str (:name manifest) ".zip")))]
@@ -228,16 +251,10 @@
     (with-open [output (ZipOutputStream. (io/output-stream file))
                 writer (io/writer output)]
       (doseq [resource resources]
-        (let [entry-name (str "StructureDefinition/" (:type resource) "-" (:id resource) ".json")
+        (let [entry-name (str (:resourceType resource) "/" (:id resource) ".json")
               entry (ZipEntry. entry-name)]
           (.putNextEntry output entry)
           (json/generate-stream resource writer)
-          (.closeEntry output)))
-      (doseq [vs valuesets]
-        (let [entry-name (str "ValueSet/" (name (key vs)) ".json")
-              entry (ZipEntry. entry-name)]
-          (.putNextEntry output entry)
-          (json/generate-stream (ig-vs->valueset vs) writer)
           (.closeEntry output)))
       (.putNextEntry output (ZipEntry. "package.json"))
       (json/generate-stream manifest writer)

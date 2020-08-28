@@ -78,13 +78,13 @@
 (deftest path->id-test
   (is (= "Patient.telecom.system" (sd/path->id [:Patient :telecom :system]))
       "Parts of the path should be joined with a dot.")
-  (is (= "Patient.extension:ethnicity" (sd/path->id [:Patient :Extension :ethnicity]))
+  (is (= "Patient.extension:ethnicity" (sd/path->id [:Patient :extension :ethnicity]))
       "Extension id should be joined with a colon."))
 
 (deftest path->str-test
   (is (= "Patient.telecom.system" (sd/path->str [:Patient :telecom :system]))
       "Parts of the path should be joined with a dot.")
-  (is (= "Patient.extension" (sd/path->str [:Patient :Extension :ethnicity]))
+  (is (= "Patient.extension" (sd/path->str [:Patient :extension :ethnicity]))
       "Extension id should not apear in the path."))
 
 (deftest element->sd-test
@@ -110,9 +110,13 @@
 (def patient
   {:description "Patient profile"
    :elements
-   {:Extension {:race {:description "US Core Race Extension"
-                       :elements {:text {:required true,  :description "Race Text", :type "string"}
-                                  :ombCategory {:collection true :type "Coding" :valueset {:id "detailed-race"}}}}
+   {:extension {:race {:description "US Core Race Extension"
+                       :elements {:extension
+                                  {:text {:required true, :description "Race Text", :type "string"}
+                                   :ombCategory {:collection true, :type "Coding", :valueset {:id "omb-race-category"}}
+                                   :detailed {:collection true, :type "Coding", :valueset {:id "detailed-race"}, :description "Extended race codes"}}
+                                  :url {:type "uri", :constant "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
+                                  :value {:max 0}}}
                 :birthsex {:type "code", :valueset {:id "birthsex"}}}
     :identifier {:min 1
                  :elements {:system {:required true}
@@ -125,11 +129,11 @@
           [:Patient :identifier :value] {:required true, :description "Description"}}
          (sd/flatten-element [:Patient :identifier]
                              (get-in patient [:elements :identifier]))))
-  (is (= [[:Patient :Extension :race]
-          [:Patient :Extension :birthsex]]
+  (is (= [[:Patient :extension :race]
+          [:Patient :extension :birthsex]]
          (keys
-          (sd/flatten-element [:Patient :Extension]
-                              (get-in patient [:elements :Extension]))))))
+          (sd/flatten-element [:Patient :extension]
+                              (get-in patient [:elements :extension]))))))
 
 (deftest convert-test
   (matcho/match
@@ -161,12 +165,20 @@
       :short "Description"}]))
 
 (deftest profile->structure-definition-test
-  (let [result (sd/profile->structure-definition :Patient :basic patient patient)]
+  (let [result (sd/profile->structure-definition "hl7.fhir.test" :Patient :basic patient patient)]
     (is (= "StructureDefinition" (:resourceType result)))
-    (is (= "basic" (:id result)))
+    (is (= "hl7.fhir.test-Patient" (:id result)))
     (is (= "Patient" (:type result)))
     (is (contains? (:differential result) :element))
     (is (= 6 (-> (:differential result) :element count)))))
+
+(deftest ig-profile->structure-definitions
+  (let [result (sd/ig-profile->structure-definitions "hl7.fhir.test" :Patient :basic patient patient)]
+    (matcho/match
+     result
+     [{:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient"}
+      {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-race", :type "Extension"}
+      {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-birthsex", :type "Extension"}])))
 
 (deftest ig-vs->valueset-test
   (let [valueset (first 
@@ -175,9 +187,9 @@
                     [{:code "req-det", :display "Requested detailed investigation"}
                      {:code "N/A", :display "No further cooperation is available"}]}})]
     (matcho/match
-     (sd/ig-vs->valueset valueset)
+     (sd/ig-vs->valueset "hl7.fhir.test" valueset)
      {:resourceType "ValueSet"
-      :id "survey-status"
+      :id "hl7.fhir.test-survey-status"
       :name "SurveyStatus"
       :title "survey status"
       :status "active"
@@ -202,4 +214,4 @@
         package (sd/generate-package! :npm project)]
     (is (.exists package) "Generated package should exist.")
     ;; TODO validate content of the package
-    (io/delete-file package)))
+    #_(io/delete-file package)))

@@ -315,7 +315,7 @@
                 const-match)))]
    (cond
      (and (:elements el) (not (contains? el :slices))) (:elements el)
-     (and (= :Extension nm)) el
+     (#{:Extension :extension} nm) el
      (:union el) (->> (:union el)
                       (reduce (fn [acc tp]
                                 (assoc acc tp (merge (or (get el (keyword tp)) {})
@@ -333,7 +333,7 @@
 (defn element-row [ctx nm el]
   [:div.el-header
    [:span.link]
-   (when (or (has-children? el) (= :Extension nm) (= :slices nm))
+   (when (or (has-children? el) (#{:Extension :extension} nm) (= :slices nm))
      [:span.down-link])
    (type-icon nm el)
    [:div.el-line
