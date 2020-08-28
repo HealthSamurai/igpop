@@ -1,7 +1,7 @@
 description:
   This profile includes all elements submitted and already implemented in igpop.
 elements:
-  Extension:
+  extension:
     race:
       description: US Core Race Extension
       elements:
@@ -19,7 +19,7 @@ elements:
     birthsex:
       type: code
       valueset: {url: 'http://hl7.org/fhir/2018Sep/valueset-birth-sex.html', id: birthsex }
-  extension:
+  Extension:
     type: Extension
     collection: true
     slice: Extension Slice:Unordered, Open by value:url
