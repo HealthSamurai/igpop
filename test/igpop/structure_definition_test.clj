@@ -121,7 +121,8 @@
     :identifier {:min 1
                  :elements {:system {:required true}
                             :value {:required true
-                                    :description "Description"}}}}})
+                                    :description "Description"}}}
+    :address {:elements {:extension {:region {:type "CodeableConcept"}}}}}})
 
 (deftest flatten-element-test
   (is (= {[:Patient :identifier] {:min 1}
@@ -176,12 +177,24 @@
                                {:id "Patient.extension:birthsex" :type [{:code "Extension"}]}
                                {:id "Patient.identifier"}]}})))
 
+(deftest get-extensions-test
+  (matcho/match
+   (sd/get-extensions patient)
+   {[:elements :extension :race] {}
+    [:elements :extension :race :elements :extension :text] {}
+    [:elements :extension :birthsex] {}
+    [:elements :address :elements :extension :region] {}}))
+
 (deftest ig-profile->structure-definitions
   (let [result (sd/ig-profile->structure-definitions "hl7.fhir.test" :Patient :basic patient patient)]
     (matcho/match
      result
      [{:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient"}
+      {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-region", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-race", :type "Extension"}
+      {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-text", :type "Extension"}
+      {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-ombCategory", :type "Extension"}
+      {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-detailed", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-birthsex", :type "Extension"}])))
 
 (deftest ig-vs->valueset-test

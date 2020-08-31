@@ -180,12 +180,28 @@
    :snapshot {:element (convert type snapshot)}
    :differential {:element (convert type diff)}})
 
+(defn get-extensions
+  "Returns a flattened map of nested extensions where key is a path in
+   the original structure and val is an extension."
+  ([x] (get-extensions [] x))
+  ([path x]
+  (let [p (conj path :elements)
+        pe (conj p :extension)
+        nested (->> (dissoc (:elements x) :extension)
+                    (map (juxt (comp (partial conj p) key) val))
+                    (mapcat (partial apply get-extensions)))]
+    (->> (get-in x [:elements :extension])
+         (map (juxt (comp (partial conj pe) key) val))
+         (mapcat (fn [[k v]] (cons [k v] (get-extensions k v))))
+         (concat nested)
+         (into {})))))
+
 (defn ig-profile->structure-definitions
   "Transforms IgPop profile into a set of structure definitions."
   [prefix type id diff snapshot]
   (let [profile (profile->structure-definition prefix type id diff snapshot)
-        extensions (->> (get-in diff [:elements :extension])
-                        (map (juxt key val (comp #(get-in snapshot %) #(conj [:elements :extension] %) key)))
+        extensions (->> (get-extensions diff)
+                        (map (juxt (comp last key) val (comp (partial get-in snapshot) key)))
                         (map (partial apply extension->structure-definition prefix type)))]
     (->> (cons profile extensions)
          (filter some?)
