@@ -166,11 +166,15 @@
 
 (deftest profile->structure-definition-test
   (let [result (sd/profile->structure-definition "hl7.fhir.test" :Patient :basic patient patient)]
-    (is (= "StructureDefinition" (:resourceType result)))
-    (is (= "hl7.fhir.test-Patient" (:id result)))
-    (is (= "Patient" (:type result)))
-    (is (contains? (:differential result) :element))
-    (is (= 6 (-> (:differential result) :element count)))))
+    (matcho/match
+     result
+     {:resourceType "StructureDefinition"
+      :id "hl7.fhir.test-Patient"
+      :type "Patient"
+      :differential {:element [{:id "Patient"}
+                               {:id "Patient.extension:race" :type [{:code "Extension"}]}
+                               {:id "Patient.extension:birthsex" :type [{:code "Extension"}]}
+                               {:id "Patient.identifier"}]}})))
 
 (deftest ig-profile->structure-definitions
   (let [result (sd/ig-profile->structure-definitions "hl7.fhir.test" :Patient :basic patient patient)]

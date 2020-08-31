@@ -148,7 +148,9 @@
   [path element]
   (->> element
        (map (juxt (comp (partial conj path) key)
-                  (comp #(dissoc % :elements) val)))
+                  (comp #(dissoc % :elements)
+                        #(assoc % :type [{:code "Extension"}])
+                        val)))
        (map (partial apply flatten-element))
        (into {})))
 
