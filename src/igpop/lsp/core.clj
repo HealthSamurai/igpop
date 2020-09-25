@@ -19,8 +19,8 @@
                                       ;; and TextDocumentSyncKind.Incremental. If omitted it defaults to TextDocumentSyncKind.None.
                                       ;; number;
                                       ;; None = 0;
-                                        ;; Full = 1;
-                                        ;; Incremental = 2;
+	                                    ;; Full = 1;
+	                                    ;; Incremental = 2;
                                       :change 1
                                       ;; If present will save notifications are sent to the server. If omitted the notification should not be
                                       ;; sent.
@@ -58,25 +58,25 @@
                    ;; :foldingRangeProvider true ;;| FoldingRangeProviderOptions | (FoldingRangeProviderOptions & TextDocumentRegistrationOptions & StaticRegistrationOptions);
                    ;; The server provides go to declaration support.
                    ;; :declarationProvider true ;; | (TextDocumentRegistrationOptions & StaticRegistrationOptions);
-                     ;; The server provides execute command support.
-                     ;; :executeCommandProvider ExecuteCommandOptions;
-                     ;; Workspace specific server capabilities
+	                 ;; The server provides execute command support.
+	                 ;; :executeCommandProvider ExecuteCommandOptions;
+	                 ;; Workspace specific server capabilities
 
                    :workspace {
-                                   ;;The server supports workspace folder.
-                                   :workspaceFolders {
-                                                        ;;* The server has support for workspace folders
-                                                        :supported true
-                                                        ;; Whether the server wants to receive workspace folder
-                                                        ;; change notifications.
+		                           ;;The server supports workspace folder.
+		                           :workspaceFolders {
+			                                            ;;* The server has support for workspace folders
+			                                            :supported true
+			                                            ;; Whether the server wants to receive workspace folder
+			                                            ;; change notifications.
                                         ;
-                                                        ;; If a strings is provided the string is treated as a ID
-                                                        ;; under which the notification is registered on the client
-                                                        ;; side. The ID can be used to unregister for these events
-                                                        ;; using the `client/unregisterCapability` request.
-                                                        :changeNotifications true ;;: string | boolean;
-                                                      }
-                                 }
+			                                            ;; If a strings is provided the string is treated as a ID
+			                                            ;; under which the notification is registered on the client
+			                                            ;; side. The ID can be used to unregister for these events
+			                                            ;; using the `client/unregisterCapability` request.
+			                                            :changeNotifications true ;;: string | boolean;
+		                                              }
+	                             }
                    }
 
     }})
