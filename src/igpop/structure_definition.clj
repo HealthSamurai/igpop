@@ -6,6 +6,14 @@
   (:import [java.net URLEncoder]
            [java.util.zip ZipOutputStream ZipEntry]))
 
+
+(def igpop-properties
+  "IgPop special properties wich will be interpreted
+  and discarded from Structure Defineitison structures"
+  #{:disabled :required :minItems :maxItems
+    :elements :union :constant :constraints
+    :valueset :description :collection})
+
 (defn- url-encode [s] (URLEncoder/encode s "UTF-8"))
 
 (defn- take-while+
@@ -43,17 +51,12 @@
     :required (when value {:min 1})
     :disabled (when value {:max 0})
     :minItems {:min value}
-    :maxItems {:max value}))
+    :maxItems {:max (str value)}))
 
 (defmethod prop->sd :constant
   [_ id _ _ value]
-  (->> (str/split id #"\.")
-       last
-       capitalize
-       (str "fixed")
-       keyword
-       (conj (list value))
-       (apply assoc {})))
+  {(->> (str/split id #"\.") last capitalize (str "fixed") keyword)
+   value})
 
 (defn- convert-constraint [[k rules]]
   (let [d (:description rules)
@@ -76,17 +79,14 @@
    :path (str path "[x]")
    :type (mapv (fn [t] {:code t}) value)})
 
+;; TODO take the base URL from the project ctx
 (defmethod prop->sd :refers
   [_ _ _ _ value]
-  (->> value
-       (filter :resourceType)
-       (map (juxt :resourceType :profile))
-       (map (partial map url-encode))
-       ;TODO take the base URL from the project ctx
-       (map (partial apply format "https://healthsamurai.github.io/igpop/profiles/%s/%s.html"))
-       (map vector)
-       (mapv (partial assoc (ordered-map {:code "Reference"}) :targetProfile))
-       (assoc {} :type)))
+  (letfn [(make-url [{rt :resourceType p :profile}]
+            (format "https://healthsamurai.github.io/igpop/profiles/%s/%s.html"
+                    (url-encode rt) (url-encode p)))]
+    {:type (mapv #(ordered-map {:code "Reference" :targetProfile [(make-url %)]})
+                 (filter :resourceType value))}))
 
 (defmethod prop->sd :valueset
   [_ _ _ _ value]
@@ -97,7 +97,7 @@
 (defmethod prop->sd :mappings
   [_ _ _ _ value]
   {:mapping
-   (mapv 
+   (mapv
     (fn [[k v]] (into (ordered-map {:identity (name k)}) v))
     value)})
 
@@ -121,15 +121,13 @@
 (defn element->sd
   "Convert an igpop element to its Structure Definition representation."
   [path element]
-  (let [id (path->id path)
-        path (path->str path)
-        result (ordered-map
-                {:id id
-                 :path path
-                 :mustSupport true})]
+  (let [id     (path->id path)
+        path   (path->str path)
+        result (ordered-map (merge {:id id :path path :mustSupport true}
+                                   #_(apply dissoc element igpop-properties)))]
     (->> element
-         (map (juxt key val))
-         (map (partial apply prop->sd element id path))
+         (mapv (fn [[prop value]]
+                 (prop->sd element id path prop value)))
          (reduce into result))))
 
 (defmulti flatten-element
@@ -140,27 +138,38 @@
 (defmethod flatten-element :default
   [path element]
   (->> (get element :elements)
-       (map (juxt (comp (partial conj path) key) val))
-       (map (partial apply flatten-element))
+       (map #(flatten-element (conj path (key %))
+                              (val %)))
        (into {path (dissoc element :elements)})))
 
 (defmethod flatten-element :extension
   [path element]
-  (->> element
-       (map (juxt (comp (partial conj path) key)
-                  (comp #(dissoc % :elements)
-                        #(assoc % :type [{:code "Extension"}])
-                        val)))
-       (map (partial apply flatten-element))
-       (into {})))
+  (into {} (map #(flatten-element
+                  (conj path (key %))
+                  (-> (val %)
+                      (assoc :type [{:code "Extension"}])
+                      (dissoc :elements)))
+                element)))
 
-(defn convert [type element]
+(defn convert
+  "Convert `element` (recurcive struct)
+  with `type` to flattened StructureDefinition"
+  [type element]
   (->> (flatten-element [type] element)
-       (map (juxt key val))
-       (mapv (partial apply element->sd))))
+       (mapv (fn [[path element]] (element->sd path element)))))
+  ;; (->> (flatten-element [type] element)
+  ;;      (map (juxt key val))
+  ;;      (mapv (partial apply element->sd))))
 
 (defn extension->structure-definition
-  "Transforms IgPop extension to a structure definition."
+  "Transforms IgPop extension to a structure definition.
+
+  prefix       - string for resource `id` prefix
+  context-type - string for resoruce `id` and `context` naming
+  id           - keyword for resource `id` postfix
+  diff         - differential profile
+  snapshot     - snapshoted profile
+  "
   [prefix context-type id diff snapshot]
   {:resourceType "StructureDefinition"
    :id (str/join "-" [prefix (name context-type) (name id)])
@@ -171,38 +180,55 @@
    :differential {:element (convert :Extension (if (:elements diff) diff {:elements {:value diff}}))}})
 
 (defn profile->structure-definition
-  "Transforms IgPop profile to a structure definition."
+  "Transforms IgPop profile to a structure definition.
+
+  prefix       - string for resource `id` prefix
+  type         - keyword for resource `id` and `type` naming.
+  id           - keyword for resource `id` postfix
+  diff         - differential profile
+  snapshot     - snapshoted profile
+  "
   [prefix type id diff snapshot]
-  {:resourceType "StructureDefinition"
-   :id (str prefix "-" (name type) (when (not= :basic id) (str "-" (name id))))
-   :description (or (:description diff) (:description snapshot))
-   :type (name type)
-   :snapshot {:element (convert type snapshot)}
-   :differential {:element (convert type diff)}})
+  (merge {:resourceType "StructureDefinition"
+          :id (str prefix "-" (name type) (when (not= :basic id) (str "-" (name id))))
+          :description (or (:description diff) (:description snapshot))
+          :type (name type)
+          :name (when (not= :basic id) (str "-" (name id)))
+          :snapshot {:element (convert type snapshot)}
+          :differential {:element (convert type diff)}}
+         #_(apply dissoc diff igpop-properties)))
 
 (defn get-extensions
   "Returns a flattened map of nested extensions where key is a path in
    the original structure and val is an extension."
   ([x] (get-extensions [] x))
   ([path x]
-  (let [p (conj path :elements)
-        pe (conj p :extension)
-        nested (->> (dissoc (:elements x) :extension)
-                    (map (juxt (comp (partial conj p) key) val))
-                    (mapcat (partial apply get-extensions)))]
-    (->> (get-in x [:elements :extension])
-         (map (juxt (comp (partial conj pe) key) val))
-         (mapcat (fn [[k v]] (cons [k v] (get-extensions k v))))
-         (concat nested)
-         (into {})))))
+   (let [p (conj path :elements)
+         pe (conj p :extension)
+         nested (->> (dissoc (:elements x) :extension)
+                     (map (juxt (comp (partial conj p) key) val))
+                     (mapcat (partial apply get-extensions)))]
+     (->> (get-in x [:elements :extension])
+          (map (juxt (comp (partial conj pe) key) val))
+          (mapcat (fn [[k v]] (cons [k v] (get-extensions k v))))
+          (concat nested)
+          (into {})))))
 
 (defn ig-profile->structure-definitions
-  "Transforms IgPop profile into a set of structure definitions."
+  "Transforms IgPop profile into a set of structure definitions.
+
+  prefix       - string for resource `id` prefix
+  type         - keyword for resource `id` and `type` naming.
+  id           - keyword for resource `id` postfix
+  diff         - differential profile
+  snapshot     - snapshoted profile
+  "
   [prefix type id diff snapshot]
   (let [profile (profile->structure-definition prefix type id diff snapshot)
-        extensions (->> (get-extensions diff)
-                        (map (juxt (comp last key) val (comp (partial get-in snapshot) key)))
-                        (map (partial apply extension->structure-definition prefix type)))]
+        extensions (map (fn [[path element-diff]]
+                          (extension->structure-definition
+                           prefix type (last path) element-diff (get-in snapshot path)))
+                        (get-extensions diff))]
     (->> (cons profile extensions)
          (filter some?)
          (into []))))
@@ -252,10 +278,10 @@
     (-> data
         (merge (select-keys ctx [:version :license :title :author :url]))
         (assoc
-         :type "fihr.ig"
+         :type "fhir.ig"
          :date (java.util.Date.)
          :canonical (:url ctx)
-         :fihrVersions [(:fhir ctx)]))))
+         :fhirVersions [(:fhir ctx)]))))
 
 ;; Generate a set of JSON Structure Definition files and zip them up.
 ;; Returns zip `File`.
