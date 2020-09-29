@@ -105,7 +105,16 @@
   [_ _ _ _ value]
   {:short value})
 
-(defn path->id [path]
+(defmethod prop->sd :type
+  [element _ _ _ value]
+  (if (or (contains? element :union)
+          (= value [{:code "Extension"}]))
+    {:type value}
+    {:type [{:code value}]}))
+
+(defn path->id
+  "Convert path (vector) to joined string with special separator"
+  [path]
   (->> path
        (mapcat #(if (= :extension %) [% ":"] [% "."]))
        drop-last

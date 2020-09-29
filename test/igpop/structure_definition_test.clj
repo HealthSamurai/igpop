@@ -9,31 +9,51 @@
   (let [element {}
         id "Patient.telecom.system"
         path "Patient.telecom.system"]
+
     (testing "default"
       (is (= {:test 0} (sd/prop->sd element id path :test 0))
           "Property should be preserved by default"))
+
     (testing "cardinality"
       (is (= {:min 1} (sd/prop->sd element id path :required true))
           "Required property should result in a min = 1 restriction.")
+
       (is (nil? (sd/prop->sd element id path :required false))
           "Non-required property should not result in a restriction.")
+
       (is (= {:max 0} (sd/prop->sd element id path :disabled true))
           "Disabled property should result in a max = 0 restriction.")
+
       (is (nil? (sd/prop->sd element id path :disabled false))
           "Non-disabled property should not result in a restriction.")
+
       (is (= {:min 7} (sd/prop->sd element id path :minItems 7))
           "minItems property should result in corresponding restriction.")
+
       (is (= {:max 42} (sd/prop->sd element id path :maxItems 42))
           "maxItems property should result in corresponding restriction."))
+
+    (testing "type"
+      (is (= {:type [{:code "string"}]} (sd/prop->sd element id path :type "string"))
+          "'type' property should be wrapped in [{:code <type>}]")
+
+      (is (= {:type [{:code "Extension"}]} (sd/prop->sd element id path :type [{:code "Extension"}]))
+          "'type' property with already Extension type set - should not changed")
+
+      (is (= {:type :ANYTHING} (sd/prop->sd (merge element {:union []}) id path :type :ANYTHING))
+          "'type' property of element with union type should not be changed"))
+
     (testing "constant"
       (is (= {:fixedSystem "email"} (sd/prop->sd element id path :constant "email"))
           "Constant should result in corresponding `fixedX` restriction."))
+
     (testing "constraints"
       (let [constraint {:ele-1 {:description "All FHIR elements"}
                         :ext-1 {:expression "Must have either" :severity "init"}}]
         (is (= {:constraint [{:key "ele-1", :severity "error", :human "All FHIR elements"}
                              {:key "ext-1", :severity "init", :expression "Must have either"}]}
                (sd/prop->sd element id path :constraints constraint)))))
+
     (testing "union"
       (is (= {:id "ActivityDefinition.subject[x]"
               :path "ActivityDefinition.subject[x]"
@@ -44,6 +64,7 @@
                           :union
                           ["CodeableConcept", "Reference"]))
           "Union property should result in corresponding restriction."))
+
     (testing "refers"
       (is (= {:type
               [{:code "Reference"
