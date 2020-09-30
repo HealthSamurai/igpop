@@ -198,14 +198,15 @@
   snapshot     - snapshoted profile
   "
   [prefix type id diff snapshot]
-  (merge {:resourceType "StructureDefinition"
-          :id (str prefix "-" (name type) (when (not= :basic id) (str "-" (name id))))
-          :description (or (:description diff) (:description snapshot))
-          :type (name type)
-          :name (when (not= :basic id) (str "-" (name id)))
-          :snapshot {:element (convert type snapshot)}
-          :differential {:element (convert type diff)}}
-         #_(apply dissoc diff igpop-properties)))
+  (merge (ordered-map
+          {:resourceType "StructureDefinition"
+           :id           (str prefix "-" (name type) (when (not= :basic id) (str "-" (name id))))
+           :description  (or (:description diff) (:description snapshot))
+           :type         (name type)
+           :name (when (not= :basic id) (name id))})
+         (apply dissoc diff igpop-properties)
+         {:snapshot {:element (convert type snapshot)}
+          :differential {:element (convert type diff)}}))
 
 (defn get-extensions
   "Returns a flattened map of nested extensions where key is a path in
