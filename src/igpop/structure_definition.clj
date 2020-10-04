@@ -51,7 +51,7 @@
     :required (when value {:min 1})
     :disabled (when value {:max 0})
     :minItems {:min value}
-    :maxItems {:max (str value)}))
+    :maxItems {:max value}))
 
 (defmethod prop->sd :constant
   [_ id _ _ value]
@@ -68,9 +68,10 @@
 
 (defmethod prop->sd :constraints
   [_ _ _ _ value]
-  (->> value
-       (mapv convert-constraint)
-       (assoc {} :constraint)))
+  {:constraint (mapv convert-constraint value)}
+  #_(->> value
+         (mapv convert-constraint)
+         (assoc {} :constraint)))
 
 (defmethod prop->sd :union
   [_ id path _ value]
@@ -108,7 +109,7 @@
 (defmethod prop->sd :type
   [element _ _ _ value]
   (if (or (contains? element :union)
-          (= value [{:code "Extension"}]))
+          (and (vector? value) (map? (first value))))
     {:type value}
     {:type [{:code value}]}))
 
@@ -132,8 +133,7 @@
   [path element]
   (let [id     (path->id path)
         path   (path->str path)
-        result (ordered-map (merge {:id id :path path :mustSupport true}
-                                   #_(apply dissoc element igpop-properties)))]
+        result (ordered-map {:id id :path path :mustSupport true})]
     (->> element
          (mapv (fn [[prop value]]
                  (prop->sd element id path prop value)))
@@ -149,26 +149,45 @@
   (->> (get element :elements)
        (map #(flatten-element (conj path (key %))
                               (val %)))
-       (into {path (dissoc element :elements)})))
+       (apply merge (ordered-map {path (dissoc element :elements)}))))
+
 
 (defmethod flatten-element :extension
   [path element]
-  (into {} (map #(flatten-element
-                  (conj path (key %))
-                  (-> (val %)
-                      (assoc :type [{:code "Extension"}])
-                      (dissoc :elements)))
-                element)))
+  (apply merge
+         (ordered-map {path {:path (str/join "." (map name path))
+                             :slicing {:discriminator [{:type "value" :path "url"}]
+                                       :ordered false
+                                       :rules "open"}}})
+         (map (fn [[id el]]
+                (flatten-element
+                 (conj path id)
+                 (-> el
+                     (dissoc :elements)
+                     (assoc :sliceName (name id)
+                            :isModifier false
+                            :type [{:code "Extension"
+                                    :profile [(format "https://healthsamurai.github.io/ig-ae/profiles/%s/%s"
+                                                      (url-encode (name (first path)))
+                                                      (url-encode (name id)))]}]))))
+              element)))
 
 (defn convert
   "Convert `element` (recurcive struct)
-  with `type` to flattened StructureDefinition"
+  with `type` to flattened StructureDefinition for resource"
   [type element]
   (->> (flatten-element [type] element)
-       (mapv (fn [[path element]] (element->sd path element)))))
-  ;; (->> (flatten-element [type] element)
-  ;;      (map (juxt key val))
-  ;;      (mapv (partial apply element->sd))))
+       (mapv (fn [[path el]]
+               (element->sd path el)))))
+
+(defn convert-ext
+  "Convert `element` (recurcive struct) 
+  with `type` to flattened StructureDefinition for extension"
+  [type element]
+  (->> (flatten-element [type] element)
+       (mapv (fn [[path el]]
+               (-> (element->sd path el)
+                   (dissoc :url))))))
 
 (defn extension->structure-definition
   "Transforms IgPop extension to a structure definition.
@@ -180,13 +199,23 @@
   snapshot     - snapshoted profile
   "
   [prefix context-type id diff snapshot]
-  {:resourceType "StructureDefinition"
-   :id (str/join "-" [prefix (name context-type) (name id)])
-   :description (or (:description diff) (:description snapshot))
-   :type "Extension"
-   :context [{:type "element", :expression (name context-type)}]
-   :snapshot {:element (convert :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
-   :differential {:element (convert :Extension (if (:elements diff) diff {:elements {:value diff}}))}})
+  (merge (ordered-map
+          {:resourceType   "StructureDefinition"
+           :id             (str/join "-" [prefix (name context-type) (name id)])
+           :name           (name id)
+           :description    (or (:description diff) (:description snapshot))
+           :status         "active"
+           :fhirVersion    "4.0.1" ;; TODO get from ctx
+           :kind           "complex-type"
+           :abstract       "false"
+           :type           "Extension"
+           :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
+           :derivation     "constraint"
+           :context        [{:type "element", :expression (name context-type)}]
+           })
+         (apply dissoc diff (conj igpop-properties :type :url)) ;; FIXME: :type property override our [:type Extension]. Refacotor
+         {;; :snapshot {:element (convert-ext :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
+          :differential {:element (convert-ext :Extension (if (:elements diff) diff {:elements {:value diff}}))}} ))
 
 (defn profile->structure-definition
   "Transforms IgPop profile to a structure definition.
@@ -258,20 +287,19 @@
   "Transforms IgPop project to a bundle of structure definitions."
   [ctx]
   (let [{:keys [valuesets diff-profiles snapshot]} ctx
-        vsets (->> valuesets
-                   (map (partial ig-vs->valueset (:id ctx)))
-                   (map (fn [x] {:fullUrl (str (:base-url ctx) "/" (:id x))
-                                 :resource x})))
-        profiles (->> diff-profiles
-                      (mapcat (fn [[type prls]] (for [[id diff] prls] [type id diff (get-in snapshot [type id])])))
-                      (mapcat (partial apply ig-profile->structure-definitions (:id ctx)))
-                      (map (fn [sd]
-                             {:fullUrl  (str (:base-url ctx) "/" (:id sd))
-                              :resource sd})))
-        result {:resourceType "Bundle"
-                :id "resources"
-                :meta {:lastUpdated (java.util.Date.)}
-                :type "collection"}]
+        vsets    (for [ig-vs valuesets
+                       :let [vset (ig-vs->valueset (:id ctx) ig-vs)]]
+                   {:fullUrl (str (:base-url ctx) "/" (:id vset))
+                    :resource vset})
+        profiles (for [[type profiles-by-id] diff-profiles
+                       [id diff] profiles-by-id
+                       struct-def (ig-profile->structure-definitions (:id ctx) type id diff (get-in snapshot [type id]))]
+                   {:fullUrl  (str (:base-url ctx) "/" (:id struct-def))
+                    :resource struct-def})
+        result   {:resourceType "Bundle"
+                  :id "resources"
+                  :meta {:lastUpdated (java.util.Date.)}
+                  :type "collection"}]
     (->> (concat vsets profiles)
          (into [])
          (assoc result :entry))))

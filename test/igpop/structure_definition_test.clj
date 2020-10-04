@@ -146,16 +146,30 @@
     :address {:elements {:extension {:region {:type "CodeableConcept"}}}}}})
 
 (deftest flatten-element-test
-  (is (= {[:Patient :identifier] {:min 1}
-          [:Patient :identifier :system] {:required true}
-          [:Patient :identifier :value] {:required true, :description "Description"}}
-         (sd/flatten-element [:Patient :identifier]
-                             (get-in patient [:elements :identifier]))))
-  (is (= [[:Patient :extension :race]
-          [:Patient :extension :birthsex]]
-         (keys
-          (sd/flatten-element [:Patient :extension]
-                              (get-in patient [:elements :extension]))))))
+
+  (testing "flatten default elements"
+    (is (= {[:Patient :identifier] {:min 1}
+            [:Patient :identifier :system] {:required true}
+            [:Patient :identifier :value] {:required true, :description "Description"}}
+           (sd/flatten-element [:Patient :identifier]
+                               (get-in patient [:elements :identifier])))))
+
+  (testing "flatten extension elemement"
+    (let [flattened (sd/flatten-element [:Patient :extension] (get-in patient [:elements :extension]))]
+
+      (is (= (get flattened [:Patient :extension])
+             {:path "Patient.extension"
+              :slicing {:discriminator [{:type "value" :path "url"}]
+                        :ordered false
+                        :rules "open"}})
+          "Should add additional element for extension description")
+
+      (is (= [[:Patient :extension]
+              [:Patient :extension :race]
+              [:Patient :extension :birthsex]]
+             (keys flattened))
+          "Should add all extension elements."))))
+
 
 (deftest convert-test
   (matcho/match
@@ -164,6 +178,11 @@
       :path "Patient"
       :mustSupport true
       :short "Patient profile"}
+     {:id "Patient.extension"
+      :path "Patient.extension"
+      :slicing {:discriminator [{:type "value" :path "url"}]
+                :ordered false
+                :rules "open"}}
      {:id "Patient.extension:race"
       :path "Patient.extension"
       :mustSupport true
@@ -186,6 +205,99 @@
       :min 1
       :short "Description"}]))
 
+(def race-extension (get (sd/get-extensions patient) [:elements :extension :race]))
+
+
+(deftest extension->structure-definition-test
+  (let [race-extension (get (sd/get-extensions patient) [:elements :extension :race])
+        result (sd/extension->structure-definition "hl7.fhir.test" "Patient.extension" :race race-extension race-extension)]
+
+    (testing "Root elements should be correct"
+      (matcho/match
+       result
+       {:resourceType "StructureDefinition"
+        :id "hl7.fhir.test-Patient.extension-race"
+        :name "race"
+        :description "US Core Race Extension",
+        :status         "active"
+        :fhirVersion    "4.0.1"
+        :kind           "complex-type"
+        :abstract       "false"
+        :type           "Extension"
+        :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
+        :derivation     "constraint"
+        :context [{:type "element", :expression "Patient.extension"}],
+        :differential {:element []}}))
+
+    (testing "Differential elements should be correct"
+      (matcho/match
+       result
+       {:differential
+        {:element
+         [{:id "Extension",
+           :path "Extension",
+           :mustSupport true,
+           :short "US Core Race Extension"}
+          {:id "Extension.extension",
+           :path "Extension.extension",
+           :mustSupport true,
+           :slicing
+           {:discriminator [{:type "value", :path "url"}],
+            :ordered false,
+            :rules "open"}}
+          {:id "Extension.extension:text",
+           :path "Extension.extension",
+           :mustSupport true,
+           :min 1,
+           :short "Race Text",
+           :type
+           [{:code "Extension",
+             :profile
+             ["https://healthsamurai.github.io/ig-ae/profiles/Extension/text"]}],
+           :sliceName "text",
+           :isModifier false}
+          {:id "Extension.extension:ombCategory",
+           :path "Extension.extension",
+           :mustSupport true,
+           :collection true,
+           :type
+           [{:code "Extension",
+             :profile
+             ["https://healthsamurai.github.io/ig-ae/profiles/Extension/ombCategory"]}],
+           :binding
+           {:valueSet
+            "https://healthsamurai.github.io/igpop/valuesets/omb-race-category.html",
+            :strength "extensible",
+            :description nil},
+           :sliceName "ombCategory",
+           :isModifier false}
+          {:id "Extension.extension:detailed",
+           :path "Extension.extension",
+           :mustSupport true,
+           :collection true,
+           :type
+           [{:code "Extension",
+             :profile
+             ["https://healthsamurai.github.io/ig-ae/profiles/Extension/detailed"]}],
+           :binding
+           {:valueSet
+            "https://healthsamurai.github.io/igpop/valuesets/detailed-race.html",
+            :strength "extensible",
+            :description nil},
+           :short "Extended race codes",
+           :sliceName "detailed",
+           :isModifier false}
+          {:id "Extension.url",
+           :path "Extension.url",
+           :mustSupport true,
+           :type [{:code "uri"}],
+           :fixedUrl "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
+          {:id "Extension.value",
+           :path "Extension.value",
+           :mustSupport true,
+           :max 0}]}}))))
+
+
 (deftest profile->structure-definition-test
   (let [result (sd/profile->structure-definition "hl7.fhir.test" :Patient :basic patient patient)]
     (matcho/match
@@ -194,6 +306,7 @@
       :id "hl7.fhir.test-Patient"
       :type "Patient"
       :differential {:element [{:id "Patient"}
+                               {:id "Patient.extension"}
                                {:id "Patient.extension:race" :type [{:code "Extension"}]}
                                {:id "Patient.extension:birthsex" :type [{:code "Extension"}]}
                                {:id "Patient.identifier"}]}})))
@@ -206,17 +319,21 @@
     [:elements :extension :birthsex] {}
     [:elements :address :elements :extension :region] {}}))
 
+
+(sd/get-extensions patient)
+
 (deftest ig-profile->structure-definitions
   (let [result (sd/ig-profile->structure-definitions "hl7.fhir.test" :Patient :basic patient patient)]
     (matcho/match
      result
-     [{:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient"}
+     [{:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient" :type "Patient"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-region", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-race", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-text", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-ombCategory", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-detailed", :type "Extension"}
-      {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-birthsex", :type "Extension"}])))
+      {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-birthsex", :type "Extension"}
+      ])))
 
 (deftest ig-vs->valueset-test
   (let [valueset (first 
