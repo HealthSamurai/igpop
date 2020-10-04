@@ -31,7 +31,11 @@
           "minItems property should result in corresponding restriction.")
 
       (is (= {:max "42"} (sd/prop->sd element id path :maxItems 42))
-          "maxItems property should result in corresponding restriction."))
+          "maxItems property should result in corresponding restriction.")
+
+      (is (= {:min 0 :max "*"} (sd/prop->sd element id path :collection true))
+          "collection property should result in both - minItems & maxItems restrictions")
+      )
 
     (testing "type"
       (is (= {:type [{:code "string"}]} (sd/prop->sd element id path :type "string"))
@@ -261,7 +265,8 @@
           {:id "Extension.extension:ombCategory",
            :path "Extension.extension",
            :mustSupport true,
-           :collection true,
+           :min 0
+           :max "*"
            :type
            [{:code "Extension",
              :profile
@@ -276,7 +281,8 @@
           {:id "Extension.extension:detailed",
            :path "Extension.extension",
            :mustSupport true,
-           :collection true,
+           :min 0
+           :max "*"
            :type
            [{:code "Extension",
              :profile

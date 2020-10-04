@@ -32,6 +32,7 @@
 
 (def prop-hierarchy
   (-> (make-hierarchy)
+      (derive :collection ::cardinality)
       (derive :disabled ::cardinality)
       (derive :required ::cardinality)
       (derive :minItems ::cardinality)
@@ -48,10 +49,11 @@
 (defmethod prop->sd ::cardinality
   [_ _ _ prop value]
   (condp = prop
-    :required (when value {:min 1})
-    :disabled (when value {:max "0"})
-    :minItems {:min value}
-    :maxItems {:max (str value)}))
+    :collection (when value {:min 0 :max "*"})
+    :required   (when value {:min 1})
+    :disabled   (when value {:max "0"})
+    :minItems   {:min value}
+    :maxItems   {:max (str value)}))
 
 (defmethod prop->sd :constant
   [_ id _ _ value]
