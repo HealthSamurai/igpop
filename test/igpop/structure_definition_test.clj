@@ -21,7 +21,7 @@
       (is (nil? (sd/prop->sd element id path :required false))
           "Non-required property should not result in a restriction.")
 
-      (is (= {:max 0} (sd/prop->sd element id path :disabled true))
+      (is (= {:max "0"} (sd/prop->sd element id path :disabled true))
           "Disabled property should result in a max = 0 restriction.")
 
       (is (nil? (sd/prop->sd element id path :disabled false))
@@ -30,15 +30,15 @@
       (is (= {:min 7} (sd/prop->sd element id path :minItems 7))
           "minItems property should result in corresponding restriction.")
 
-      (is (= {:max 42} (sd/prop->sd element id path :maxItems 42))
+      (is (= {:max "42"} (sd/prop->sd element id path :maxItems 42))
           "maxItems property should result in corresponding restriction."))
 
     (testing "type"
       (is (= {:type [{:code "string"}]} (sd/prop->sd element id path :type "string"))
           "'type' property should be wrapped in [{:code <type>}]")
 
-      (is (= {:type [{:code "Extension"}]} (sd/prop->sd element id path :type [{:code "Extension"}]))
-          "'type' property with already Extension type set - should not changed")
+      (is (= {:type [{}]} (sd/prop->sd element id path :type [{}]))
+          "'type' property with value = (vector of maps)- should not changed")
 
       (is (= {:type :ANYTHING} (sd/prop->sd (merge element {:union []}) id path :type :ANYTHING))
           "'type' property of element with union type should not be changed"))
@@ -113,7 +113,7 @@
           :path "Patient.identifier"
           :mustSupport true
           :min 1
-          :max 1
+          :max "1"
           :short "Identifier"}
          (sd/element->sd [:Patient :identifier]
                          {:minItems 1
@@ -132,12 +132,13 @@
   {:description "Patient profile"
    :elements
    {:extension {:race {:description "US Core Race Extension"
+                       :url "exn:extension:patient-race"
                        :elements {:extension
                                   {:text {:required true, :description "Race Text", :type "string"}
                                    :ombCategory {:collection true, :type "Coding", :valueset {:id "omb-race-category"}}
                                    :detailed {:collection true, :type "Coding", :valueset {:id "detailed-race"}, :description "Extended race codes"}}
                                   :url {:type "uri", :constant "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
-                                  :value {:max 0}}}
+                                  :value {:maxItems "0"}}}
                 :birthsex {:type "code", :valueset {:id "birthsex"}}}
     :identifier {:min 1
                  :elements {:system {:required true}
@@ -174,36 +175,36 @@
 (deftest convert-test
   (matcho/match
    (sd/convert :Patient patient)
-    [{:id "Patient"
-      :path "Patient"
-      :mustSupport true
-      :short "Patient profile"}
-     {:id "Patient.extension"
-      :path "Patient.extension"
-      :slicing {:discriminator [{:type "value" :path "url"}]
-                :ordered false
-                :rules "open"}}
-     {:id "Patient.extension:race"
-      :path "Patient.extension"
-      :mustSupport true
-      :short "US Core Race Extension"}
-     {:id "Patient.extension:birthsex"
-      :path "Patient.extension"
-      :mustSupport true
-      :binding {}}
-     {:id "Patient.identifier"
-      :path "Patient.identifier"
-      :mustSupport true
-      :min 1}
-     {:id "Patient.identifier.system"
-      :path "Patient.identifier.system"
-      :mustSupport true
-      :min 1}
-     {:id "Patient.identifier.value"
-      :path "Patient.identifier.value"
-      :mustSupport true
-      :min 1
-      :short "Description"}]))
+   [#_{:id "Patient"
+       :path "Patient"
+       :mustSupport true
+       :short "Patient profile"}
+    {:id "Patient.extension"
+     :path "Patient.extension"
+     :slicing {:discriminator [{:type "value" :path "url"}]
+               :ordered false
+               :rules "open"}}
+    {:id "Patient.extension:race"
+     :path "Patient.extension"
+     :mustSupport true
+     :short "US Core Race Extension"}
+    {:id "Patient.extension:birthsex"
+     :path "Patient.extension"
+     :mustSupport true
+     :binding {}}
+    {:id "Patient.identifier"
+     :path "Patient.identifier"
+     :mustSupport true
+     :min 1}
+    {:id "Patient.identifier.system"
+     :path "Patient.identifier.system"
+     :mustSupport true
+     :min 1}
+    {:id "Patient.identifier.value"
+     :path "Patient.identifier.value"
+     :mustSupport true
+     :min 1
+     :short "Description"}]))
 
 (def race-extension (get (sd/get-extensions patient) [:elements :extension :race]))
 
@@ -222,7 +223,8 @@
         :status         "active"
         :fhirVersion    "4.0.1"
         :kind           "complex-type"
-        :abstract       "false"
+        :abstract       false
+        :url             "exn:extension:patient-race"
         :type           "Extension"
         :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
         :derivation     "constraint"
@@ -234,7 +236,7 @@
        result
        {:differential
         {:element
-         [{:id "Extension",
+         [#_{:id "Extension",
            :path "Extension",
            :mustSupport true,
            :short "US Core Race Extension"}
@@ -295,7 +297,7 @@
           {:id "Extension.value",
            :path "Extension.value",
            :mustSupport true,
-           :max 0}]}}))))
+           :max "0"}]}}))))
 
 
 (deftest profile->structure-definition-test
@@ -305,7 +307,7 @@
      {:resourceType "StructureDefinition"
       :id "hl7.fhir.test-Patient"
       :type "Patient"
-      :differential {:element [{:id "Patient"}
+      :differential {:element [#_{:id "Patient"}
                                {:id "Patient.extension"}
                                {:id "Patient.extension:race" :type [{:code "Extension"}]}
                                {:id "Patient.extension:birthsex" :type [{:code "Extension"}]}

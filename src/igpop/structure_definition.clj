@@ -49,9 +49,9 @@
   [_ _ _ prop value]
   (condp = prop
     :required (when value {:min 1})
-    :disabled (when value {:max 0})
+    :disabled (when value {:max "0"})
     :minItems {:min value}
-    :maxItems {:max value}))
+    :maxItems {:max (str value)}))
 
 (defmethod prop->sd :constant
   [_ id _ _ value]
@@ -140,7 +140,11 @@
          (reduce into result))))
 
 (defmulti flatten-element
-  "Turn nested structure into flat map with keys representing path in the original structure."
+  "Turn nested structure into flat map with keys
+  representing path in the original structure.
+
+  path    - vector of keys
+  element - ig-pop element"
   {:arglists '([path element])}
   (fn [path _] (last path)))
 
@@ -164,6 +168,7 @@
                  (conj path id)
                  (-> el
                      (dissoc :elements)
+                     (dissoc :url)
                      (assoc :sliceName (name id)
                             :isModifier false
                             :type [{:code "Extension"
@@ -177,65 +182,77 @@
   with `type` to flattened StructureDefinition for resource"
   [type element]
   (->> (flatten-element [type] element)
+       (rest)  ;;  remove root element from definition
        (mapv (fn [[path el]]
                (element->sd path el)))))
 
 (defn convert-ext
-  "Convert `element` (recurcive struct) 
+  "Convert `element` (recurcive struct)
   with `type` to flattened StructureDefinition for extension"
   [type element]
   (->> (flatten-element [type] element)
        (mapv (fn [[path el]]
-               (-> (element->sd path el)
-                   (dissoc :url))))))
+               (-> (element->sd path el))))))
 
 (defn extension->structure-definition
   "Transforms IgPop extension to a structure definition.
 
-  prefix       - string for resource `id` prefix
-  context-type - string for resoruce `id` and `context` naming
-  id           - keyword for resource `id` postfix
-  diff         - differential profile
-  snapshot     - snapshoted profile
+  project-id    - string, that will be used as prefix of all urls
+  profile-type  - keyword for resource type
+  profile-id    - profile-id for profile-type. (used as postfix in urls)
+  diff          - differential profile
+  snapshot      - snapshoted profile
   "
-  [prefix context-type id diff snapshot]
-  (merge (ordered-map
-          {:resourceType   "StructureDefinition"
-           :id             (str/join "-" [prefix (name context-type) (name id)])
-           :name           (name id)
-           :description    (or (:description diff) (:description snapshot))
-           :status         "active"
-           :fhirVersion    "4.0.1" ;; TODO get from ctx
-           :kind           "complex-type"
-           :abstract       "false"
-           :type           "Extension"
-           :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
-           :derivation     "constraint"
-           :context        [{:type "element", :expression (name context-type)}]
-           })
-         (apply dissoc diff (conj igpop-properties :type :url)) ;; FIXME: :type property override our [:type Extension]. Refacotor
-         {;; :snapshot {:element (convert-ext :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
-          :differential {:element (convert-ext :Extension (if (:elements diff) diff {:elements {:value diff}}))}} ))
+  [project-id profile-type profile-id diff snapshot]
+  {:resourceType   "StructureDefinition"
+   :id             (str/join "-" [project-id (name profile-type) (name profile-id)])
+   :name           (name profile-id) ;; REVIEW - is this correct value?
+   :description    (or (:description diff) (:description snapshot))
+   :status         "active"
+   :fhirVersion    "4.0.1" ;; TODO get from ctx
+   :kind           "complex-type"
+   :abstract       false
+   :type           "Extension"
+   :url            (:url diff)
+   :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
+   :derivation     "constraint"
+   :context        [{:type "element", :expression (name profile-type)}]
+   ;; :snapshot {:element (convert :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
+   :differential {:element (convert :Extension (if (:elements diff) diff {:elements {:value diff}}))}})
 
 (defn profile->structure-definition
   "Transforms IgPop profile to a structure definition.
 
-  prefix       - string for resource `id` prefix
-  type         - keyword for resource `id` and `type` naming.
-  id           - keyword for resource `id` postfix
-  diff         - differential profile
-  snapshot     - snapshoted profile
+  project-id    - string, that will be used as prefix of all urls
+  profile-type  - keyword for resource type
+  profile-id    - profile-id for profile-type. (used as postfix in urls)
+  diff          - differential profile
+  snapshot      - snapshoted profile
   "
-  [prefix type id diff snapshot]
-  (merge (ordered-map
-          {:resourceType "StructureDefinition"
-           :id           (str prefix "-" (name type) (when (not= :basic id) (str "-" (name id))))
-           :description  (or (:description diff) (:description snapshot))
-           :type         (name type)
-           :name (when (not= :basic id) (name id))})
-         (apply dissoc diff igpop-properties)
-         {:snapshot {:element (convert type snapshot)}
-          :differential {:element (convert type diff)}}))
+  [project-id profile-type profile-id diff snapshot]
+  (merge {:resourceType "StructureDefinition"
+          :id           (str project-id "-" (name profile-type) (when (not= :basic profile-id) (str "-" (name profile-id))))
+          :description  (or (:description diff) (:description snapshot))
+          :type         (name profile-type)
+          :name         (when (not= :basic profile-id) (name profile-id))
+          :status       "active"
+          :fhirVersion  "4.0.1"
+          :abstract     false
+          }
+         ;; url: "https://healthsamurai.github.io/ig-ae/profiles/StructureDefinition/AZAdverseEvent"
+         ;; name: "az-adverseevent"
+         ;; baseDefinition: "http://hl7.org/fhir/StructureDefinition/AdverseEvent"
+         ;; derivation: constraint
+         ;; title: ''
+         ;; context: {}
+         ;; :kind        "complex-type"
+         ;; identifier: {}
+         ;; version: ''
+         ;; description: This is the AZ profile (StructureDefinition) for AdverseEvent
+         ;; elements: {}
+         (apply dissoc diff igpop-properties) ;; <---- TODO: replace this with explicit field enumeration
+         {;; :snapshot {:element (convert profile-type snapshot)}
+          :differential {:element (convert profile-type diff)}}))
 
 (defn get-extensions
   "Returns a flattened map of nested extensions where key is a path in
@@ -256,17 +273,17 @@
 (defn ig-profile->structure-definitions
   "Transforms IgPop profile into a set of structure definitions.
 
-  prefix       - string for resource `id` prefix
-  type         - keyword for resource `id` and `type` naming.
-  id           - keyword for resource `id` postfix
-  diff         - differential profile
-  snapshot     - snapshoted profile
+  project-id    - string, that will be used as prefix of all urls
+  profile-type  - keyword for resource type
+  profile-id    - profile-id for profile-type. (used as postfix in urls)
+  diff          - differential profile
+  snapshot      - snapshoted profile
   "
-  [prefix type id diff snapshot]
-  (let [profile (profile->structure-definition prefix type id diff snapshot)
+  [project-id profile-type profile-id diff snapshot]
+  (let [profile (profile->structure-definition project-id profile-type profile-id diff snapshot)
         extensions (map (fn [[path element-diff]]
                           (extension->structure-definition
-                           prefix type (last path) element-diff (get-in snapshot path)))
+                           project-id profile-type (last path) element-diff (get-in snapshot path)))
                         (get-extensions diff))]
     (->> (cons profile extensions)
          (filter some?)
@@ -342,3 +359,58 @@
       (json/generate-stream manifest writer)
       (.closeEntry output))
     file))
+
+
+(comment
+  (def test-base (clj-yaml.core/parse-string (slurp "./npm/fhir-4.0.0/src/AdverseEvent.yaml")))
+  (def test-profile (clj-yaml.core/parse-string (slurp "../ig-ae/src/AdverseEvent.yaml")))
+  (def bad-result-data (json/parse-string (slurp "my_tasks/hl7.fhir.ae-AdverseEvent-AZEmployeeReporter.json")))
+
+  (extension->structure-definition [] "" "id" test-data test-data)
+
+
+
+  ; -------------------------------------
+
+  (def hm (.getAbsolutePath (io/file  "../ig-ae")))
+
+  (require '[igpop.loader])
+
+  (def ctx (igpop.loader/load-project hm))
+
+  (defn dump [x & [format]]
+    (println "dump")
+    (spit "./my_tasks/temp.yaml"
+          (if (= format :json)
+            (cheshire.core/generate-string x {:pretty true})
+            (clj-yaml.core/generate-string x))))
+
+  (dump (-> ctx :diff-profiles :AdverseEvent))
+  (dump (-> ctx :resources :AdverseEvent))
+  (dump (-> ctx :profiles :AdverseEvent))
+
+  (dump
+   (ig-profile->structure-definitions
+    "prefix"
+    :AZAdverseEvent
+    :AZAdverseEvent
+    test-profile
+    test-base
+    ;; (:diff-profile ctx)
+    ;; (:snapshot ctx)
+    )
+   )
+
+  (dump (project->bundle ctx)
+        :json)
+
+  (clojure.pprint/pprint (-> ctx :base :profiles))
+
+  (flatten-element [ :AZAdverseEvent ] test-profile)
+
+  (project->bundle ctx)
+
+
+  (generate-package! :npm ctx :file (temp-file "package" ".zip"))
+
+  -------------------------------------)
