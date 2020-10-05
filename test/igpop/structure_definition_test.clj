@@ -39,10 +39,10 @@
 
     (testing "type"
       (is (= {:type [{:code "string"}]} (sd/prop->sd element id path :type "string"))
-          "'type' property should be wrapped in [{:code <type>}]")
+          "'type' property with simple value should be wrapped in [{:code <type>}]")
 
       (is (= {:type [{}]} (sd/prop->sd element id path :type [{}]))
-          "'type' property with value = (vector of maps)- should not changed")
+          "'type' property with complex value(vector of maps)- should not be changed")
 
       (is (= {:type :ANYTHING} (sd/prop->sd (merge element {:union []}) id path :type :ANYTHING))
           "'type' property of element with union type should not be changed"))
@@ -150,6 +150,7 @@
                                     :description "Description"}}}
     :address {:elements {:extension {:region {:type "CodeableConcept"}}}}}})
 
+
 (deftest flatten-element-test
 
   (testing "flatten default elements"
@@ -220,10 +221,10 @@
     (testing "Root elements should be correct"
       (matcho/match
        result
-       {:resourceType "StructureDefinition"
-        :id "hl7.fhir.test-Patient.extension-race"
-        :name "race"
-        :description "US Core Race Extension",
+       {:resourceType   "StructureDefinition"
+        :id             "hl7.fhir.test-Patient.extension-race"
+        :name           "race"
+        :description    "US Core Race Extension",
         :status         "active"
         :fhirVersion    "4.0.1"
         :kind           "complex-type"
@@ -232,8 +233,8 @@
         :type           "Extension"
         :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
         :derivation     "constraint"
-        :context [{:type "element", :expression "Patient.extension"}],
-        :differential {:element []}}))
+        :context        [{:type "element", :expression "Patient.extension"}],
+        :differential   {:element []}}))
 
     (testing "Differential elements should be correct"
       (matcho/match

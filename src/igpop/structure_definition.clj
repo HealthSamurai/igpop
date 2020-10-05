@@ -206,7 +206,8 @@
   snapshot      - snapshoted profile
   "
   [project-id profile-type profile-id diff snapshot]
-  {:resourceType   "StructureDefinition"
+  (ordered-map
+   :resourceType   "StructureDefinition"
    :id             (str/join "-" [project-id (name profile-type) (name profile-id)])
    :name           (name profile-id) ;; REVIEW - is this correct value?
    :description    (or (:description diff) (:description snapshot))
@@ -220,7 +221,7 @@
    :derivation     "constraint"
    :context        [{:type "element", :expression (name profile-type)}]
    ;; :snapshot {:element (convert :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
-   :differential {:element (convert :Extension (if (:elements diff) diff {:elements {:value diff}}))}})
+   :differential {:element (convert :Extension (if (:elements diff) diff {:elements {:value diff}}))}))
 
 (defn profile->structure-definition
   "Transforms IgPop profile to a structure definition.
@@ -232,15 +233,15 @@
   snapshot      - snapshoted profile
   "
   [project-id profile-type profile-id diff snapshot]
-  (merge {:resourceType "StructureDefinition"
+  (merge (ordered-map
+          :resourceType "StructureDefinition"
           :id           (str project-id "-" (name profile-type) (when (not= :basic profile-id) (str "-" (name profile-id))))
           :description  (or (:description diff) (:description snapshot))
           :type         (name profile-type)
           :name         (when (not= :basic profile-id) (name profile-id))
           :status       "active"
           :fhirVersion  "4.0.1"
-          :abstract     false
-          }
+          :abstract     false)
          ;; url: "https://healthsamurai.github.io/ig-ae/profiles/StructureDefinition/AZAdverseEvent"
          ;; name: "az-adverseevent"
          ;; baseDefinition: "http://hl7.org/fhir/StructureDefinition/AdverseEvent"
