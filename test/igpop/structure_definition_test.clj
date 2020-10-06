@@ -119,18 +119,18 @@
           :min 1
           :max "1"
           :short "Identifier"}
-         (sd/element->sd [:Patient :identifier]
-                         {:minItems 1
-                          :maxItems 1
-                          :description "Identifier"})))
+         (sd/element->sd [[:Patient :identifier]
+                          {:minItems 1
+                           :maxItems 1
+                           :description "Identifier"}])))
   (is (= {:id "Patient.gender"
           :path "Patient.gender"
           :mustSupport true
           :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/fhir:administrative-gender.html"
                     :strength "extensible"
                     :description nil}}
-         (sd/element->sd [:Patient :gender]
-                         {:valueset {:id "fhir:administrative-gender"}}))))
+         (sd/element->sd [[:Patient :gender]
+                          {:valueset {:id "fhir:administrative-gender"}}]))))
 
 (def patient
   {:description "Patient profile"
@@ -164,8 +164,7 @@
     (let [flattened (sd/flatten-element [:Patient :extension] (get-in patient [:elements :extension]))]
 
       (is (= (get flattened [:Patient :extension])
-             {:path "Patient.extension"
-              :slicing {:discriminator [{:type "value" :path "url"}]
+             {:slicing {:discriminator [{:type "value" :path "url"}]
                         :ordered false
                         :rules "open"}})
           "Should add additional element for extension description")

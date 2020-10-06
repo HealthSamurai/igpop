@@ -132,10 +132,10 @@
 
 (defn element->sd
   "Convert an igpop element to its Structure Definition representation."
-  [path element]
+  [[path element]]
   (let [id     (path->id path)
         path   (path->str path)
-        result (ordered-map {:id id :path path :mustSupport true})]
+        result (ordered-map :id id :path path :mustSupport true)]
     (->> element
          (mapv (fn [[prop value]]
                  (prop->sd element id path prop value)))
@@ -144,7 +144,7 @@
 (defmulti flatten-element
   "Turn nested structure into flat map with keys
   representing path in the original structure.
-
+  _
   path    - vector of keys
   element - ig-pop element"
   {:arglists '([path element])}
@@ -152,32 +152,30 @@
 
 (defmethod flatten-element :default
   [path element]
-  (->> (get element :elements)
-       (map #(flatten-element (conj path (key %))
-                              (val %)))
-       (apply merge (ordered-map {path (dissoc element :elements)}))))
+  (apply merge
+         (ordered-map path (dissoc element :elements))
+         (for [[id el] (get element :elements)]
+           (flatten-element (conj path id) el))))
 
 
 (defmethod flatten-element :extension
   [path element]
   (apply merge
-         (ordered-map {path {:path (str/join "." (map name path))
-                             :slicing {:discriminator [{:type "value" :path "url"}]
-                                       :ordered false
-                                       :rules "open"}}})
-         (map (fn [[id el]]
-                (flatten-element
-                 (conj path id)
-                 (-> el
-                     (dissoc :elements)
-                     (dissoc :url)
-                     (assoc :sliceName (name id)
-                            :isModifier false
-                            :type [{:code "Extension"
-                                    :profile [(format "https://healthsamurai.github.io/ig-ae/profiles/%s/%s"
-                                                      (url-encode (name (first path)))
-                                                      (url-encode (name id)))]}]))))
-              element)))
+         (ordered-map
+          path {:slicing {:discriminator [{:type "value" :path "url"}]
+                          :ordered false
+                          :rules "open"}})
+         (for [[ext-id el] element]
+           (flatten-element
+            (conj path ext-id)
+            (-> el
+                (dissoc :elements :url)
+                (assoc :sliceName (name ext-id)
+                       :isModifier false
+                       :type [{:code "Extension"
+                               :profile [(format "https://healthsamurai.github.io/ig-ae/profiles/%s/%s"
+                                                 (url-encode (name (first path)))
+                                                 (url-encode (name ext-id)))]}]))))))
 
 (defn convert
   "Convert `element` (recurcive struct)
@@ -185,16 +183,15 @@
   [type element]
   (->> (flatten-element [type] element)
        (rest)  ;;  remove root element from definition
-       (mapv (fn [[path el]]
-               (element->sd path el)))))
+       (mapv element->sd)))
 
 (defn convert-ext
   "Convert `element` (recurcive struct)
   with `type` to flattened StructureDefinition for extension"
   [type element]
   (->> (flatten-element [type] element)
-       (mapv (fn [[path el]]
-               (-> (element->sd path el))))))
+       (map (fn [[k v]] [k (dissoc v :url)]))
+       (mapv element->sd)))
 
 (defn extension->structure-definition
   "Transforms IgPop extension to a structure definition.
