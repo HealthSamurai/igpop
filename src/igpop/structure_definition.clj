@@ -217,8 +217,16 @@
    :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
    :derivation     "constraint"
    :context        [{:type "element", :expression (name profile-type)}]
-   ;; :snapshot {:element (convert :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
-   :differential {:element (convert :Extension (if (:elements diff) diff {:elements {:value diff}}))}))
+   ;; :snapshot {:element (convert-ext :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
+   :differential {:element
+                  (convert-ext :Extension
+                               (if (:elements diff)
+                                 diff
+                                 ;; HACK for id = "Extension"  min/max should came from diff.
+                                 ;;  for id = "Extension.value" min/max = 1 - by default (At least for now) - [Vitaly 06.10.2020]
+                                 (merge {:elements {:value (assoc diff :minItems 1 :maxItems 1)}}
+                                        (select-keys diff [:minItems :maxItems] ))
+                                 #_{:elements {:value diff}}))}))
 
 (defn profile->structure-definition
   "Transforms IgPop profile to a structure definition.
@@ -407,10 +415,18 @@
   (clojure.pprint/pprint (-> ctx :base :profiles))
 
   (flatten-element [ :AZAdverseEvent ] test-profile)
+  (let [ext (val (first (get-extensions test-profile)))]
+    (convert-ext :Extension
+                 (merge {:elements {:value (assoc ext :minItems 0 :maxItems 0)}}
+                        (select-keys ext [:minItems :maxItems] ))
+                 )
+    )
 
   (project->bundle ctx)
 
 
   (generate-package! :npm ctx :file (temp-file "package" ".zip"))
 
+
   -------------------------------------)
+

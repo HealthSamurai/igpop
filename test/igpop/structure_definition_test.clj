@@ -240,71 +240,42 @@
        result
        {:differential
         {:element
-         [#_{:id "Extension",
-           :path "Extension",
-           :mustSupport true,
-           :short "US Core Race Extension"}
-          {:id "Extension.extension",
-           :path "Extension.extension",
-           :mustSupport true,
-           :slicing
-           {:discriminator [{:type "value", :path "url"}],
-            :ordered false,
-            :rules "open"}}
-          {:id "Extension.extension:text",
-           :path "Extension.extension",
-           :mustSupport true,
-           :min 1,
-           :short "Race Text",
-           :type
-           [{:code "Extension",
-             :profile
-             ["https://healthsamurai.github.io/ig-ae/profiles/Extension/text"]}],
-           :sliceName "text",
-           :isModifier false}
-          {:id "Extension.extension:ombCategory",
-           :path "Extension.extension",
-           :mustSupport true,
-           :min 0
-           :max "*"
-           :type
-           [{:code "Extension",
-             :profile
-             ["https://healthsamurai.github.io/ig-ae/profiles/Extension/ombCategory"]}],
-           :binding
-           {:valueSet
-            "https://healthsamurai.github.io/igpop/valuesets/omb-race-category.html",
-            :strength "extensible",
-            :description nil},
-           :sliceName "ombCategory",
-           :isModifier false}
-          {:id "Extension.extension:detailed",
-           :path "Extension.extension",
-           :mustSupport true,
-           :min 0
-           :max "*"
-           :type
-           [{:code "Extension",
-             :profile
-             ["https://healthsamurai.github.io/ig-ae/profiles/Extension/detailed"]}],
-           :binding
-           {:valueSet
-            "https://healthsamurai.github.io/igpop/valuesets/detailed-race.html",
-            :strength "extensible",
-            :description nil},
-           :short "Extended race codes",
-           :sliceName "detailed",
-           :isModifier false}
-          {:id "Extension.url",
-           :path "Extension.url",
-           :mustSupport true,
-           :type [{:code "uri"}],
-           :fixedUrl "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
-          {:id "Extension.value",
-           :path "Extension.value",
-           :mustSupport true,
-           :max "0"}]}}))))
+         [{:id "Extension", :path "Extension", :mustSupport true, :short "US Core Race Extension"}
+          {:id "Extension.extension", :path "Extension.extension", :mustSupport true,
+           :slicing {:discriminator [{:type "value", :path "url"}], :ordered false, :rules "open"}}
+          {:id "Extension.extension:text", :path "Extension.extension", :mustSupport true, :min 1, :short "Race Text",
+           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/profiles/Extension/text"]}],
+           :sliceName "text", :isModifier false}
+          {:id "Extension.extension:ombCategory", :path "Extension.extension", :mustSupport true, :min 0 :max "*"
+           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/profiles/Extension/ombCategory"]}],
+           :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/omb-race-category.html",
+                     :strength "extensible", :description nil}, :sliceName "ombCategory", :isModifier false}
+          {:id "Extension.extension:detailed", :path "Extension.extension", :mustSupport true, :min 0 :max "*"
+           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/profiles/Extension/detailed"]}],
+           :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/detailed-race.html", :strength "extensible", :description nil},
+           :short "Extended race codes", :sliceName "detailed", :isModifier false}
+          {:id "Extension.url", :path "Extension.url", :mustSupport true, :type [{:code "uri"}], :fixedUrl "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
+          {:id "Extension.value", :path "Extension.value", :mustSupport true, :max "0"}]}}))
 
+    (testing "When simple (non-nested) extension, minItems and maxItems property should go to first element in :differential"
+
+      (let [ext {:type "string", :description "AZ Employee Reporter", :minItems 2, :maxItems 4}]
+        (matcho/match
+         (sd/extension->structure-definition "hl7.fhir.test" "AZAdverseEvent" :AZEmployeeReporter ext ext)
+         {:differential {:element
+                         [{:id "Extension" :path "Extension" :min 2 :max "4"}
+                          {:id "Extension.value" :path "Extension.value" :min 1 :max "1"}]}})))
+
+    (testing "When 'url' prop is given"
+      (let [ext {:url "urn:extension:sometype-someextension" }
+            ext-def (sd/extension->structure-definition "project-id" "SomeType" :SomeExtension ext ext)]
+
+        (testing "it should be passed to top-level property of StructureDefinition - 'url'"
+          (matcho/match ext-def {:url "urn:extension:sometype-someextension"}))
+
+        (testing "it should not be passed to differential elements"
+          (is (= [nil nil] (map :url (get-in ext-def [:differential :element]))))))
+      )))
 
 (deftest profile->structure-definition-test
   (let [result (sd/profile->structure-definition "hl7.fhir.test" :Patient :basic patient patient)]
