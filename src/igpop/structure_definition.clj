@@ -177,6 +177,7 @@
                                                  (url-encode (name (first path)))
                                                  (url-encode (name ext-id)))]}]))))))
 
+
 (defn convert
   "Convert `element` (recurcive struct)
   with `type` to flattened StructureDefinition for resource"
@@ -185,13 +186,43 @@
        (rest)  ;;  remove root element from definition
        (mapv element->sd)))
 
-(defn convert-ext
+
+(defn convert-nested-ext
   "Convert `element` (recurcive struct)
   with `type` to flattened StructureDefinition for extension"
   [type element]
   (->> (flatten-element [type] element)
        (map (fn [[k v]] [k (dissoc v :url)]))
        (mapv element->sd)))
+
+(defn simple-flatten-element
+  "Like flatten-element, but does not interpret extension as special case.
+  We need in Extension SD element with id : Extension.extension."
+  [path element]
+  (apply merge
+         (ordered-map path (dissoc element :elements))
+         (for [[id el] (get element :elements)]
+           (simple-flatten-element (conj path id) el))))
+
+(defn convert-simple-ext
+  "Convert `element`
+  with `type` to sequenced StructureDefinition for simple extension"
+  [type element]
+  (->> (simple-flatten-element [type] element)
+       (map (fn [[k v]] [k (dissoc v :url)]))
+       (mapv element->sd)))
+
+(defn enrich-simple-extension
+  "When we met simple(not nested) extension property - we need to generate
+  additional elements for it in Extension SD file"
+  [diff]
+  (merge
+   {:elements {:extension {:minItems 0 :maxItems 0}
+               :url {:minItems 1 :maxItems 1 :fixedUri (:url diff)}
+               "value[x]" {:minItems 1 :maxItems 1 :type (:type diff)}}}
+   (select-keys diff [:minItems :maxItems])))
+
+;; (enrich-simple-extension {:minItems 10})
 
 (defn extension->structure-definition
   "Transforms IgPop extension to a structure definition.
@@ -203,6 +234,7 @@
   snapshot      - snapshoted profile
   "
   [project-id profile-type profile-id diff snapshot]
+  (println diff)
   (ordered-map
    :resourceType   "StructureDefinition"
    :id             (str/join "-" [project-id (name profile-type) (name profile-id)])
@@ -219,14 +251,21 @@
    :context        [{:type "element", :expression (name profile-type)}]
    ;; :snapshot {:element (convert-ext :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
    :differential {:element
-                  (convert-ext :Extension
-                               (if (:elements diff)
-                                 diff
-                                 ;; HACK for id = "Extension"  min/max should came from diff.
-                                 ;;  for id = "Extension.value" min/max = 1 - by default (At least for now) - [Vitaly 06.10.2020]
-                                 (merge {:elements {:value (assoc diff :minItems 1 :maxItems 1)}}
-                                        (select-keys diff [:minItems :maxItems] ))
-                                 #_{:elements {:value diff}}))}))
+                  (if (:elements diff)
+                    (convert-nested-ext :Extension diff)
+                    ;; HACK for id = "Extension"  min/max should came from diff.
+                    ;;  for id = "Extension.value" min/max = 1 - by default (At least for now) - [Vitaly 06.10.2020]
+                    (convert-simple-ext :Extension (enrich-simple-extension diff))
+                    #_(merge {:elements {:value (assoc diff :minItems 1 :maxItems 1)}}
+                             (select-keys diff [:minItems :maxItems] ))
+                    #_{:elements {:value diff}})
+                  #_(convert-ext :Extension
+                                 (if (:elements diff)
+                                   diff
+                                   (enrich-simple-extension diff)
+                                   #_(merge {:elements {:value (assoc diff :minItems 1 :maxItems 1)}}
+                                            (select-keys diff [:minItems :maxItems] ))
+                                   #_{:elements {:value diff}}))}))
 
 (defn profile->structure-definition
   "Transforms IgPop profile to a structure definition.
@@ -428,6 +467,12 @@
 
   (generate-package! :npm ctx :file (temp-file "package" ".zip"))
 
+  {:elements
+   {:extension {:minItems 0, :maxItems 0},
+    :url {:minItems 1, :maxItems 1, :fixedUri FIXED_URL},
+    :value {:minItems 1, :maxItems 1, :type SOME_TYPE}},
+   :minItems 2,
+   :maxItems 4}
 
   -------------------------------------)
 
