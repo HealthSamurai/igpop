@@ -317,7 +317,8 @@
 (deftest ig-vs->valueset-test
   (let [valueset (first 
                   {:survey-status
-                   {:concepts
+                   {:system "Intellijent source"
+                    :concepts
                     [{:code "req-det", :display "Requested detailed investigation"}
                      {:code "N/A", :display "No further cooperation is available"}]}})]
     (matcho/match
@@ -327,7 +328,8 @@
       :name "SurveyStatus"
       :title "survey status"
       :status "active"
-      :compose {:include {:concept (:concepts (val valueset))}}})))
+      :compose {:include [{:system "Intellijent source"
+                           :concept (:concepts (val valueset))}]}})))
 
 (deftest project->bundle-test
   (let [project-path (.getPath (io/resource "test-project"))
@@ -349,3 +351,5 @@
     (is (.exists package) "Generated package should exist.")
     ;; TODO validate content of the package
     #_(io/delete-file package)))
+
+

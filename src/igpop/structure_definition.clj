@@ -306,7 +306,8 @@
    :title (str/replace (name id) "-" " ")
    :status (:status body "active")
    :date (:date body (java.util.Date.))
-   :compose {:include {:concept (:concepts body)}}})
+   :compose {:include [(merge (select-keys body [:system])
+                              {:concept (:concepts body)})]}})
 
 (defn project->bundle
   "Transforms IgPop project to a bundle of structure definitions."
