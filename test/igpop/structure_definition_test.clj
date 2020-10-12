@@ -3,7 +3,8 @@
             [clojure.java.io :as io]
             [matcho.core :as matcho]
             [igpop.loader :as loader]
-            [igpop.structure-definition :as sd]))
+            [igpop.structure-definition :as sd]
+            [clojure.string :as str]))
 
 (deftest prop->sd-test
   (let [element {}
@@ -215,25 +216,40 @@
 
 (deftest extension->structure-definition-test
   (let [race-extension (get (sd/get-extensions patient) [:elements :extension :race])
-        result (sd/extension->structure-definition "hl7.fhir.test" "Patient.extension" :race race-extension race-extension)]
+        manifest {:id "hl7.fhir.test" :fhir "4.0.1", :url "http://example.com"}
+        result (sd/extension->structure-definition manifest "Patient.extension" :race race-extension race-extension)]
 
-    (testing "Root elements should be correct"
+    (testing "Root static properties should be correct"
       (matcho/match
        result
        {:resourceType   "StructureDefinition"
-        :id             "hl7.fhir.test-Patient.extension-race"
-        :name           "race"
-        :description    "US Core Race Extension",
         :status         "active"
-        :fhirVersion    "4.0.1"
         :kind           "complex-type"
         :abstract       false
-        :url             "exn:extension:patient-race"
         :type           "Extension"
         :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
-        :derivation     "constraint"
+        :derivation     "constraint"}))
+
+    (testing "Root evaluated properties should be correct"
+      (matcho/match
+       result
+       {:id             "hl7.fhir.test-Patient.extension-race"
+        :name           "race"
+        :description    "US Core Race Extension",
         :context        [{:type "element", :expression "Patient.extension"}],
         :differential   {:element []}}))
+
+    (testing "fhirVersion should be taken from manifest"
+      (matcho/match
+       result {:fhirVersion "4.0.1"}))
+
+    (testing "url prefix should be taken from manifest"
+      (is (str/starts-with? (:url result) (:url manifest))))
+
+    (testing "url postfix should be taken from element definition"
+      (is (str/ends-with? (:url result) (:url race-extension))))
+
+
 
     #_(testing "Differential elements should be correct"
       (matcho/match
@@ -261,7 +277,8 @@
 
       (let [ext {:type "string", :description "AZ Employee Reporter" :url "http:///hl7.fhir.test/AZAdverseEvent/AZEmployeeReporter"
                  :minItems 2, :maxItems 4}
-            res (sd/extension->structure-definition "hl7.fhir.test" "AZAdverseEvent" :AZEmployeeReporter ext ext)]
+            manifest {:id "hl7.fhir.test" :url ""}
+            res (sd/extension->structure-definition manifest "AZAdverseEvent" :AZEmployeeReporter ext ext)]
 
         (testing " additional elements should be generated - 'extension', 'url' and 'value[x]'"
           (matcho/match
@@ -289,27 +306,40 @@
 
     (testing "When 'url' prop is given"
       (let [ext {:url "urn:extension:sometype-someextension" }
-            res (sd/extension->structure-definition "project-id" "SomeType" :SomeExtension ext ext)]
+            manifest {:id "project-id"}
+            res (sd/extension->structure-definition manifest "SomeType" :SomeExtension ext ext)]
 
-        (testing "it should be passed to top-level property of StructureDefinition - 'url'"
-          (matcho/match res {:url "urn:extension:sometype-someextension"}))
+        (testing "it should be passed as postfix to top-level property of StructureDefinition - 'url'"
+          (is (str/ends-with? (:url res) (:url ext))))
 
         (testing "it should not be passed to differential elements"
           (is (= [nil nil nil nil] (map :url (get-in res [:differential :element]))))))
       )))
 
 (deftest profile->structure-definition-test
-  (let [result (sd/profile->structure-definition "hl7.fhir.test" :Patient :basic patient patient)]
-    (matcho/match
-     result
-     {:resourceType "StructureDefinition"
-      :id "hl7.fhir.test-Patient"
-      :type "Patient"
-      :differential {:element [#_{:id "Patient"}
-                               {:id "Patient.extension"}
-                               {:id "Patient.extension:race" :type [{:code "Extension"}]}
-                               {:id "Patient.extension:birthsex" :type [{:code "Extension"}]}
-                               {:id "Patient.identifier"}]}})))
+  (testing "converting profile to structure-definition"
+    (let [result (sd/profile->structure-definition {:id "hl7.fhir.test"} :Patient :basic patient patient)]
+
+      (testing "should generate correct root properties"
+        (matcho/match result {:resourceType "StructureDefinition"
+                              :id "hl7.fhir.test-Patient"
+                              :type "Patient"
+                              :differential {}}))
+
+      (testing "should generate elements in differential with correct ids and types"
+        (matcho/match
+         result {:differential {:element [{:id "Patient.extension"}
+                                          {:id "Patient.extension:race" :type [{:code "Extension"}]}
+                                          {:id "Patient.extension:birthsex" :type [{:code "Extension"}]}
+                                          {:id "Patient.identifier"}]}}))
+
+      #_(testing "should generate elements in differential with correct ids and types"
+          (matcho/match
+           result {:differential {:element [{:id "Patient.extension"}
+                                            {:id "Patient.extension:race" :type [{:code "Extension"}]}
+                                            {:id "Patient.extension:birthsex" :type [{:code "Extension"}]}
+                                            {:id "Patient.identifier"}]}}))
+      )))
 
 (deftest get-extensions-test
   (matcho/match
@@ -323,7 +353,7 @@
 (sd/get-extensions patient)
 
 (deftest ig-profile->structure-definitions
-  (let [result (sd/ig-profile->structure-definitions "hl7.fhir.test" :Patient :basic patient patient)]
+  (let [result (sd/ig-profile->structure-definitions {:id "hl7.fhir.test"} :Patient :basic patient patient)]
     (matcho/match
      result
      [{:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient" :type "Patient"}
@@ -343,7 +373,7 @@
                     [{:code "req-det", :display "Requested detailed investigation"}
                      {:code "N/A", :display "No further cooperation is available"}]}})]
     (matcho/match
-     (sd/ig-vs->valueset "hl7.fhir.test" valueset)
+     (sd/ig-vs->valueset {:id "hl7.fhir.test"} valueset)
      {:resourceType "ValueSet"
       :id "hl7.fhir.test-survey-status"
       :name "SurveyStatus"

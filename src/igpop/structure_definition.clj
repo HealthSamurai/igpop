@@ -16,6 +16,15 @@
 
 (defn- url-encode [s] (URLEncoder/encode s "UTF-8"))
 
+(defn- format-url
+  "Make url from 'url-template' with special tokens '%s'
+  Replaces tokens with url-encoded parts"
+  [url-template & parts]
+  (apply format url-template (map url-encode parts)))
+
+;; (format-url "http://example.com/q=%s&location=%s" "Привет" "С П Б")
+;; (format-url "http://example.com/q=%s&location=%s" "example.com/one/two" "С П Б")
+
 (defn- take-while+
   [pred coll]
   (lazy-seq
@@ -86,8 +95,7 @@
 (defmethod prop->sd :refers
   [_ _ _ _ value]
   (letfn [(make-url [{rt :resourceType p :profile}]
-            (format "https://healthsamurai.github.io/igpop/profiles/%s/%s.html"
-                    (url-encode rt) (url-encode p)))]
+            (format-url "https://healthsamurai.github.io/igpop/profiles/%s/%s.html" rt p))]
     {:type (mapv #(ordered-map {:code "Reference" :targetProfile [(make-url %)]})
                  (filter :resourceType value))}))
 
@@ -227,25 +235,25 @@
 (defn extension->structure-definition
   "Transforms IgPop extension to a structure definition.
 
-  project-id    - string, that will be used as prefix of all urls
+  manifest      - igpop manifest map
   profile-type  - keyword for resource type
   profile-id    - profile-id for profile-type. (used as postfix in urls)
   diff          - differential profile
   snapshot      - snapshoted profile
   "
-  [project-id profile-type profile-id diff snapshot]
+  [manifest profile-type profile-id diff snapshot]
   (println diff)
   (ordered-map
    :resourceType   "StructureDefinition"
-   :id             (str/join "-" [project-id (name profile-type) (name profile-id)])
+   :id             (str/join "-" [(:id manifest) (name profile-type) (name profile-id)])
    :name           (name profile-id) ;; REVIEW - is this correct value?
    :description    (or (:description diff) (:description snapshot))
    :status         "active"
-   :fhirVersion    "4.0.1" ;; TODO get from ctx
+   :fhirVersion    (:fhir manifest)
    :kind           "complex-type"
    :abstract       false
    :type           "Extension"
-   :url            (:url diff)
+   :url            (str (:url manifest) "/" (:url diff))
    :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
    :derivation     "constraint"
    :context        [{:type "element", :expression (name profile-type)}]
@@ -270,21 +278,21 @@
 (defn profile->structure-definition
   "Transforms IgPop profile to a structure definition.
 
-  project-id    - string, that will be used as prefix of all urls
+  manifest      - igpop manifest map
   profile-type  - keyword for resource type
   profile-id    - profile-id for profile-type. (used as postfix in urls)
   diff          - differential profile
   snapshot      - snapshoted profile
   "
-  [project-id profile-type profile-id diff snapshot]
+  [manifest profile-type profile-id diff snapshot]
   (merge (ordered-map
           :resourceType "StructureDefinition"
-          :id           (str project-id "-" (name profile-type) (when (not= :basic profile-id) (str "-" (name profile-id))))
+          :id           (str (:id manifest) "-" (name profile-type) (when (not= :basic profile-id) (str "-" (name profile-id))))
           :description  (or (:description diff) (:description snapshot))
           :type         (name profile-type)
           :name         (when (not= :basic profile-id) (name profile-id))
           :status       "active"
-          :fhirVersion  "4.0.1"
+          :fhirVersion  (:fhir manifest)
           :abstract     false)
          ;; url: "https://healthsamurai.github.io/ig-ae/profiles/StructureDefinition/AZAdverseEvent"
          ;; name: "az-adverseevent"
@@ -320,17 +328,17 @@
 (defn ig-profile->structure-definitions
   "Transforms IgPop profile into a set of structure definitions.
 
-  project-id    - string, that will be used as prefix of all urls
+  manifest      - igpop manifest map
   profile-type  - keyword for resource type
   profile-id    - profile-id for profile-type. (used as postfix in urls)
   diff          - differential profile
   snapshot      - snapshoted profile
   "
-  [project-id profile-type profile-id diff snapshot]
-  (let [profile (profile->structure-definition project-id profile-type profile-id diff snapshot)
+  [manifest profile-type profile-id diff snapshot]
+  (let [profile (profile->structure-definition manifest profile-type profile-id diff snapshot)
         extensions (map (fn [[path element-diff]]
                           (extension->structure-definition
-                           project-id profile-type (last path) element-diff (get-in snapshot path)))
+                           manifest profile-type (last path) element-diff (get-in snapshot path)))
                         (get-extensions diff))]
     (->> (cons profile extensions)
          (filter some?)
@@ -338,9 +346,9 @@
 
 (defn ig-vs->valueset
   "Trnsforms IgPop valueset to a canonical valuest."
-  [prefix [id body]]
+  [manifest [id body]]
   {:resourceType "ValueSet"
-   :id (str prefix "-" (name id))
+   :id (str (:id manifest) "-" (name id))
    :name (->> (str/split (name id) #"-") (map capitalize) (apply str))
    :title (str/replace (name id) "-" " ")
    :status (:status body "active")
@@ -353,12 +361,12 @@
   [ctx]
   (let [{:keys [valuesets diff-profiles snapshot]} ctx
         vsets    (for [ig-vs valuesets
-                       :let [vset (ig-vs->valueset (:id ctx) ig-vs)]]
+                       :let [vset (ig-vs->valueset ctx ig-vs)]]
                    {:fullUrl (str (:base-url ctx) "/" (:id vset))
                     :resource vset})
         profiles (for [[type profiles-by-id] diff-profiles
                        [id diff] profiles-by-id
-                       struct-def (ig-profile->structure-definitions (:id ctx) type id diff (get-in snapshot [type id]))]
+                       struct-def (ig-profile->structure-definitions ctx type id diff (get-in snapshot [type id]))]
                    {:fullUrl  (str (:base-url ctx) "/" (:id struct-def))
                     :resource struct-def})
         result   {:resourceType "Bundle"
