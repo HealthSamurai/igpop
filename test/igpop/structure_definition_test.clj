@@ -78,23 +78,25 @@
     (testing "refers"
       (is (= {:type
               [{:code "Reference"
-                :targetProfile ["https://healthsamurai.github.io/igpop/profiles/Practitioner/basic.html"]}
+                :targetProfile ["http://example.com/profiles/Practitioner/basic.html"]}
                {:code "Reference"
-                :targetProfile ["https://healthsamurai.github.io/igpop/profiles/Organization/basic.html"]}
+                :targetProfile ["http://example.com/profiles/Organization/basic.html"]}
                {:code "Reference"
-                :targetProfile ["https://healthsamurai.github.io/igpop/profiles/Patient/basic.html"]}]}
-             (sd/prop->sd nil element id path :refers [{:profile "basic"
-                                                    :resourceType "Practitioner"}
-                                                   {:resourceType "Organization"
-                                                    :profile "basic"}
-                                                   {:profile "basic"
-                                                    :resourceType "Patient"}]))
+                :targetProfile ["http://example.com/profiles/Patient/basic.html"]}]}
+             (sd/prop->sd {:url "http://example.com"}
+                          element id path :refers
+                          [{:profile "basic"
+                            :resourceType "Practitioner"}
+                           {:resourceType "Organization"
+                            :profile "basic"}
+                           {:profile "basic"
+                            :resourceType "Patient"}]))
           "Reference should result in type restriction with correct URL to the referenced resource."))
     (testing "valueset"
-      (is (= {:binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/sample.html"
+      (is (= {:binding {:valueSet "http://example.com/valuesets/sample.html"
                         :description "test"
                         :strength "extensible"}}
-             (sd/prop->sd nil element id path :valueset {:id "sample" :description "test"}))
+             (sd/prop->sd {:url "http://example.com"} element id path :valueset {:id "sample" :description "test"}))
           "Valueset should result in binding with correct URL and description."))
     (testing "mappings"
       (is (= {:mapping [{:identity "hl7.v2" :map "PID-5, PID-9"}
@@ -125,18 +127,21 @@
           :min 1
           :max "1"
           :short "Identifier"}
-         (sd/element->sd {} [[:Patient :identifier]
-                             {:minItems 1
-                              :maxItems 1
-                              :description "Identifier"}])))
+         (sd/element->sd {:url "https://healthsamurai.github.io/igpop"}
+                         [[:Patient :identifier]
+                          {:minItems 1
+                           :maxItems 1
+                           :description "Identifier"}])))
+
   (is (= {:id "Patient.gender"
           :path "Patient.gender"
           :mustSupport true
           :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/fhir:administrative-gender.html"
                     :strength "extensible"
                     :description nil}}
-         (sd/element->sd {} [[:Patient :gender]
-                             {:valueset {:id "fhir:administrative-gender"}}]))))
+         (sd/element->sd {:url "https://healthsamurai.github.io/igpop"}
+                         [[:Patient :gender]
+                          {:valueset {:id "fhir:administrative-gender"}}]))))
 
 (def patient
   {:description "Patient profile"

@@ -93,15 +93,15 @@
 
 ;; TODO take the base URL from the project ctx
 (defmethod prop->sd :refers
-  [_ _ _ _ _ value]
+  [manifest _ _ _ _ value]
   (letfn [(make-url [{rt :resourceType p :profile}]
-            (format-url "https://healthsamurai.github.io/igpop/profiles/%s/%s.html" rt p))]
+            (format-url (str (:url manifest) "/profiles/%s/%s.html") rt p))]
     {:type (mapv #(ordered-map {:code "Reference" :targetProfile [(make-url %)]})
                  (filter :resourceType value))}))
 
 (defmethod prop->sd :valueset
-  [_ _ _ _ _ value]
-  {:binding {:valueSet (str "https://healthsamurai.github.io/igpop/valuesets/" (:id value) ".html")
+  [manifest _ _ _ _ value]
+  {:binding {:valueSet (str (:url manifest) "/valuesets/" (:id value) ".html")
              :strength (:strength value "extensible")
              :description (:description value)}})
 
