@@ -12,44 +12,44 @@
         path "Patient.telecom.system"]
 
     (testing "default"
-      (is (= {:test 0} (sd/prop->sd element id path :test 0))
+      (is (= {:test 0} (sd/prop->sd nil element id path :test 0))
           "Property should be preserved by default"))
 
     (testing "cardinality"
-      (is (= {:min 1} (sd/prop->sd element id path :required true))
+      (is (= {:min 1} (sd/prop->sd nil element id path :required true))
           "Required property should result in a min = 1 restriction.")
 
-      (is (nil? (sd/prop->sd element id path :required false))
+      (is (nil? (sd/prop->sd nil element id path :required false))
           "Non-required property should not result in a restriction.")
 
-      (is (= {:max "0"} (sd/prop->sd element id path :disabled true))
+      (is (= {:max "0"} (sd/prop->sd nil element id path :disabled true))
           "Disabled property should result in a max = 0 restriction.")
 
-      (is (nil? (sd/prop->sd element id path :disabled false))
+      (is (nil? (sd/prop->sd nil element id path :disabled false))
           "Non-disabled property should not result in a restriction.")
 
-      (is (= {:min 7} (sd/prop->sd element id path :minItems 7))
+      (is (= {:min 7} (sd/prop->sd nil element id path :minItems 7))
           "minItems property should result in corresponding restriction.")
 
-      (is (= {:max "42"} (sd/prop->sd element id path :maxItems 42))
+      (is (= {:max "42"} (sd/prop->sd nil element id path :maxItems 42))
           "maxItems property should result in corresponding restriction.")
 
-      (is (= {:min 0 :max "*"} (sd/prop->sd element id path :collection true))
+      (is (= {:min 0 :max "*"} (sd/prop->sd nil element id path :collection true))
           "collection property should result in both - minItems & maxItems restrictions")
       )
 
     (testing "type"
-      (is (= {:type [{:code "string"}]} (sd/prop->sd element id path :type "string"))
+      (is (= {:type [{:code "string"}]} (sd/prop->sd nil element id path :type "string"))
           "'type' property with simple value should be wrapped in [{:code <type>}]")
 
-      (is (= {:type [{}]} (sd/prop->sd element id path :type [{}]))
+      (is (= {:type [{}]} (sd/prop->sd nil element id path :type [{}]))
           "'type' property with complex value(vector of maps)- should not be changed")
 
-      (is (= {:type :ANYTHING} (sd/prop->sd (merge element {:union []}) id path :type :ANYTHING))
+      (is (= {:type :ANYTHING} (sd/prop->sd nil (merge element {:union []}) id path :type :ANYTHING))
           "'type' property of element with union type should not be changed"))
 
     (testing "constant"
-      (is (= {:fixedSystem "email"} (sd/prop->sd element id path :constant "email"))
+      (is (= {:fixedSystem "email"} (sd/prop->sd nil element id path :constant "email"))
           "Constant should result in corresponding `fixedX` restriction."))
 
     (testing "constraints"
@@ -57,18 +57,23 @@
                         :ext-1 {:expression "Must have either" :severity "init"}}]
         (is (= {:constraint [{:key "ele-1", :severity "error", :human "All FHIR elements"}
                              {:key "ext-1", :severity "init", :expression "Must have either"}]}
-               (sd/prop->sd element id path :constraints constraint)))))
+               (sd/prop->sd nil element id path :constraints constraint)))))
 
     (testing "union"
       (is (= {:id "ActivityDefinition.subject[x]"
               :path "ActivityDefinition.subject[x]"
               :type [{:code "CodeableConcept"}, {:code "Reference"}]}
-             (sd/prop->sd element
+             (sd/prop->sd nil element
                           "ActivityDefinition.subject"
                           "ActivityDefinition.subject"
                           :union
                           ["CodeableConcept", "Reference"]))
           "Union property should result in corresponding restriction."))
+
+    #_(testing "profile"
+      (is (= {:type [{:profile "http://example.com"}]}
+             (sd/prop->sd nil element id path :profile "http://example.com"))
+          "value should be wrapped in vector and placed by path 'type.[0]' property"))
 
     (testing "refers"
       (is (= {:type
@@ -78,7 +83,7 @@
                 :targetProfile ["https://healthsamurai.github.io/igpop/profiles/Organization/basic.html"]}
                {:code "Reference"
                 :targetProfile ["https://healthsamurai.github.io/igpop/profiles/Patient/basic.html"]}]}
-             (sd/prop->sd element id path :refers [{:profile "basic"
+             (sd/prop->sd nil element id path :refers [{:profile "basic"
                                                     :resourceType "Practitioner"}
                                                    {:resourceType "Organization"
                                                     :profile "basic"}
@@ -89,16 +94,16 @@
       (is (= {:binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/sample.html"
                         :description "test"
                         :strength "extensible"}}
-             (sd/prop->sd element id path :valueset {:id "sample" :description "test"}))
+             (sd/prop->sd nil element id path :valueset {:id "sample" :description "test"}))
           "Valueset should result in binding with correct URL and description."))
     (testing "mappings"
       (is (= {:mapping [{:identity "hl7.v2" :map "PID-5, PID-9"}
                         {:identity "ru.tfoms" :map "XX-XX-F1"}]}
-             (sd/prop->sd element id path :mappings {:hl7.v2 {:map "PID-5, PID-9"}, :ru.tfoms {:map "XX-XX-F1"}}))
+             (sd/prop->sd nil element id path :mappings {:hl7.v2 {:map "PID-5, PID-9"}, :ru.tfoms {:map "XX-XX-F1"}}))
           "Mappings should result in a list of mapping structures."))
     (testing "description"
       (is (= {:short "test"}
-             (sd/prop->sd element id path :description "test"))
+             (sd/prop->sd nil element id path :description "test"))
           "Description should go to `short` field of the structure definition."))))
 
 (deftest path->id-test
@@ -120,18 +125,18 @@
           :min 1
           :max "1"
           :short "Identifier"}
-         (sd/element->sd [[:Patient :identifier]
-                          {:minItems 1
-                           :maxItems 1
-                           :description "Identifier"}])))
+         (sd/element->sd {} [[:Patient :identifier]
+                             {:minItems 1
+                              :maxItems 1
+                              :description "Identifier"}])))
   (is (= {:id "Patient.gender"
           :path "Patient.gender"
           :mustSupport true
           :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/fhir:administrative-gender.html"
                     :strength "extensible"
                     :description nil}}
-         (sd/element->sd [[:Patient :gender]
-                          {:valueset {:id "fhir:administrative-gender"}}]))))
+         (sd/element->sd {} [[:Patient :gender]
+                             {:valueset {:id "fhir:administrative-gender"}}]))))
 
 (def patient
   {:description "Patient profile"
@@ -179,7 +184,7 @@
 
 (deftest convert-test
   (matcho/match
-   (sd/convert :Patient patient)
+   (sd/convert {} :Patient patient)
    [#_{:id "Patient"
        :path "Patient"
        :mustSupport true
@@ -318,12 +323,14 @@
 
 (deftest profile->structure-definition-test
   (testing "converting profile to structure-definition"
-    (let [result (sd/profile->structure-definition {:id "hl7.fhir.test"} :Patient :basic patient patient)]
+    (let [result (sd/profile->structure-definition {:id "hl7.fhir.test"
+                                                    :url "http://example.com"} :Patient :basic patient patient)]
 
       (testing "should generate correct root properties"
         (matcho/match result {:resourceType "StructureDefinition"
                               :id "hl7.fhir.test-Patient"
                               :type "Patient"
+                              :url "http://example.com/profiles/StructureDefinition/Patient"
                               :differential {}}))
 
       (testing "should generate elements in differential with correct ids and types"

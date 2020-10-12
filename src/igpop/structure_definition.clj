@@ -49,14 +49,14 @@
 
 (defmulti prop->sd
   "Convert an element's property to Structure Definition property."
-  {:arglists '([element id path prop value])}
-  (fn [_ _ _ prop _] prop)
+  {:arglists '([manifest element id path prop value])}
+  (fn [_ _ _ _ prop _] prop)
   :hierarchy #'prop-hierarchy)
 
-(defmethod prop->sd :default [_ _ _ prop value] {prop value})
+(defmethod prop->sd :default [_ _ _ _ prop value] {prop value})
 
 (defmethod prop->sd ::cardinality
-  [_ _ _ prop value]
+  [_ _ _ _ prop value]
   (condp = prop
     :collection (when value {:min 0 :max "*"})
     :required   (when value {:min 1})
@@ -65,7 +65,7 @@
     :maxItems   {:max (str value)}))
 
 (defmethod prop->sd :constant
-  [_ id _ _ value]
+  [_ _ id _ _ value]
   {(->> (str/split id #"\.") last capitalize (str "fixed") keyword)
    value})
 
@@ -78,14 +78,14 @@
     (into (ordered-map :key (name k)) props)))
 
 (defmethod prop->sd :constraints
-  [_ _ _ _ value]
+  [_ _ _ _ _ value]
   {:constraint (mapv convert-constraint value)}
   #_(->> value
          (mapv convert-constraint)
          (assoc {} :constraint)))
 
 (defmethod prop->sd :union
-  [_ id path _ value]
+  [_ _ id path _ value]
   ;TODO consider porting the second implementation from the original
   {:id (str id "[x]")
    :path (str path "[x]")
@@ -93,35 +93,41 @@
 
 ;; TODO take the base URL from the project ctx
 (defmethod prop->sd :refers
-  [_ _ _ _ value]
+  [_ _ _ _ _ value]
   (letfn [(make-url [{rt :resourceType p :profile}]
             (format-url "https://healthsamurai.github.io/igpop/profiles/%s/%s.html" rt p))]
     {:type (mapv #(ordered-map {:code "Reference" :targetProfile [(make-url %)]})
                  (filter :resourceType value))}))
 
 (defmethod prop->sd :valueset
-  [_ _ _ _ value]
+  [_ _ _ _ _ value]
   {:binding {:valueSet (str "https://healthsamurai.github.io/igpop/valuesets/" (:id value) ".html")
              :strength (:strength value "extensible")
              :description (:description value)}})
 
 (defmethod prop->sd :mappings
-  [_ _ _ _ value]
+  [_ _ _ _ _ value]
   {:mapping
    (mapv
     (fn [[k v]] (into (ordered-map {:identity (name k)}) v))
     value)})
 
 (defmethod prop->sd :description
-  [_ _ _ _ value]
+  [_ _ _ _ _ value]
   {:short value})
 
 (defmethod prop->sd :type
-  [element _ _ _ value]
+  [_ element _ _ _ value]
   (if (or (contains? element :union)
           (and (vector? value) (map? (first value))))
     {:type value}
     {:type [{:code value}]}))
+
+(defmethod prop->sd :profile
+  [_ _ _ _ _ value]
+  nil
+  #_{:type [{:profile [value]}]})
+
 
 (defn path->id
   "Convert path (vector) to joined string with special separator"
@@ -140,13 +146,13 @@
 
 (defn element->sd
   "Convert an igpop element to its Structure Definition representation."
-  [[path element]]
+  [manifest [path element]]
   (let [id     (path->id path)
         path   (path->str path)
         result (ordered-map :id id :path path :mustSupport true)]
     (->> element
          (mapv (fn [[prop value]]
-                 (prop->sd element id path prop value)))
+                 (prop->sd manifest element id path prop value)))
          (reduce into result))))
 
 (defmulti flatten-element
@@ -189,19 +195,19 @@
 (defn convert
   "Convert `element` (recurcive struct)
   with `type` to flattened StructureDefinition for resource"
-  [type element]
+  [manifest type element]
   (->> (flatten-element [type] element)
        (rest)  ;;  remove root element from definition
-       (mapv element->sd)))
+       (mapv (partial element->sd manifest))))
 
 
 (defn convert-nested-ext
   "Convert `element` (recurcive struct)
   with `type` to flattened StructureDefinition for extension"
-  [type element]
+  [manifest type element]
   (->> (flatten-element [type] element)
        (map (fn [[k v]] [k (dissoc v :url)]))
-       (mapv element->sd)))
+       (mapv (partial element->sd manifest))))
 
 (defn simple-flatten-element
   "Like flatten-element, but does not interpret extension as special case.
@@ -215,10 +221,10 @@
 (defn convert-simple-ext
   "Convert `element`
   with `type` to sequenced StructureDefinition for simple extension"
-  [type element]
+  [manifest type element]
   (->> (simple-flatten-element [type] element)
        (map (fn [[k v]] [k (dissoc v :url)]))
-       (mapv element->sd)))
+       (mapv (partial element->sd manifest))))
 
 (defn enrich-simple-extension
   "When we met simple(not nested) extension property - we need to generate
@@ -260,10 +266,10 @@
    ;; :snapshot {:element (convert-ext :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
    :differential {:element
                   (if (:elements diff)
-                    (convert-nested-ext :Extension diff)
+                    (convert-nested-ext manifest :Extension diff)
                     ;; HACK for id = "Extension"  min/max should came from diff.
                     ;;  for id = "Extension.value" min/max = 1 - by default (At least for now) - [Vitaly 06.10.2020]
-                    (convert-simple-ext :Extension (enrich-simple-extension diff))
+                    (convert-simple-ext manifest :Extension (enrich-simple-extension diff))
                     #_(merge {:elements {:value (assoc diff :minItems 1 :maxItems 1)}}
                              (select-keys diff [:minItems :maxItems] ))
                     #_{:elements {:value diff}})
@@ -291,6 +297,7 @@
           :description  (or (:description diff) (:description snapshot))
           :type         (name profile-type)
           :name         (when (not= :basic profile-id) (name profile-id))
+          :url          (str (:url manifest) "/profiles/StructureDefinition/" (name profile-type) (when (not= :basic profile-id) (str "-" (name profile-id))))
           :status       "active"
           :fhirVersion  (:fhir manifest)
           :abstract     false)
@@ -306,8 +313,8 @@
          ;; description: This is the AZ profile (StructureDefinition) for AdverseEvent
          ;; elements: {}
          (apply dissoc diff igpop-properties) ;; <---- TODO: replace this with explicit field enumeration
-         {;; :snapshot {:element (convert profile-type snapshot)}
-          :differential {:element (convert profile-type diff)}}))
+         {;; :snapshot {:element (convert manifest profile-type snapshot)}
+          :differential {:element (convert manifest profile-type diff)}}))
 
 (defn get-extensions
   "Returns a flattened map of nested extensions where key is a path in
@@ -464,7 +471,7 @@
 
   (flatten-element [ :AZAdverseEvent ] test-profile)
   (let [ext (val (first (get-extensions test-profile)))]
-    (convert-ext :Extension
+    (convert-ext {} :Extension
                  (merge {:elements {:value (assoc ext :minItems 0 :maxItems 0)}}
                         (select-keys ext [:minItems :maxItems] ))
                  )
