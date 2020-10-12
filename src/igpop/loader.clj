@@ -39,6 +39,7 @@
     (Character/isUpperCase (first s))))
 
 (defn parse-name
+  "Determines by file-name - file format and path for placing file-data in context."
   ([dir file-name]
    (let [parts (str/split file-name #"\.")]
      (cond
@@ -136,20 +137,19 @@
 (defn build-profiles [ctx mode]
   (->> ctx
        :source
-       (reduce
-        (fn [acc [rt profiles]]
-          (reduce (fn [acc [id profile]]
-                    (let [rich-profile (enrich ctx [rt] profile)
-                          resources (get-in ctx (into [:base :profiles] [rt]))
-                          snapshot (u/deep-merge resources rich-profile)]
-                      (assoc-in acc [rt id]
-                               (cond
-                                 (= mode "profiles") rich-profile
-                                 (= mode "resources") resources
-                                 (= mode "diff-profiles") profile
-                                 (= mode "snapshot") snapshot)
-                               ))) acc profiles)
-          ) {})
+       (reduce (fn [acc [rt profiles]]
+                 (reduce (fn [acc [id profile]]
+                           (let [rich-profile (enrich ctx [rt] profile)
+                                 resources (get-in ctx (into [:base :profiles] [rt]))
+                                 snapshot (u/deep-merge resources rich-profile)]
+                             (assoc-in acc [rt id]
+                                       (cond
+                                         (= mode "profiles") rich-profile
+                                         (= mode "resources") resources
+                                         (= mode "diff-profiles") profile
+                                         (= mode "snapshot") snapshot))))
+                         acc profiles))
+               {})
        (assoc ctx (keyword mode))
        (get-inlined-valuesets)))
 
@@ -166,26 +166,26 @@
                                 (let [fset (into #{} (.listFiles f))
                                       files (filter some? (conj fset homepage))]
                                   (reduce (fn [acc f]
-                                           (if (.isDirectory f)
-                                             (reduce (fn [acc file]
-                                                       (let [parts (str/split (.getName file) #"\.")
-                                                             id (keyword (first parts))
-                                                             file-path (.getPath file)]
-                                                         (assoc-in acc [:docs :pages (keyword (.getName f)) id] (read-file :md file-path))))
-                                                     acc (.listFiles f))
-                                             (let [parts (str/split (.getName f) #"\.")
-                                                   id (keyword (first parts))
-                                                   file-path (.getPath f)]
-                                               (cond
-                                                 (= "md" (last parts))
-                                                 (if (= (first parts) "homepage") ;;Separate welcome page
-                                                   (assoc-in acc [:docs :home id] (read-file :md file-path))
-                                                   (assoc-in acc [:docs :pages id :basic] (read-file :md file-path)))
-                                                 (= "yaml" (last parts))
-                                                 (let [res (read-file :yaml file-path)]
-                                                   (update-in acc [:docs id] (fn [x] (if x (merge x res) res))))
-                                                 :else
-                                                 acc))))
+                                            (if (.isDirectory f)
+                                              (reduce (fn [acc file]
+                                                        (let [parts (str/split (.getName file) #"\.")
+                                                              id (keyword (first parts))
+                                                              file-path (.getPath file)]
+                                                          (assoc-in acc [:docs :pages (keyword (.getName f)) id] (read-file :md file-path))))
+                                                      acc (.listFiles f))
+                                              (let [parts (str/split (.getName f) #"\.")
+                                                    id (keyword (first parts))
+                                                    file-path (.getPath f)]
+                                                (cond
+                                                  (= "md" (last parts))
+                                                  (if (= (first parts) "homepage") ;;Separate welcome page
+                                                    (assoc-in acc [:docs :home id] (read-file :md file-path))
+                                                    (assoc-in acc [:docs :pages id :basic] (read-file :md file-path)))
+                                                  (= "yaml" (last parts))
+                                                  (let [res (read-file :yaml file-path)]
+                                                    (update-in acc [:docs id] (fn [x] (if x (merge x res) res))))
+                                                  :else
+                                                  acc))))
                                           acc files))
                                 (let [rt (keyword nm)]
                                   (reduce (fn [acc f]
@@ -225,8 +225,7 @@
                                      (read-yaml (.getPath f))))
                          (and (str/ends-with? nm ".yaml"))
                          (let [rt (str/replace nm #"\.yaml$" "")]
-                           (assoc-in acc [:profiles (keyword rt)] (read-yaml (.getPath f))))
-                         ))) {}))
+                           (assoc-in acc [:profiles (keyword rt)] (read-yaml (.getPath f))))))) {}))
       (println "Could not find " (.getPath (io/file home (str "igpop-fhir-" fhir-version)))))))
 
 (defn load-definitions [home fhir-version]
@@ -241,19 +240,18 @@
   (let [defaults (safe-file file-name)]
     (read-yaml defaults)))
 
-(defn load-project [home]
-  (let [manifest-file (io/file home "ig.yaml")]
+(defn load-project [home-dir]
+  (let [manifest-file (io/file home-dir "ig.yaml")]
     (when-not (.exists manifest-file)
       (throw (Exception. (str "Manifest " (.getPath manifest-file) " does not exists"))))
 
     (let [manifest (read-yaml (.getPath manifest-file))
-          fhir (when-let [fv (:fhir manifest)] (load-fhir home fv))
-          definitions (when-let [fv (:fhir manifest)] (load-definitions home fv))
-          ;;schema (load-and-parse "src/igpop/igpop-schema-v2.yaml")
-          manifest' (assoc manifest :base fhir :home home :definitions definitions #_:schema #_schema)]
+          fhir (when-let [fv (:fhir manifest)] (load-fhir home-dir fv))
+          definitions (when-let [fv (:fhir manifest)] (load-definitions home-dir fv)) ;; REVIEW:   json-schema loading.
+          manifest' (assoc manifest :base fhir :home home-dir :definitions definitions)]
       (merge
        manifest'
-       (load-defs manifest' home)))))
+       (load-defs manifest' home-dir)))))
 
 (defn reload [ctx]
   (swap! ctx
