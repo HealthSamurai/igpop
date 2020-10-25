@@ -70,8 +70,8 @@
                           ["CodeableConcept", "Reference"]))
           "Union property should result in corresponding restriction."))
 
-    #_(testing "profile"
-      (is (= {:type [{:profile "http://example.com"}]}
+    (testing "profile"
+      (is (= {:type [{:profile "http://example.com" :code "Extension"}]}
              (sd/prop->sd nil element id path :profile "http://example.com"))
           "value should be wrapped in vector and placed by path 'type.[0]' property"))
 
@@ -143,10 +143,31 @@
                          [[:Patient :gender]
                           {:valueset {:id "fhir:administrative-gender"}}]))))
 
-(def patient
+
+;; patient profile without nested extensions
+(def patient-basic
   {:description "Patient profile"
+   :title "Basic patient profile"
    :elements
    {:extension {:race {:description "US Core Race Extension"
+                       :title "US Core Race Extension. "
+                       :url "exn:extension:patient-race"
+                       :elements {:url {:type "uri", :constant "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
+                                  :value {:maxItems "0"}}}
+                :birthsex {:type "code", :valueset {:id "birthsex"}}}
+    :identifier {:min 1
+                 :elements {:system {:required true}
+                            :value {:required true
+                                    :description "Description"}}}
+    :address {:elements {:extension {:region {:type "CodeableConcept"}}}}}})
+
+
+(def patient
+  {:description "Patient profile"
+   :title "Basic patient profile"
+   :elements
+   {:extension {:race {:description "US Core Race Extension"
+                       :title "US Core Race Extension. "
                        :url "exn:extension:patient-race"
                        :elements {:extension
                                   {:text {:required true, :description "Race Text", :type "string"}
@@ -162,17 +183,19 @@
     :address {:elements {:extension {:region {:type "CodeableConcept"}}}}}})
 
 
+
 (deftest flatten-element-test
 
   (testing "flatten default elements"
     (is (= {[:Patient :identifier] {:min 1}
             [:Patient :identifier :system] {:required true}
             [:Patient :identifier :value] {:required true, :description "Description"}}
-           (sd/flatten-element [:Patient :identifier]
+           (sd/flatten-element {} [:Patient :identifier]
                                (get-in patient [:elements :identifier])))))
 
   (testing "flatten extension elemement"
-    (let [flattened (sd/flatten-element [:Patient :extension] (get-in patient [:elements :extension]))]
+    (let [flattened (sd/flatten-element
+                     {} [:Patient :extension] (get-in patient [:elements :extension]))]
 
       (is (= (get flattened [:Patient :extension])
              {:slicing {:discriminator [{:type "value" :path "url"}]
@@ -187,39 +210,26 @@
           "Should add all extension elements."))))
 
 
-(deftest convert-test
+(deftest convert-profile-elements-test
   (matcho/match
-   (sd/convert {} :Patient patient)
-   [#_{:id "Patient"
-       :path "Patient"
-       :mustSupport true
-       :short "Patient profile"}
-    {:id "Patient.extension"
-     :path "Patient.extension"
-     :slicing {:discriminator [{:type "value" :path "url"}]
-               :ordered false
-               :rules "open"}}
-    {:id "Patient.extension:race"
-     :path "Patient.extension"
-     :mustSupport true
-     :short "US Core Race Extension"}
-    {:id "Patient.extension:birthsex"
-     :path "Patient.extension"
-     :mustSupport true
-     :binding {}}
-    {:id "Patient.identifier"
-     :path "Patient.identifier"
-     :mustSupport true
-     :min 1}
-    {:id "Patient.identifier.system"
-     :path "Patient.identifier.system"
-     :mustSupport true
-     :min 1}
-    {:id "Patient.identifier.value"
-     :path "Patient.identifier.value"
-     :mustSupport true
-     :min 1
-     :short "Description"}]))
+   (sd/convert-profile-elements {} :Patient patient)
+   [{:id "Patient.extension"}
+    {:id "Patient.extension:race"}
+    ;; NOTE: Disabled nested extensions and nested extension elements for now (Vitaly 18.10.2020)
+    ;; {:id "Patient.extension:race.extension"}
+    ;; {:id "Patient.extension:race.extension:text"}
+    ;; {:id "Patient.extension:race.extension:ombCategory"}
+    ;; {:id "Patient.extension:race.extension:detailed"}
+    ;; {:id "Patient.extension:race.url"}
+    ;; {:id "Patient.extension:race.value"}
+    ;; NOTE: Disabled nested extensions and nested extension elements for now (Vitaly 18.10.2020)
+    {:id "Patient.extension:birthsex"}
+    {:id "Patient.identifier"}
+    {:id "Patient.identifier.system"}
+    {:id "Patient.identifier.value"}
+    {:id "Patient.address"}
+    {:id "Patient.address.extension"}
+    {:id "Patient.address.extension:region"}]))
 
 (def race-extension (get (sd/get-extensions patient) [:elements :extension :race]))
 
@@ -249,9 +259,15 @@
         :context        [{:type "element", :expression "Patient.extension"}],
         :differential   {:element []}}))
 
-    (testing "fhirVersion should be taken from manifest"
+
+    (testing "Root additional properties should be correct"
       (matcho/match
-       result {:fhirVersion "4.0.1"}))
+       result
+       {:title "US Core Race Extension. "}))
+
+
+    (testing "fhirVersion should be taken from manifest"
+      (matcho/match result {:fhirVersion "4.0.1"}))
 
     (testing "url prefix should be taken from manifest"
       (is (str/starts-with? (:url result) (:url manifest))))
@@ -285,9 +301,9 @@
 
     (testing "When simple (non-nested) extension -"
 
-      (let [ext {:type "string", :description "AZ Employee Reporter" :url "http:///hl7.fhir.test/AZAdverseEvent/AZEmployeeReporter"
+      (let [ext {:type "string", :description "AZ Employee Reporter" :url "http://hl7.fhir.test/AZAdverseEvent/AZEmployeeReporter"
                  :minItems 2, :maxItems 4}
-            manifest {:id "hl7.fhir.test" :url ""}
+            manifest {:id "hl7.fhir.test" :url "http://example.com"}
             res (sd/extension->structure-definition manifest "AZAdverseEvent" :AZEmployeeReporter ext ext)]
 
         (testing " additional elements should be generated - 'extension', 'url' and 'value[x]'"
@@ -311,12 +327,12 @@
 
         (testing "'url' field of profile should go to 'fixedUri' property of 'Element.url'"
           (matcho/match
-           res {:differential {:element [{} {} {:id "Extension.url" :fixedUri "http:///hl7.fhir.test/AZAdverseEvent/AZEmployeeReporter"} {}]}}))))
+           res {:differential {:element [{} {} {:id "Extension.url" :fixedUri "http://hl7.fhir.test/AZAdverseEvent/AZEmployeeReporter"} {}]}}))))
 
 
     (testing "When 'url' prop is given"
       (let [ext {:url "urn:extension:sometype-someextension" }
-            manifest {:id "project-id"}
+            manifest {:id "project-id" :url "http://example.com"}
             res (sd/extension->structure-definition manifest "SomeType" :SomeExtension ext ext)]
 
         (testing "it should be passed as postfix to top-level property of StructureDefinition - 'url'"
@@ -329,7 +345,7 @@
 (deftest profile->structure-definition-test
   (testing "converting profile to structure-definition"
     (let [result (sd/profile->structure-definition {:id "hl7.fhir.test"
-                                                    :url "http://example.com"} :Patient :basic patient patient)]
+                                                    :url "http://example.com"} :Patient :basic patient-basic patient-basic)]
 
       (testing "should generate correct root properties"
         (matcho/match result {:resourceType "StructureDefinition"
@@ -338,7 +354,11 @@
                               :url "http://example.com/profiles/StructureDefinition/Patient"
                               :differential {}}))
 
+      (testing "should generate correct 'additional' root properties"
+        (matcho/match result {:title "Basic patient profile"}))
+
       (testing "should generate elements in differential with correct ids and types"
+        (def *res result)
         (matcho/match
          result {:differential {:element [{:id "Patient.extension"}
                                           {:id "Patient.extension:race" :type [{:code "Extension"}]}
@@ -362,23 +382,35 @@
     [:elements :address :elements :extension :region] {}}))
 
 
-(sd/get-extensions patient)
 
 (deftest ig-profile->structure-definitions
-  (let [result (sd/ig-profile->structure-definitions {:id "hl7.fhir.test"} :Patient :basic patient patient)]
+  (let [manifest {:id "hl7.fhir.test" :url "http://example.com"}
+        result (sd/ig-profile->structure-definitions manifest :Patient :basic patient patient)]
     (matcho/match
      result
      [{:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient" :type "Patient"}
-      {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-region", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-race", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-text", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-ombCategory", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-detailed", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-birthsex", :type "Extension"}
-      ])))
+      {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-region", :type "Extension"}]))
+
+  (testing "When some of elements refers to extension profile from separare igpop-profile"
+    (let [manifest {:id "hl7.fhir.test" :url "http://example.com"}
+          profile {:elements {:name {:profile "HumanName-salutation"}}}
+          result (sd/ig-profile->structure-definitions manifest :Patient :basic profile profile)]
+      (matcho/match
+       result
+       [{:differential
+         {:element
+          [{:id "Patient.name",
+            :type [{:code "Extension", :profile "http://example.com/HumanName-salutation"}]}]}}]))))
+
+
 
 (deftest ig-vs->valueset-test
-  (let [valueset (first 
+  (let [valueset (first
                   {:survey-status
                    {:system "Intellijent source"
                     :concepts
@@ -414,5 +446,6 @@
     (is (.exists package) "Generated package should exist.")
     ;; TODO validate content of the package
     #_(io/delete-file package)))
+
 
 

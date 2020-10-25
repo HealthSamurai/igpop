@@ -1,3 +1,4 @@
 id: hl7.fhir.test
+url: http://hl7.fhir.test
 description: Test project
 fhir: '4.0.0'

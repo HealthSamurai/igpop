@@ -25,6 +25,7 @@
 ;; (format-url "http://example.com/q=%s&location=%s" "Привет" "С П Б")
 ;; (format-url "http://example.com/q=%s&location=%s" "example.com/one/two" "С П Б")
 
+
 (defn- take-while+
   [pred coll]
   (lazy-seq
@@ -38,6 +39,32 @@
   Unlike `clojure.string/capitalize` - we don't lowercase rest of the string"
   [^String s]
   (str (.toUpperCase (subs s 0 1)) (subs s 1)))
+
+;; -------------------------------- URL utils -------------------------------
+
+(defn make-extension-url [base-url ext-url]
+  (when ext-url
+    (if (str/starts-with? ext-url "http")
+      ext-url
+      (str base-url "/" ext-url))))
+
+(defn make-profile-id [project-id profile-type profile-id]
+  (str project-id "-" (name profile-type)
+       (when (not= :basic profile-id)
+         (str "-" (name profile-id)))))
+
+
+(defn make-profile-url [base-url profile-type profile-id]
+  (str base-url "/profiles/StructureDefinition/"
+       (name profile-type)
+       (when (not= :basic profile-id)
+         (str "-" (name profile-id)))))
+
+;; (format-url (str (:url manifest) "/StructureDefinition/%s-%s")
+;;             (name (first path)) (name (peek path)))
+
+
+;; -------------------------------- prop->sd -------------------------------
 
 (def prop-hierarchy
   (-> (make-hierarchy)
@@ -124,9 +151,47 @@
     {:type [{:code value}]}))
 
 (defmethod prop->sd :profile
-  [_ _ _ _ _ value]
-  nil
-  #_{:type [{:profile [value]}]})
+  [manifest _ _ _ _ value]
+  {:type [{:code "Extension"
+           :profile (make-extension-url (:url manifest) value)}]})
+
+;; ----------------------------- PATH utils ---------------------------------
+
+(defn path-extension-root?
+  "Is path determine an extension root
+  Something like [_ _ :extension]"
+  [path]
+  (= :extension (peek path)))
+
+(defn path-extension?
+  "Is path determine a named extension
+  Something like [_ _ :extension _]"
+  [path]
+  (and (> (count path) 1)
+       (not= :extension (peek path))
+       (= :extension (-> path pop peek))))
+
+(defn path-extension-element?
+  "Is path determine a nested element of named extension
+  Something like [:extension _ :elements _]"
+  [path]
+  (let [n (count path)]
+    (and (> n 3)
+         (not= :extension (nth path (- n 1)))
+         (= :elements (nth path (- n 2)))
+         (not= :extension (nth path (- n 3)))
+         (= :extension (nth path (- n 4))))))
+
+(defn path-nested-extension?
+  "Is path determine a nested extension (extension in extension)
+  Something like [:extension _ :elements _ :extension _ ] "
+  [path]
+  (and (> (count path) 2)
+       (> (count (filter #{:extension} path)) 1)))
+
+(defn path->sd-path
+  "Remove ':elements' part from path"
+  [path] (into [] (remove #{:elements}) path))
 
 
 (defn path->id
@@ -144,6 +209,8 @@
        (map name)
        (str/join ".")))
 
+;; ----------------------------- PROFILE utils ---------------------------------
+
 (defn element->sd
   "Convert an igpop element to its Structure Definition representation."
   [manifest [path element]]
@@ -155,57 +222,85 @@
                  (prop->sd manifest element id path prop value)))
          (reduce into result))))
 
-(defmulti flatten-element
+
+(defn choose-next-steps
+  "Choose next steps according to path.
+  Returns vector of `[current-element next-elements next-path]`"
+  [path element]
+  (cond (path-extension-root? path)
+        [element element path]
+        :default
+        [(dissoc element :elements) (get element :elements) (conj path :elements)]))
+
+(defn reduce-profile
+  "Walk on profile and call 'f' on every element (or extension)
+  * 'f' - function like (fn [init path element]) => init'
+  * 'init' - accumulation value,
+  * 'path' - position of 'element' in the profile tree.
+  (NOTE: We try to preserve walk order)"
+  ([f init element] (reduce-profile f init [] element))
+  ([f init path element]
+   (let [[cur-el next-els next-path] (choose-next-steps path element)
+         init' (f init path cur-el)
+         make-step (fn [acc id el] (reduce-profile f acc (conj next-path id) el))]
+     (reduce-kv make-step init' next-els))))
+
+
+(def default-first-extension-element
+  "Element that will be placed before extension elements"
+  {:slicing {:discriminator [{:type "value" :path "url"}]
+             :ordered false
+             :rules "open"}})
+
+(defn enrich-extension-element-with-slice-name [manifest path el]
+  (-> (dissoc el :elements :url)
+      (assoc :sliceName (name (peek path))
+             :isModifier false
+             :type [{:code "Extension"
+                     :profile [(format-url (str (:url manifest) "/StructureDefinition/%s-%s")
+                                           (name (first path)) (name (peek path)))]}])))
+
+
+(defn flatten-element
   "Turn nested structure into flat map with keys
   representing path in the original structure.
-  _
   path    - vector of keys
   element - ig-pop element"
-  {:arglists '([path element])}
-  (fn [path _] (last path)))
+  [manifest path element]
+  (reduce-profile
+   (fn [acc path el]
+     (cond
+       (or (path-nested-extension? path)
+           (path-extension-element? path))
+       acc  ;; ignore for now
 
-(defmethod flatten-element :default
-  [path element]
-  (apply merge
-         (ordered-map path (dissoc element :elements))
-         (for [[id el] (get element :elements)]
-           (flatten-element (conj path id) el))))
+       (path-extension-root? path)
+       (assoc acc (path->sd-path path)
+              default-first-extension-element)
 
+       (path-extension? path)
+       (assoc acc (path->sd-path path)
+              (enrich-extension-element-with-slice-name manifest path el))
 
-(defmethod flatten-element :extension
-  [path element]
-  (apply merge
-         (ordered-map
-          path {:slicing {:discriminator [{:type "value" :path "url"}]
-                          :ordered false
-                          :rules "open"}})
-         (for [[ext-id el] element]
-           (flatten-element
-            (conj path ext-id)
-            (-> el
-                (dissoc :elements :url)
-                (assoc :sliceName (name ext-id)
-                       :isModifier false
-                       :type [{:code "Extension"
-                               :profile [(format "https://healthsamurai.github.io/ig-ae/profiles/%s/%s"
-                                                 (url-encode (name (first path)))
-                                                 (url-encode (name ext-id)))]}]))))))
+       :else
+       (assoc acc (path->sd-path path) el)))
+   (ordered-map)
+   path element))
 
-
-(defn convert
+(defn convert-profile-elements
   "Convert `element` (recurcive struct)
   with `type` to flattened StructureDefinition for resource"
   [manifest type element]
-  (->> (flatten-element [type] element)
+  (->> (flatten-element manifest [type] element)
        (rest)  ;;  remove root element from definition
        (mapv (partial element->sd manifest))))
 
 
-(defn convert-nested-ext
+(defn convert-nested-extension-elements
   "Convert `element` (recurcive struct)
   with `type` to flattened StructureDefinition for extension"
   [manifest type element]
-  (->> (flatten-element [type] element)
+  (->> (flatten-element manifest [type] element)
        (map (fn [[k v]] [k (dissoc v :url)]))
        (mapv (partial element->sd manifest))))
 
@@ -218,23 +313,33 @@
          (for [[id el] (get element :elements)]
            (simple-flatten-element (conj path id) el))))
 
-(defn convert-simple-ext
-  "Convert `element`
-  with `type` to sequenced StructureDefinition for simple extension"
-  [manifest type element]
-  (->> (simple-flatten-element [type] element)
-       (map (fn [[k v]] [k (dissoc v :url)]))
-       (mapv (partial element->sd manifest))))
+;; (defn simple-flatten-element2
+;;   "Like flatten-element, but does not interpret extension as special case.
+;;   We need in Extension SD element with id : Extension.extension."
+;;   [path element]
+;;   (reduce-profile assoc (ordered-map) path element))
 
+
+;; HACK: bad staff here - our structure is not correct profile.
 (defn enrich-simple-extension
   "When we met simple(not nested) extension property - we need to generate
   additional elements for it in Extension SD file"
-  [diff]
+  [manifest diff]
   (merge
    {:elements {:extension {:minItems 0 :maxItems 0}
                :url {:minItems 1 :maxItems 1 :fixedUri (:url diff)}
                "value[x]" {:minItems 1 :maxItems 1 :type (:type diff)}}}
    (select-keys diff [:minItems :maxItems])))
+
+
+(defn convert-simple-extension-elements
+  "Convert `element`with `type` to sequenced StructureDefinition for simple extension"
+  [manifest type element]
+  (->> (assoc element :url (make-extension-url (:url manifest) (:url element)))
+       (enrich-simple-extension manifest)
+       (simple-flatten-element [type])
+       (map (fn [[k v]] [k (dissoc v :url)]))
+       (mapv (partial element->sd manifest))))
 
 ;; (enrich-simple-extension {:minItems 10})
 
@@ -248,38 +353,31 @@
   snapshot      - snapshoted profile
   "
   [manifest profile-type profile-id diff snapshot]
-  (println diff)
-  (ordered-map
-   :resourceType   "StructureDefinition"
-   :id             (str/join "-" [(:id manifest) (name profile-type) (name profile-id)])
-   :name           (name profile-id) ;; REVIEW - is this correct value?
-   :description    (or (:description diff) (:description snapshot))
-   :status         "active"
-   :fhirVersion    (:fhir manifest)
-   :kind           "complex-type"
-   :abstract       false
-   :type           "Extension"
-   :url            (str (:url manifest) "/" (:url diff))
-   :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
-   :derivation     "constraint"
-   :context        [{:type "element", :expression (name profile-type)}]
+  ;; (println manifest (:url diff))
+  (merge
+   (ordered-map
+    :resourceType   "StructureDefinition"
+    :id             (str/join "-" [(:id manifest) (name profile-type) (name profile-id)])
+    :name           (name profile-id) ;; REVIEW - is this correct value?
+    :description    (or (:description diff) (:description snapshot))
+    :status         "active"
+    :fhirVersion    (:fhir manifest)
+    :kind           "complex-type" ;; always a complex-type
+    :abstract       false
+    :type           "Extension"
+    :url            (make-extension-url (:url manifest) (:url diff))
+    :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
+    :derivation     "constraint"
+    :context        [{:type "element", :expression (name profile-type)}])
    ;; :snapshot {:element (convert-ext :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
-   :differential {:element
-                  (if (:elements diff)
-                    (convert-nested-ext manifest :Extension diff)
-                    ;; HACK for id = "Extension"  min/max should came from diff.
-                    ;;  for id = "Extension.value" min/max = 1 - by default (At least for now) - [Vitaly 06.10.2020]
-                    (convert-simple-ext manifest :Extension (enrich-simple-extension diff))
-                    #_(merge {:elements {:value (assoc diff :minItems 1 :maxItems 1)}}
-                             (select-keys diff [:minItems :maxItems] ))
-                    #_{:elements {:value diff}})
-                  #_(convert-ext :Extension
-                                 (if (:elements diff)
-                                   diff
-                                   (enrich-simple-extension diff)
-                                   #_(merge {:elements {:value (assoc diff :minItems 1 :maxItems 1)}}
-                                            (select-keys diff [:minItems :maxItems] ))
-                                   #_{:elements {:value diff}}))}))
+   (select-keys diff [:title])
+   {:differential {:element
+                   (if (:elements diff)
+                     (convert-nested-extension-elements manifest :Extension diff)
+                     ;; HACK for id = "Extension"  min/max should came from diff.
+                     ;;  for id = "Extension.value" min/max = 1 - by default (At least for now) - [Vitaly 06.10.2020]
+                     (convert-simple-extension-elements manifest :Extension diff))}}))
+
 
 (defn profile->structure-definition
   "Transforms IgPop profile to a structure definition.
@@ -293,11 +391,11 @@
   [manifest profile-type profile-id diff snapshot]
   (merge (ordered-map
           :resourceType "StructureDefinition"
-          :id           (str (:id manifest) "-" (name profile-type) (when (not= :basic profile-id) (str "-" (name profile-id))))
+          :id           (make-profile-id (:id manifest) profile-type profile-id)
           :description  (or (:description diff) (:description snapshot))
           :type         (name profile-type)
           :name         (when (not= :basic profile-id) (name profile-id))
-          :url          (str (:url manifest) "/profiles/StructureDefinition/" (name profile-type) (when (not= :basic profile-id) (str "-" (name profile-id))))
+          :url          (make-profile-url (:url manifest) profile-type profile-id)
           :status       "active"
           :fhirVersion  (:fhir manifest)
           :abstract     false)
@@ -307,30 +405,26 @@
          ;; derivation: constraint
          ;; title: ''
          ;; context: {}
-         ;; :kind        "complex-type"
+         ;; :kind        "complex-type" ;; resource or complex-type
          ;; identifier: {}
          ;; version: ''
          ;; description: This is the AZ profile (StructureDefinition) for AdverseEvent
          ;; elements: {}
-         (apply dissoc diff igpop-properties) ;; <---- TODO: replace this with explicit field enumeration
-         {;; :snapshot {:element (convert manifest profile-type snapshot)}
-          :differential {:element (convert manifest profile-type diff)}}))
+         (select-keys diff [:title])
+         ;; (apply dissoc diff igpop-properties) ;; <---- TODO: replace this with explicit field enumeration
+         {;; :snapshot {:element (convert-profile-elements manifest profile-type snapshot)}
+          :differential {:element (convert-profile-elements manifest profile-type diff)}}))
+
 
 (defn get-extensions
   "Returns a flattened map of nested extensions where key is a path in
    the original structure and val is an extension."
   ([x] (get-extensions [] x))
   ([path x]
-   (let [p (conj path :elements)
-         pe (conj p :extension)
-         nested (->> (dissoc (:elements x) :extension)
-                     (map (juxt (comp (partial conj p) key) val))
-                     (mapcat (partial apply get-extensions)))]
-     (->> (get-in x [:elements :extension])
-          (map (juxt (comp (partial conj pe) key) val))
-          (mapcat (fn [[k v]] (cons [k v] (get-extensions k v))))
-          (concat nested)
-          (into {})))))
+   (reduce-profile (fn [acc path el]
+                     (cond-> acc (path-extension? path) (assoc path el)))
+                   (ordered-map) path x)))
+
 
 (defn ig-profile->structure-definitions
   "Transforms IgPop profile into a set of structure definitions.
@@ -343,10 +437,11 @@
   "
   [manifest profile-type profile-id diff snapshot]
   (let [profile (profile->structure-definition manifest profile-type profile-id diff snapshot)
-        extensions (map (fn [[path element-diff]]
-                          (extension->structure-definition
-                           manifest profile-type (last path) element-diff (get-in snapshot path)))
-                        (get-extensions diff))]
+        extensions (->> (get-extensions diff)
+                        ;; (remove #{:profile}) ;; NOTE: Remove extensions wich refers to profiles. We don't need to generate SD files for them
+                        (map (fn [[path element-diff]]
+                               (extension->structure-definition
+                                manifest profile-type (last path) element-diff (get-in snapshot path)))))]
     (->> (cons profile extensions)
          (filter some?)
          (into []))))
@@ -425,6 +520,8 @@
 
 
 (comment
+
+  (require 'clj-yaml.core)
   (def test-base (clj-yaml.core/parse-string (slurp "./npm/fhir-4.0.0/src/AdverseEvent.yaml")))
   (def test-profile (clj-yaml.core/parse-string (slurp "../ig-ae/src/AdverseEvent.yaml")))
   (def bad-result-data (json/parse-string (slurp "my_tasks/hl7.fhir.ae-AdverseEvent-AZEmployeeReporter.json")))
@@ -469,7 +566,7 @@
 
   (clojure.pprint/pprint (-> ctx :base :profiles))
 
-  (flatten-element [ :AZAdverseEvent ] test-profile)
+  ;; (flatten-element [ :AZAdverseEvent ] test-profile)
   (let [ext (val (first (get-extensions test-profile)))]
     (convert-ext {} :Extension
                  (merge {:elements {:value (assoc ext :minItems 0 :maxItems 0)}}
@@ -482,12 +579,5 @@
 
   (generate-package! :npm ctx :file (temp-file "package" ".zip"))
 
-  {:elements
-   {:extension {:minItems 0, :maxItems 0},
-    :url {:minItems 1, :maxItems 1, :fixedUri FIXED_URL},
-    :value {:minItems 1, :maxItems 1, :type SOME_TYPE}},
-   :minItems 2,
-   :maxItems 4}
 
   -------------------------------------)
-
