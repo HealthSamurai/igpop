@@ -71,9 +71,10 @@
           "Union property should result in corresponding restriction."))
 
     (testing "profile"
-      (is (= {:type [{:profile "http://example.com" :code "Extension"}]}
-             (sd/prop->sd nil element id path :profile "http://example.com"))
-          "value should be wrapped in vector and placed by path 'type.[0]' property"))
+      (is (= {:type [{:profile ["http://example.com/az-HumanName" ]:code "HumanName"}]}
+             (sd/prop->sd nil element id path :profile "http://example.com/az-HumanName"))
+          (str "value should be injected into path [:type 0 :profile]"
+               " and extracted type name from url and placed by path [:type 0 :code]")))
 
     (testing "refers"
       (is (= {:type
@@ -398,14 +399,14 @@
 
   (testing "When some of elements refers to extension profile from separare igpop-profile"
     (let [manifest {:id "hl7.fhir.test" :url "http://example.com"}
-          profile {:elements {:name {:profile "HumanName-salutation"}}}
+          profile {:elements {:name {:profile "az-HumanName"}}}
           result (sd/ig-profile->structure-definitions manifest :Patient :basic profile profile)]
       (matcho/match
        result
        [{:differential
          {:element
           [{:id "Patient.name",
-            :type [{:code "Extension", :profile "http://example.com/HumanName-salutation"}]}]}}]))))
+            :type [{:code "HumanName", :profile ["http://example.com/az-HumanName"]}]}]}}]))))
 
 
 

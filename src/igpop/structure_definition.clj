@@ -22,10 +22,6 @@
   [url-template & parts]
   (apply format url-template (map url-encode parts)))
 
-;; (format-url "http://example.com/q=%s&location=%s" "Привет" "С П Б")
-;; (format-url "http://example.com/q=%s&location=%s" "example.com/one/two" "С П Б")
-
-
 (defn- take-while+
   [pred coll]
   (lazy-seq
@@ -150,10 +146,17 @@
     {:type value}
     {:type [{:code value}]}))
 
+;; FIXME temprorary solution. Find better alternative
+(defn url->profile-name
+  "Asuume that url is in format - http://somewhere.org/fhir/uv/myig//hl7.fhir.ae-HumanName
+  We extract 'HumanName' from this"
+  [url]
+  (subs url (inc (str/last-index-of url "-"))))
+
 (defmethod prop->sd :profile
   [manifest _ _ _ _ value]
-  {:type [{:code "Extension"
-           :profile (make-extension-url (:url manifest) value)}]})
+  {:type [{:code (url->profile-name value)  ;; <-- FIXME need name of base complex type
+           :profile [(make-extension-url (:url manifest) value)]}]})
 
 ;; ----------------------------- PATH utils ---------------------------------
 
@@ -396,6 +399,7 @@
           :type         (name profile-type)
           :name         (when (not= :basic profile-id) (name profile-id))
           :url          (make-profile-url (:url manifest) profile-type profile-id)
+          :kind         "resource" ;; resource or complex-type
           :status       "active"
           :fhirVersion  (:fhir manifest)
           :abstract     false)
@@ -405,12 +409,11 @@
          ;; derivation: constraint
          ;; title: ''
          ;; context: {}
-         ;; :kind        "complex-type" ;; resource or complex-type
          ;; identifier: {}
          ;; version: ''
          ;; description: This is the AZ profile (StructureDefinition) for AdverseEvent
          ;; elements: {}
-         (select-keys diff [:title])
+         (select-keys diff [:title :kind])
          ;; (apply dissoc diff igpop-properties) ;; <---- TODO: replace this with explicit field enumeration
          {;; :snapshot {:element (convert-profile-elements manifest profile-type snapshot)}
           :differential {:element (convert-profile-elements manifest profile-type diff)}}))
