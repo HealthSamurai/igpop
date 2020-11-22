@@ -7,6 +7,15 @@
            [java.util.zip ZipOutputStream ZipEntry]))
 
 
+(def resource-root-keys
+  "Resource root keys, specified in natural order."
+  [:resourceType :id :url :identifier :version :name :title :status
+   :experimental :date :publisher :contact :description :useContext :jurisdiction
+   :purpose :copyright :keyword :fhirVersion :mapping :kind :abstract :context
+   :contextInvariant :type :baseDefinition :derivation :snapshot :differential])
+
+;; TODO: delete this value (we use resouce-root-keys for filtering purpose).
+;; Or maybe we can use these keys in special-keys analysers (future ideas)
 (def igpop-properties
   "IgPop special properties wich will be interpreted
   and discarded from Structure Defineitison structures"
@@ -151,7 +160,7 @@
   "Asuume that url is in format - http://somewhere.org/fhir/uv/myig//hl7.fhir.ae-HumanName
   We extract 'HumanName' from this"
   [url]
-  (subs url (inc (str/last-index-of url "-"))))
+  (when url (subs url (inc (str/last-index-of url "-")))))
 
 (defmethod prop->sd :profile
   [manifest _ _ _ _ value]
@@ -162,13 +171,13 @@
 
 (defn path-extension-root?
   "Is path determine an extension root
-  Something like [_ _ :extension]"
+  Something like [... _ _ :extension]"
   [path]
   (= :extension (peek path)))
 
 (defn path-extension?
   "Is path determine a named extension
-  Something like [_ _ :extension _]"
+  Something like [... _ _ :extension _]"
   [path]
   (and (> (count path) 1)
        (not= :extension (peek path))
@@ -176,7 +185,7 @@
 
 (defn path-extension-element?
   "Is path determine a nested element of named extension
-  Something like [:extension _ :elements _]"
+  Something like [... :extension _ :elements _]"
   [path]
   (let [n (count path)]
     (and (> n 3)
@@ -187,7 +196,7 @@
 
 (defn path-nested-extension?
   "Is path determine a nested extension (extension in extension)
-  Something like [:extension _ :elements _ :extension _ ] "
+  Something like [... :extension _ :elements _ :extension _ ] "
   [path]
   (and (> (count path) 2)
        (> (count (filter #{:extension} path)) 1)))
@@ -346,6 +355,13 @@
 
 ;; (enrich-simple-extension {:minItems 10})
 
+(def resource-root-keys-sort-order
+  (zipmap resource-root-keys (range)))
+
+(defn resource-keys-comparator [x y]
+  (compare (resource-root-keys-sort-order x)
+           (resource-root-keys-sort-order y)))
+
 (defn extension->structure-definition
   "Transforms IgPop extension to a structure definition.
 
@@ -356,25 +372,27 @@
   snapshot      - snapshoted profile
   "
   [manifest profile-type profile-id diff snapshot]
-  ;; (println manifest (:url diff))
   (merge
-   (ordered-map
-    :resourceType   "StructureDefinition"
-    :id             (str/join "-" [(:id manifest) (name profile-type) (name profile-id)])
+   (sorted-map-by resource-keys-comparator)
+   ;; -- default values
+   {:id             (str/join "-" [(:id manifest) (name profile-type) (name profile-id)])
     :name           (name profile-id) ;; REVIEW - is this correct value?
     :description    (or (:description diff) (:description snapshot))
     :status         "active"
     :fhirVersion    (:fhir manifest)
     :kind           "complex-type" ;; always a complex-type
     :abstract       false
-    :type           "Extension"
-    :url            (make-extension-url (:url manifest) (:url diff))
     :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
     :derivation     "constraint"
-    :context        [{:type "element", :expression (name profile-type)}])
-   ;; :snapshot {:element (convert-ext :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
-   (select-keys diff [:title])
-   {:differential {:element
+    :context        [{:type "element", :expression (name profile-type)}]}
+   ;; -- replaced by user values
+   (select-keys diff resource-root-keys)
+   ;; -- pinned values
+   {:resourceType "StructureDefinition"
+    :type         "Extension"
+    :url          (make-extension-url (:url manifest) (:url diff))
+    ;; :snapshot {:element (convert-ext :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
+    :differential {:element
                    (if (:elements diff)
                      (convert-nested-extension-elements manifest :Extension diff)
                      ;; HACK for id = "Extension"  min/max should came from diff.
@@ -392,31 +410,33 @@
   snapshot      - snapshoted profile
   "
   [manifest profile-type profile-id diff snapshot]
-  (merge (ordered-map
-          :resourceType "StructureDefinition"
-          :id           (make-profile-id (:id manifest) profile-type profile-id)
-          :description  (or (:description diff) (:description snapshot))
-          :type         (name profile-type)
-          :name         (when (not= :basic profile-id) (name profile-id))
-          :url          (make-profile-url (:url manifest) profile-type profile-id)
-          :kind         "resource" ;; resource or complex-type
-          :status       "active"
-          :fhirVersion  (:fhir manifest)
-          :abstract     false)
-         ;; url: "https://healthsamurai.github.io/ig-ae/profiles/StructureDefinition/AZAdverseEvent"
-         ;; name: "az-adverseevent"
-         ;; baseDefinition: "http://hl7.org/fhir/StructureDefinition/AdverseEvent"
-         ;; derivation: constraint
-         ;; title: ''
-         ;; context: {}
-         ;; identifier: {}
-         ;; version: ''
-         ;; description: This is the AZ profile (StructureDefinition) for AdverseEvent
-         ;; elements: {}
-         (select-keys diff [:title :kind])
-         ;; (apply dissoc diff igpop-properties) ;; <---- TODO: replace this with explicit field enumeration
-         {;; :snapshot {:element (convert-profile-elements manifest profile-type snapshot)}
-          :differential {:element (convert-profile-elements manifest profile-type diff)}}))
+  (merge
+   (sorted-map-by resource-keys-comparator)
+   ;; -- default values
+   {:id           (make-profile-id (:id manifest) profile-type profile-id)
+    :description  (or (:description diff) (:description snapshot))
+    :type         (name profile-type)
+    :name         (when (not= :basic profile-id) (name profile-id))
+    :kind         "resource" ;; resource or complex-type
+    :status       "active"
+    :fhirVersion  (:fhir manifest)
+    :abstract     false}
+   ;; url: "https://healthsamurai.github.io/ig-ae/profiles/StructureDefinition/AZAdverseEvent"
+   ;; name: "az-adverseevent"
+   ;; :derivation constraint
+   ;; title: ''
+   ;; context: {}
+   ;; identifier: {}
+   ;; version: ''
+   ;; description: This is the AZ profile (StructureDefinition) for AdverseEvent
+   ;; elements: {}
+   ;; -- replaced by user values
+   (select-keys diff resource-root-keys)
+   ;; -- pinned values
+   {:resourceType "StructureDefinition"
+    :url          (make-profile-url (:url manifest) profile-type profile-id)
+    ;; -- :snapshot {:element (convert-profile-elements manifest profile-type snapshot)}
+    :differential {:element (convert-profile-elements manifest profile-type diff)}}))
 
 
 (defn get-extensions
@@ -554,7 +574,7 @@
 
   (dump
    (ig-profile->structure-definitions
-    "prefix"
+    {:url "prefix"}
     :AZAdverseEvent
     :AZAdverseEvent
     test-profile
@@ -563,6 +583,10 @@
     ;; (:snapshot ctx)
     )
    )
+
+  (dump (profile->structure-definition
+   {:url "prefix"} :AZAdverseEvent :AZAdverseEvent test-profile test-base
+   ))
 
   (dump (project->bundle ctx)
         :json)

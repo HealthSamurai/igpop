@@ -6,6 +6,15 @@
             [igpop.structure-definition :as sd]
             [clojure.string :as str]))
 
+(deftest resource-root-keys-test
+  (is (= sd/resource-root-keys
+         [:resourceType :id :url :identifier :version :name :title :status
+          :experimental :date :publisher :contact :description :useContext :jurisdiction
+          :purpose :copyright :keyword :fhirVersion :mapping :kind :abstract :context
+          :contextInvariant :type :baseDefinition :derivation :snapshot :differential])
+      (str "Keys should be correct and placed in correct order. "
+           "According to https://www.hl7.org/fhir/structuredefinition.html")))
+
 (deftest prop->sd-test
   (let [element {}
         id "Patient.telecom.system"
@@ -71,7 +80,7 @@
           "Union property should result in corresponding restriction."))
 
     (testing "profile"
-      (is (= {:type [{:profile ["http://example.com/az-HumanName" ]:code "HumanName"}]}
+      (is (= {:type [{:profile ["http://example.com/az-HumanName"] :code "HumanName"}]}
              (sd/prop->sd nil element id path :profile "http://example.com/az-HumanName"))
           (str "value should be injected into path [:type 0 :profile]"
                " and extracted type name from url and placed by path [:type 0 :code]")))
