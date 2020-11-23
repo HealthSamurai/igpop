@@ -47,9 +47,12 @@
 
 ;; -------------------------------- URL utils -------------------------------
 
+(defn url? [o]
+  (and (string? o) (str/starts-with? o "http")))
+
 (defn make-extension-url [base-url ext-url]
   (when ext-url
-    (if (str/starts-with? ext-url "http")
+    (if (url? ext-url)
       ext-url
       (str base-url "/" ext-url))))
 
@@ -155,16 +158,28 @@
     {:type value}
     {:type [{:code value}]}))
 
-;; FIXME temprorary solution. Find better alternative
+;; FIXME Dumb and naive solution. Find better alternative.
 (defn url->profile-name
-  "Asuume that url is in format - http://somewhere.org/fhir/uv/myig//hl7.fhir.ae-HumanName
-  We extract 'HumanName' from this"
+  "Asuume that url is in one of the formats:
+    - http://somewhere.org/fhir/uv/myig/hl7.fhir.ae-HumanName
+    - http://somewhere.org/fhir/uv/myig/hl7.fhir.ae.HumanName
+    - http://somewhere.org/fhir/uv/myig/hl7/fhir/ae/HumanName
+  We try extract 'HumanName' from this"
   [url]
-  (when url (subs url (inc (str/last-index-of url "-")))))
+  (when url
+    (->> (cond (str/includes? url "-") "-"
+               (str/includes? url ".") "."
+               (str/includes? url "/") "/")
+         (str/last-index-of url)
+         inc
+         (subs url))))
+
 
 (defmethod prop->sd :profile
   [manifest _ _ _ _ value]
-  {:type [{:code (url->profile-name value)  ;; <-- FIXME need name of base complex type
+  {:type [{:code (if (url? value)
+                   (url->profile-name value)
+                   (get-in manifest [:diff-profiles value :basic :base]))  ;; <-- FIXME: Leaky abstraction.. Try find another way to get `base`
            :profile [(make-extension-url (:url manifest) value)]}]})
 
 ;; ----------------------------- PATH utils ---------------------------------

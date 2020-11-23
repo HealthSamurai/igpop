@@ -1,5 +1,5 @@
 (ns igpop.structure-definition-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [clojure.test :refer [deftest is testing are]]
             [clojure.java.io :as io]
             [matcho.core :as matcho]
             [igpop.loader :as loader]
@@ -14,6 +14,13 @@
           :contextInvariant :type :baseDefinition :derivation :snapshot :differential])
       (str "Keys should be correct and placed in correct order. "
            "According to https://www.hl7.org/fhir/structuredefinition.html")))
+
+(deftest url?-test
+  (are [x y] (= (sd/url? x) y)
+    "http" true
+    "htt"  false
+    ""     false
+    10     false))
 
 (deftest prop->sd-test
   (let [element {}
