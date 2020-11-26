@@ -9,4 +9,6 @@ src/igpop/test.clj
 show-project.json
 plain-igpop.json
 profiles-others.json
-
+.idea/
+classes/
+*.iml
