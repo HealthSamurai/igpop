@@ -62,11 +62,9 @@
          (str "-" (name profile-id)))))
 
 
-(defn make-profile-url [base-url profile-type profile-id]
-  (str base-url "/profiles/StructureDefinition/"
-       (name profile-type)
-       (when (not= :basic profile-id)
-         (str "-" (name profile-id)))))
+(defn make-profile-url [manifest profile-type profile-id]
+  (str (:url manifest) "/profiles/StructureDefinition/"
+       (make-profile-id (:id manifest) profile-type profile-id)))
 
 ;; (format-url (str (:url manifest) "/StructureDefinition/%s-%s")
 ;;             (name (first path)) (name (peek path)))
@@ -449,7 +447,7 @@
    (select-keys diff resource-root-keys)
    ;; -- pinned values
    {:resourceType "StructureDefinition"
-    :url          (make-profile-url (:url manifest) profile-type profile-id)
+    :url          (make-profile-url manifest profile-type profile-id)
     ;; -- :snapshot {:element (convert-profile-elements manifest profile-type snapshot)}
     :differential {:element (convert-profile-elements manifest profile-type diff)}}))
 
