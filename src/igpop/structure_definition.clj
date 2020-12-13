@@ -186,22 +186,15 @@
 
 (defmethod prop->sd :profile
   [manifest _ _ _ _ value]
-  {:type [{:code (if (url? value)
-                   (url->profile-name value)
-                   (let [basic? (not (str/includes? value "-"))
-                         [rt profile-id] (if basic?
-                                           [value :basic]
-                                           (str/split value #"-")) ;; NOTE: assume that we have only ONE dash
-                         base (get-in manifest [:diff-profiles (keyword rt) (keyword profile-id) :baseDefinition])]  ;; <-- FIXME: Leaky abstraction.. Try find another way to get `base`
-                     (if (url? base)
-                       (-> (str/split base #"/") last)
-                       base)))
-           :profile [(if (url? value)
-                       value
-                       (if (not (str/includes? value "-"))
-                         (make-extension-url manifest value :basic)
-                         (let [[rt profile-id] (str/split value #"-")]
-                           (make-extension-url manifest rt profile-id))))]}]})
+  {:type [(if (url? value)
+            {:code (url->profile-name value) :profile [value]}
+            (let [[rt profile-id]
+                  (if (not (str/includes? value "-")) [value :basic]
+                      (str/split value #"-"))                   ;; NOTE: assume that we have only ONE dash
+                  base (get-in manifest [:diff-profiles (keyword rt) (keyword profile-id) :baseDefinition])] ;; <-- FIXME: Leaky abstraction.. Try find another way to get `base`
+              {:code (if (url? base) (-> (str/split base #"/") last) base)
+               :profile [(make-extension-url manifest rt profile-id)]}))]})
+
 
 ;; ----------------------------- PATH utils ---------------------------------
 
