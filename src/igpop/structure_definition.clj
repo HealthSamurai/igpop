@@ -188,10 +188,20 @@
   [manifest _ _ _ _ value]
   {:type [{:code (if (url? value)
                    (url->profile-name value)
-                   (get-in manifest [:diff-profiles value :base]))  ;; <-- FIXME: Leaky abstraction.. Try find another way to get `base`
+                   (let [basic? (not (str/includes? value "-"))
+                         [rt profile-id] (if basic?
+                                           [value :basic]
+                                           (str/split value #"-")) ;; NOTE: assume that we have only ONE dash
+                         base (get-in manifest [:diff-profiles (keyword rt) (keyword profile-id) :baseDefinition])]  ;; <-- FIXME: Leaky abstraction.. Try find another way to get `base`
+                     (if (url? base)
+                       (-> (str/split base #"/") last)
+                       base)))
            :profile [(if (url? value)
                        value
-                       (make-extension-url manifest value ""))]}]})
+                       (if (not (str/includes? value "-"))
+                         (make-extension-url manifest value :basic)
+                         (let [[rt profile-id] (str/split value #"-")]
+                           (make-extension-url manifest rt profile-id))))]}]})
 
 ;; ----------------------------- PATH utils ---------------------------------
 
@@ -605,18 +615,24 @@
   (dump (-> ctx :diff-profiles keys))
   (dump (-> ctx :resources :AdverseEvent))
   (dump (-> ctx :profiles :Patient))
+  (-> ctx :profiles :Practitioner :basic :baseDefinition)
+  (-> ctx :profiles :Practitioner :basic)
+
+  (prop->sd ctx {} :Practitioner [] :profile "HumanName")
 
   (dump (-> ctx :diff-profiles :Address))
   (dump
-   (second
+   (first
     (ig-profile->structure-definitions
-     {:url "http://my-super-site"
-      :id "ig-az"}
+     ctx
+     ;; {:url "http://my-super-site"
+     ;;  :id "ig-az"
+     ;;  :BAD "GGG"}
      :Address
      :basic
                                         ;test-profile
-     (-> ctx :profiles :Address :basic)
-     (-> ctx :profiles :Address :basic)
+     ;; (-> ctx :profiles :Address :basic)
+     ;; (-> ctx :profiles :Address :basic)
                                         ;test-base
      ;; (:diff-profile ctx)
      ;; (:snapshot ctx)

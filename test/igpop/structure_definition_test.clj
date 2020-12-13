@@ -420,15 +420,16 @@
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-region", :type "Extension"}]))
 
   (testing "When some of elements refers to extension profile from separare igpop-profile"
-    (let [manifest {:id "hl7.fhir.test" :url "http://example.com"}
-          profile {:elements {:name {:profile "az-HumanName"}}}
+    (let [manifest {:id "hl7.fhir.test" :url "http://example.com"
+                    :diff-profiles {:HumanName {:basic {:baseDefinition "HumanName"}}}}
+          profile {:elements {:name {:profile "HumanName"}}}
           result (sd/ig-profile->structure-definitions manifest :Patient :basic profile profile)]
       (matcho/match
        result
        [{:differential
          {:element
           [{:id "Patient.name",
-            :type [{:code "HumanName", :profile ["http://example.com/az-HumanName"]}]}]}}]))))
+            :type [{:code "HumanName", :profile ["http://example.com/profiles/hl7.fhir.test-HumanName-basic"]}]}]}}]))))
 
 
 
