@@ -95,12 +95,12 @@
     (testing "refers"
       (is (= {:type
               [{:code "Reference"
-                :targetProfile ["http://example.com/profiles/Practitioner/basic"]}
+                :targetProfile ["http://example.com/profiles/ig-ae-Practitioner/basic"]}
                {:code "Reference"
-                :targetProfile ["http://example.com/profiles/Organization/basic"]}
+                :targetProfile ["http://example.com/profiles/ig-ae-Organization/basic"]}
                {:code "Reference"
-                :targetProfile ["http://example.com/profiles/Patient/basic"]}]}
-             (sd/prop->sd {:url "http://example.com"}
+                :targetProfile ["http://example.com/profiles/ig-ae-Patient/basic"]}]}
+             (sd/prop->sd {:url "http://example.com", :id "ig-ae"}
                           element id path :refers
                           [{:profile "basic"
                             :resourceType "Practitioner"}
@@ -374,7 +374,7 @@
         (matcho/match result {:resourceType "StructureDefinition"
                               :id "hl7.fhir.test-Patient"
                               :type "Patient"
-                              :url "http://example.com/profiles/hl7.fhir.test-Patient"
+                              :url "http://example.com/profiles/hl7.fhir.test-Patient/basic"
                               :differential {}}))
 
       (testing "should generate correct 'additional' root properties"

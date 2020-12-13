@@ -50,12 +50,6 @@
 (defn url? [o]
   (and (string? o) (str/starts-with? o "http")))
 
-(defn make-extension-url [base-url ext-url]
-  (when ext-url
-    (if (url? ext-url)
-      ext-url
-      (str base-url "/" ext-url))))
-
 (defn make-profile-id [project-id profile-type profile-id]
   (str project-id "-" (name profile-type)
        (when (not= :basic profile-id)
@@ -63,13 +57,23 @@
 
 
 (defn make-profile-url [manifest profile-type profile-id]
-  (str (:url manifest) "/profiles/"
-       (make-profile-id (:id manifest) profile-type profile-id)))
+  (format "%s/profiles/%s-%s/%s"
+          (:url manifest) (:id manifest) (name profile-type) (name profile-id)))
+
+;; (defn make-extension-url [base-url ext-url]
+;;   (when ext-url
+;;     (if (url? ext-url)
+;;       ext-url
+;;       (str base-url "/" ext-url))))
+
+(defn make-extension-url [manifest profile-type extension-id]
+  (format "%s/profiles/%s-%s-%s"
+          (:url manifest) (:id manifest) (name profile-type) (name extension-id)))
 
 
 (defn make-valueset-url [manifest value-id]
-  (str (:url manifest) "/valuesets/"
-       (:id manifest) "-" (name value-id)))
+  (format "%s/valuesets/%s-%s"
+          (:url manifest) (:id manifest)  (name value-id)))
 
 
 
@@ -134,7 +138,8 @@
 (defmethod prop->sd :refers
   [manifest _ _ _ _ value]
   (letfn [(make-url [{rt :resourceType p :profile}]
-            (format-url (str (:url manifest) "/profiles/%s/%s") rt p))]
+            (make-profile-url manifest rt p)
+            #_(format-url (str (:url manifest) "/profiles/%s/%s") rt p))]
     {:type (mapv #(ordered-map {:code "Reference" :targetProfile [(make-url %)]})
                  (filter :resourceType value))}))
 
@@ -184,7 +189,9 @@
   {:type [{:code (if (url? value)
                    (url->profile-name value)
                    (get-in manifest [:diff-profiles value :base]))  ;; <-- FIXME: Leaky abstraction.. Try find another way to get `base`
-           :profile [(make-extension-url (:url manifest) value)]}]})
+           :profile [(if (url? value)
+                       value
+                       (make-extension-url manifest value ""))]}]})
 
 ;; ----------------------------- PATH utils ---------------------------------
 
@@ -411,9 +418,9 @@
    {:resourceType "StructureDefinition"
     :type         "Extension"
     ;; :id           (str/join "-" [(:id manifest) (name profile-type) (name profile-id)])
-    :id           (make-profile-id (:id manifest)  profile-type profile-id)
+    :id           (make-profile-id (:id manifest) profile-type profile-id)
     ;; :url          (make-extension-url (:url manifest) (:url diff))
-    :url          (make-profile-url manifest profile-type profile-id)
+    :url          (make-extension-url manifest profile-type profile-id)
     ;; :snapshot {:element (convert-ext :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
     :differential {:element
                    (if (:elements diff)
@@ -421,7 +428,7 @@
                      ;; HACK for id = "Extension"  min/max should came from diff.
                      ;;  for id = "Extension.value" min/max = 1 - by default (At least for now) - [Vitaly 06.10.2020]
                      (convert-simple-extension-elements manifest
-                                                        (make-profile-url manifest profile-type profile-id)
+                                                        (make-extension-url manifest profile-type profile-id)
                                                         :Extension diff))}}))
 
 
