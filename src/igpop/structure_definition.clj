@@ -66,6 +66,13 @@
   (str (:url manifest) "/profiles/"
        (make-profile-id (:id manifest) profile-type profile-id)))
 
+
+(defn make-valueset-url [manifest value-id]
+  (str (:url manifest) "/valuesets/"
+       (:id manifest) "-" (name value-id)))
+
+
+
 ;; (format-url (str (:url manifest) "/StructureDefinition/%s-%s")
 ;;             (name (first path)) (name (peek path)))
 
@@ -124,17 +131,16 @@
    :path (str path "[x]")
    :type (mapv (fn [t] {:code t}) value)})
 
-;; TODO take the base URL from the project ctx
 (defmethod prop->sd :refers
   [manifest _ _ _ _ value]
   (letfn [(make-url [{rt :resourceType p :profile}]
-            (format-url (str (:url manifest) "/profiles/%s/%s.html") rt p))]
+            (format-url (str (:url manifest) "/profiles/%s/%s") rt p))]
     {:type (mapv #(ordered-map {:code "Reference" :targetProfile [(make-url %)]})
                  (filter :resourceType value))}))
 
 (defmethod prop->sd :valueset
   [manifest _ _ _ _ value]
-  {:binding {:valueSet (str (:url manifest) "/valuesets/" (:id value) ".html")
+  {:binding {:valueSet (make-valueset-url manifest (:id value))
              :strength (:strength value "extensible")
              :description (:description value)}})
 

@@ -95,11 +95,11 @@
     (testing "refers"
       (is (= {:type
               [{:code "Reference"
-                :targetProfile ["http://example.com/profiles/Practitioner/basic.html"]}
+                :targetProfile ["http://example.com/profiles/Practitioner/basic"]}
                {:code "Reference"
-                :targetProfile ["http://example.com/profiles/Organization/basic.html"]}
+                :targetProfile ["http://example.com/profiles/Organization/basic"]}
                {:code "Reference"
-                :targetProfile ["http://example.com/profiles/Patient/basic.html"]}]}
+                :targetProfile ["http://example.com/profiles/Patient/basic"]}]}
              (sd/prop->sd {:url "http://example.com"}
                           element id path :refers
                           [{:profile "basic"
@@ -110,16 +110,18 @@
                             :resourceType "Patient"}]))
           "Reference should result in type restriction with correct URL to the referenced resource."))
     (testing "valueset"
-      (is (= {:binding {:valueSet "http://example.com/valuesets/sample.html"
+      (is (= {:binding {:valueSet "http://example.com/valuesets/ig-sample"
                         :description "test"
                         :strength "extensible"}}
-             (sd/prop->sd {:url "http://example.com"} element id path :valueset {:id "sample" :description "test"}))
+             (sd/prop->sd {:url "http://example.com" :id "ig"} element id path :valueset {:id "sample" :description "test"}))
           "Valueset should result in binding with correct URL and description."))
+
     (testing "mappings"
       (is (= {:mapping [{:identity "hl7.v2" :map "PID-5, PID-9"}
                         {:identity "ru.tfoms" :map "XX-XX-F1"}]}
              (sd/prop->sd nil element id path :mappings {:hl7.v2 {:map "PID-5, PID-9"}, :ru.tfoms {:map "XX-XX-F1"}}))
           "Mappings should result in a list of mapping structures."))
+
     (testing "description"
       (is (= {:short "test"}
              (sd/prop->sd nil element id path :description "test"))
@@ -144,7 +146,7 @@
           :min 1
           :max "1"
           :short "Identifier"}
-         (sd/element->sd {:url "https://healthsamurai.github.io/igpop"}
+         (sd/element->sd {:url "https://healthsamurai.github.io/igpop" :id "igpop"}
                          [[:Patient :identifier]
                           {:minItems 1
                            :maxItems 1
@@ -153,12 +155,12 @@
   (is (= {:id "Patient.gender"
           :path "Patient.gender"
           :mustSupport true
-          :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/fhir:administrative-gender.html"
+          :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/igpop-administrative-gender"
                     :strength "extensible"
                     :description nil}}
-         (sd/element->sd {:url "https://healthsamurai.github.io/igpop"}
+         (sd/element->sd {:url "https://healthsamurai.github.io/igpop" :id "igpop"}
                          [[:Patient :gender]
-                          {:valueset {:id "fhir:administrative-gender"}}]))))
+                          {:valueset {:id "administrative-gender"}}]))))
 
 
 ;; patient profile without nested extensions
@@ -307,11 +309,11 @@
            :sliceName "text", :isModifier false}
           {:id "Extension.extension:ombCategory", :path "Extension.extension", :mustSupport true, :min 0 :max "*"
            :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/profiles/Extension/ombCategory"]}],
-           :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/omb-race-category.html",
+           :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/omb-race-category",
                      :strength "extensible", :description nil}, :sliceName "ombCategory", :isModifier false}
           {:id "Extension.extension:detailed", :path "Extension.extension", :mustSupport true, :min 0 :max "*"
            :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/profiles/Extension/detailed"]}],
-           :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/detailed-race.html", :strength "extensible", :description nil},
+           :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/detailed-race", :strength "extensible", :description nil},
            :short "Extended race codes", :sliceName "detailed", :isModifier false}
           {:id "Extension.url", :path "Extension.url", :mustSupport true, :type [{:code "uri"}], :fixedUrl "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
           {:id "Extension.value", :path "Extension.value", :mustSupport true, :max "0" :type [{}]}]}}))
