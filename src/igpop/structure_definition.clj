@@ -63,7 +63,7 @@
 
 
 (defn make-profile-url [manifest profile-type profile-id]
-  (str (:url manifest) "/profiles/StructureDefinition/"
+  (str (:url manifest) "/profiles/"
        (make-profile-id (:id manifest) profile-type profile-id)))
 
 ;; (format-url (str (:url manifest) "/StructureDefinition/%s-%s")
@@ -177,7 +177,7 @@
   [manifest _ _ _ _ value]
   {:type [{:code (if (url? value)
                    (url->profile-name value)
-                   (get-in manifest [:diff-profiles value :basic :base]))  ;; <-- FIXME: Leaky abstraction.. Try find another way to get `base`
+                   (get-in manifest [:diff-profiles value :base]))  ;; <-- FIXME: Leaky abstraction.. Try find another way to get `base`
            :profile [(make-extension-url (:url manifest) value)]}]})
 
 ;; ----------------------------- PATH utils ---------------------------------
@@ -349,22 +349,24 @@
 (defn enrich-simple-extension
   "When we met simple(not nested) extension property - we need to generate
   additional elements for it in Extension SD file"
-  [manifest diff]
+  [manifest fixedUri diff]
   (merge
    {:elements {:extension {:minItems 0 :maxItems 0}
-               :url {:minItems 1 :maxItems 1 :fixedUri (:url diff)}
+               :url {:minItems 1 :maxItems 1 :fixedUri fixedUri}
                "value[x]" {:minItems 1 :maxItems 1 :type (:type diff)}}}
    (select-keys diff [:minItems :maxItems])))
 
 
 (defn convert-simple-extension-elements
   "Convert `element`with `type` to sequenced StructureDefinition for simple extension"
-  [manifest type element]
-  (->> (assoc element :url (make-extension-url (:url manifest) (:url element)))
-       (enrich-simple-extension manifest)
-       (simple-flatten-element [type])
-       (map (fn [[k v]] [k (dissoc v :url)]))
-       (mapv (partial element->sd manifest))))
+  [manifest fixedUri type element]
+  (->>
+   ;; (assoc element :url (make-extension-url (:url manifest) (:url element)))
+   (assoc element :url fixedUri)
+   (enrich-simple-extension manifest fixedUri)
+   (simple-flatten-element [type])
+   (map (fn [[k v]] [k (dissoc v :url)]))
+   (mapv (partial element->sd manifest))))
 
 ;; (enrich-simple-extension {:minItems 10})
 
@@ -388,8 +390,7 @@
   (merge
    (sorted-map-by resource-keys-comparator)
    ;; -- default values
-   {:id             (str/join "-" [(:id manifest) (name profile-type) (name profile-id)])
-    :name           (name profile-id) ;; REVIEW - is this correct value?
+   {:name           (name profile-id) ;; REVIEW - is this correct value?
     :description    (or (:description diff) (:description snapshot))
     :status         "active"
     :fhirVersion    (:fhir manifest)
@@ -403,14 +404,19 @@
    ;; -- pinned values
    {:resourceType "StructureDefinition"
     :type         "Extension"
-    :url          (make-extension-url (:url manifest) (:url diff))
+    ;; :id           (str/join "-" [(:id manifest) (name profile-type) (name profile-id)])
+    :id           (make-profile-id (:id manifest)  profile-type profile-id)
+    ;; :url          (make-extension-url (:url manifest) (:url diff))
+    :url          (make-profile-url manifest profile-type profile-id)
     ;; :snapshot {:element (convert-ext :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
     :differential {:element
                    (if (:elements diff)
                      (convert-nested-extension-elements manifest :Extension diff)
                      ;; HACK for id = "Extension"  min/max should came from diff.
                      ;;  for id = "Extension.value" min/max = 1 - by default (At least for now) - [Vitaly 06.10.2020]
-                     (convert-simple-extension-elements manifest :Extension diff))}}))
+                     (convert-simple-extension-elements manifest
+                                                        (make-profile-url manifest profile-type profile-id)
+                                                        :Extension diff))}}))
 
 
 (defn profile->structure-definition
@@ -426,7 +432,7 @@
   (merge
    (sorted-map-by resource-keys-comparator)
    ;; -- default values
-   {:id           (make-profile-id (:id manifest) profile-type profile-id)
+   {
     :description  (or (:description diff) (:description snapshot))
     :type         (name profile-type)
     :name         (when (not= :basic profile-id) (name profile-id))
@@ -447,6 +453,7 @@
    (select-keys diff resource-root-keys)
    ;; -- pinned values
    {:resourceType "StructureDefinition"
+    :id           (make-profile-id (:id manifest) profile-type profile-id)
     :url          (make-profile-url manifest profile-type profile-id)
     ;; -- :snapshot {:element (convert-profile-elements manifest profile-type snapshot)}
     :differential {:element (convert-profile-elements manifest profile-type diff)}}))
@@ -562,7 +569,7 @@
   (def test-profile (clj-yaml.core/parse-string (slurp "../ig-ae/src/AdverseEvent.yaml")))
   (def bad-result-data (json/parse-string (slurp "my_tasks/hl7.fhir.ae-AdverseEvent-AZEmployeeReporter.json")))
 
-  (extension->structure-definition [] "" "id" test-data test-data)
+  (extension->structure-definition [] "" "id" test-profile test-profile)
 
 
 
@@ -582,24 +589,33 @@
             (clj-yaml.core/generate-string x))))
 
   (dump (-> ctx :diff-profiles :AdverseEvent))
+  (dump (-> ctx :diff-profiles keys))
   (dump (-> ctx :resources :AdverseEvent))
-  (dump (-> ctx :profiles :AdverseEvent))
+  (dump (-> ctx :profiles :Patient))
 
+  (dump (-> ctx :diff-profiles :Address))
   (dump
-   (ig-profile->structure-definitions
-    {:url "prefix"}
-    :AZAdverseEvent
-    :AZAdverseEvent
-    test-profile
-    test-base
-    ;; (:diff-profile ctx)
-    ;; (:snapshot ctx)
+   (second
+    (ig-profile->structure-definitions
+     {:url "http://my-super-site"
+      :id "ig-az"}
+     :Address
+     :basic
+                                        ;test-profile
+     (-> ctx :profiles :Address :basic)
+     (-> ctx :profiles :Address :basic)
+                                        ;test-base
+     ;; (:diff-profile ctx)
+     ;; (:snapshot ctx)
+     )
     )
    )
 
+
+  (-> ctx :profiles :HumanName)
+
   (dump (profile->structure-definition
-   {:url "prefix"} :AZAdverseEvent :AZAdverseEvent test-profile test-base
-   ))
+         {:url "prefix"} :AZAdverseEvent :AZAdverseEvent test-profile test-base))
 
   (dump (project->bundle ctx)
         :json)
@@ -610,9 +626,7 @@
   (let [ext (val (first (get-extensions test-profile)))]
     (convert-ext {} :Extension
                  (merge {:elements {:value (assoc ext :minItems 0 :maxItems 0)}}
-                        (select-keys ext [:minItems :maxItems] ))
-                 )
-    )
+                        (select-keys ext [:minItems :maxItems]))))
 
   (project->bundle ctx)
 

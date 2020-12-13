@@ -289,8 +289,8 @@
     (testing "url prefix should be taken from manifest"
       (is (str/starts-with? (:url result) (:url manifest))))
 
-    (testing "url postfix should be taken from element definition"
-      (is (str/ends-with? (:url result) (:url race-extension))))
+    (testing "url postfix should be taken generated resouce id"
+      (is (str/ends-with? (:url result) (:id result))))
 
 
 
@@ -318,7 +318,7 @@
 
     (testing "When simple (non-nested) extension -"
 
-      (let [ext {:type "string", :description "AZ Employee Reporter" :url "http://hl7.fhir.test/AZAdverseEvent/AZEmployeeReporter"
+      (let [ext {:type "string", :description "AZ Employee Reporter"
                  :minItems 2, :maxItems 4}
             manifest {:id "hl7.fhir.test" :url "http://example.com"}
             res (sd/extension->structure-definition manifest "AZAdverseEvent" :AZEmployeeReporter ext ext)]
@@ -342,18 +342,22 @@
                             {:id "Extension.url"       :min 1 :max "1"}
                             {:id "Extension.value[x]"  :min 1 :max "1"}]}}))
 
-        (testing "'url' field of profile should go to 'fixedUri' property of 'Element.url'"
+        (testing "generated 'url' of sd should go to 'fixedUri' property of 'Element.url'"
           (matcho/match
-           res {:differential {:element [{} {} {:id "Extension.url" :fixedUri "http://hl7.fhir.test/AZAdverseEvent/AZEmployeeReporter"} {}]}}))))
+           res {:differential {:element [{} {} {:id "Extension.url" :fixedUri "http://example.com/profiles/hl7.fhir.test-AZAdverseEvent-AZEmployeeReporter"} {}]}}))))
 
 
+    ;; TODO: Dissalow to provide url property completely
     (testing "When 'url' prop is given"
       (let [ext {:url "urn:extension:sometype-someextension" }
             manifest {:id "project-id" :url "http://example.com"}
             res (sd/extension->structure-definition manifest "SomeType" :SomeExtension ext ext)]
 
-        (testing "it should be passed as postfix to top-level property of StructureDefinition - 'url'"
-          (is (str/ends-with? (:url res) (:url ext))))
+        (testing "it should not be passed as postfix to top-level property of StructureDefinition - 'url'"
+          (is (not (str/ends-with? (:url res) (:url ext)))))
+
+        ;; (testing "it should be passed as postfix to top-level property of StructureDefinition - 'url'"
+        ;;   (is (str/ends-with? (:url res) (:url ext))))
 
         (testing "it should not be passed to differential elements"
           (is (= [nil nil nil nil] (map :url (get-in res [:differential :element]))))))
@@ -368,7 +372,7 @@
         (matcho/match result {:resourceType "StructureDefinition"
                               :id "hl7.fhir.test-Patient"
                               :type "Patient"
-                              :url "http://example.com/profiles/StructureDefinition/Patient"
+                              :url "http://example.com/profiles/hl7.fhir.test-Patient"
                               :differential {}}))
 
       (testing "should generate correct 'additional' root properties"
