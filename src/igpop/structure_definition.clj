@@ -76,7 +76,7 @@
 
 (defn make-valueset-url [manifest value-id]
   (format "%s/ValueSet/%s-%s"
-          (:url manifest) (:id manifest)  (name value-id)))
+          (:url manifest) (:id manifest) (name value-id)))
 
 
 
@@ -301,8 +301,7 @@
       (assoc :sliceName (name (peek path))
              :isModifier false
              :type [{:code "Extension"
-                     :profile [(format-url (str (:url manifest) "/StructureDefinition/%s-%s")
-                                           (name (first path)) (name (peek path)))]}])))
+                     :profile [(make-extension-url manifest (name (first path)) (name (peek path)))]}])))
 
 
 (defn flatten-element

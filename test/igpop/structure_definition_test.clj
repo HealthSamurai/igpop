@@ -90,7 +90,13 @@
       (is (= {:type [{:profile ["http://example.com/az-HumanName"] :code "HumanName"}]}
              (sd/prop->sd nil element id path :profile "http://example.com/az-HumanName"))
           (str "value should be injected into path [:type 0 :profile]"
-               " and extracted type name from url and placed by path [:type 0 :code]")))
+               " and extracted type name from url and placed by path [:type 0 :code]"))
+
+      (is (= {:type [{:profile ["http://example.com/StructureDefinition/test.ag-HumanName"] :code "HumanName"}]}
+             (sd/prop->sd {:diff-profiles {:HumanName {:basic {:baseDefinition "HumanName"}}} :id "test.ag" :url "http://example.com"}
+                          element id path :profile "HumanName"))
+          (str "value should be injected into path [:type 0 :profile]"
+               " and retrived type-name from context by path [:diff-profiles resource-type :basic :baseDefinition] and placed by path [:type 0 :code]")) )
 
     (testing "refers"
       (is (= {:type
@@ -417,7 +423,17 @@
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-ombCategory", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-detailed", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-birthsex", :type "Extension"}
-      {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-region", :type "Extension"}]))
+      {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-region", :type "Extension"}])
+
+    (testing "Extension elements in resource definition should have correct type.code and type.profile url in it"
+      (matcho/match
+       result
+       [{:type "Patient"
+         :differential
+         {:element
+          [{}
+           {:id "Patient.extension:race"
+            :type [{:code "Extension" :profile ["http://example.com/StructureDefinition/hl7.fhir.test-Patient-race"]}]}]}}])))
 
   (testing "When some of elements refers to extension profile from separare igpop-profile"
     (let [manifest {:id "hl7.fhir.test" :url "http://example.com"
