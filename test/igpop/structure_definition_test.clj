@@ -95,11 +95,11 @@
     (testing "refers"
       (is (= {:type
               [{:code "Reference"
-                :targetProfile ["http://example.com/profiles/ig-ae-Practitioner/basic"]}
+                :targetProfile ["http://example.com/StructureDefinition/ig-ae-Practitioner"]}
                {:code "Reference"
-                :targetProfile ["http://example.com/profiles/ig-ae-Organization/basic"]}
+                :targetProfile ["http://example.com/StructureDefinition/ig-ae-Organization"]}
                {:code "Reference"
-                :targetProfile ["http://example.com/profiles/ig-ae-Patient/basic"]}]}
+                :targetProfile ["http://example.com/StructureDefinition/ig-ae-Patient"]}]}
              (sd/prop->sd {:url "http://example.com", :id "ig-ae"}
                           element id path :refers
                           [{:profile "basic"
@@ -110,7 +110,7 @@
                             :resourceType "Patient"}]))
           "Reference should result in type restriction with correct URL to the referenced resource."))
     (testing "valueset"
-      (is (= {:binding {:valueSet "http://example.com/valuesets/ig-sample"
+      (is (= {:binding {:valueSet "http://example.com/ValueSet/ig-sample"
                         :description "test"
                         :strength "extensible"}}
              (sd/prop->sd {:url "http://example.com" :id "ig"} element id path :valueset {:id "sample" :description "test"}))
@@ -155,7 +155,7 @@
   (is (= {:id "Patient.gender"
           :path "Patient.gender"
           :mustSupport true
-          :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/igpop-administrative-gender"
+          :binding {:valueSet "https://healthsamurai.github.io/igpop/ValueSet/igpop-administrative-gender"
                     :strength "extensible"
                     :description nil}}
          (sd/element->sd {:url "https://healthsamurai.github.io/igpop" :id "igpop"}
@@ -305,14 +305,14 @@
           {:id "Extension.extension", :path "Extension.extension", :mustSupport true,
            :slicing {:discriminator [{:type "value", :path "url"}], :ordered false, :rules "open"}}
           {:id "Extension.extension:text", :path "Extension.extension", :mustSupport true, :min 1, :short "Race Text",
-           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/profiles/Extension/text"]}],
+           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/StructureDefinition/Extension/text"]}],
            :sliceName "text", :isModifier false}
           {:id "Extension.extension:ombCategory", :path "Extension.extension", :mustSupport true, :min 0 :max "*"
-           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/profiles/Extension/ombCategory"]}],
+           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/StructureDefinition/Extension/ombCategory"]}],
            :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/omb-race-category",
                      :strength "extensible", :description nil}, :sliceName "ombCategory", :isModifier false}
           {:id "Extension.extension:detailed", :path "Extension.extension", :mustSupport true, :min 0 :max "*"
-           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/profiles/Extension/detailed"]}],
+           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/StructureDefinition/Extension/detailed"]}],
            :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/detailed-race", :strength "extensible", :description nil},
            :short "Extended race codes", :sliceName "detailed", :isModifier false}
           {:id "Extension.url", :path "Extension.url", :mustSupport true, :type [{:code "uri"}], :fixedUrl "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
@@ -346,7 +346,7 @@
 
         (testing "generated 'url' of sd should go to 'fixedUri' property of 'Element.url'"
           (matcho/match
-           res {:differential {:element [{} {} {:id "Extension.url" :fixedUri "http://example.com/profiles/hl7.fhir.test-AZAdverseEvent-AZEmployeeReporter"} {}]}}))))
+           res {:differential {:element [{} {} {:id "Extension.url" :fixedUri "http://example.com/StructureDefinition/hl7.fhir.test-AZAdverseEvent-AZEmployeeReporter"} {}]}}))))
 
 
     ;; TODO: Dissalow to provide url property completely
@@ -374,7 +374,7 @@
         (matcho/match result {:resourceType "StructureDefinition"
                               :id "hl7.fhir.test-Patient"
                               :type "Patient"
-                              :url "http://example.com/profiles/hl7.fhir.test-Patient/basic"
+                              :url "http://example.com/StructureDefinition/hl7.fhir.test-Patient"
                               :differential {}}))
 
       (testing "should generate correct 'additional' root properties"
@@ -429,7 +429,7 @@
        [{:differential
          {:element
           [{:id "Patient.name",
-            :type [{:code "HumanName", :profile ["http://example.com/profiles/hl7.fhir.test-HumanName-basic"]}]}]}}]))))
+            :type [{:code "HumanName", :profile ["http://example.com/StructureDefinition/hl7.fhir.test-HumanName"]}]}]}}]))))
 
 
 

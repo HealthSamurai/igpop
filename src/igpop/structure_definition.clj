@@ -57,8 +57,10 @@
 
 
 (defn make-profile-url [manifest profile-type profile-id]
-  (format "%s/profiles/%s-%s/%s"
-          (:url manifest) (:id manifest) (name profile-type) (name profile-id)))
+  (format "%s/StructureDefinition/%s-%s%s"
+          (:url manifest) (:id manifest) (name profile-type)
+          (if (= (name profile-id) "basic") "" (str "-" (name profile-id)))))
+
 
 ;; (defn make-extension-url [base-url ext-url]
 ;;   (when ext-url
@@ -67,12 +69,13 @@
 ;;       (str base-url "/" ext-url))))
 
 (defn make-extension-url [manifest profile-type extension-id]
-  (format "%s/profiles/%s-%s-%s"
-          (:url manifest) (:id manifest) (name profile-type) (name extension-id)))
+  (format "%s/StructureDefinition/%s-%s%s"
+          (:url manifest) (:id manifest) (name profile-type)
+          (if (= (name extension-id) "basic") "" (str "-" (name extension-id)))))
 
 
 (defn make-valueset-url [manifest value-id]
-  (format "%s/valuesets/%s-%s"
+  (format "%s/ValueSet/%s-%s"
           (:url manifest) (:id manifest)  (name value-id)))
 
 
