@@ -457,9 +457,10 @@
                     [{:code "req-det", :display "Requested detailed investigation"}
                      {:code "N/A", :display "No further cooperation is available"}]}})]
     (matcho/match
-     (sd/ig-vs->valueset {:id "hl7.fhir.test"} valueset)
+     (sd/ig-vs->valueset {:id "hl7.fhir.test" :url "http://example.com"} valueset)
      {:resourceType "ValueSet"
       :id "hl7.fhir.test-survey-status"
+      :url "http://example.com/ValueSet/hl7.fhir.test-survey-status"
       :name "SurveyStatus"
       :title "survey status"
       :status "active"

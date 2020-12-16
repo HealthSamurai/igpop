@@ -78,6 +78,8 @@
   (format "%s/ValueSet/%s-%s"
           (:url manifest) (:id manifest) (name value-id)))
 
+(defn make-valueset-id [manifest value-id]
+  (str (:id manifest) "-" (name value-id)))
 
 
 ;; (format-url (str (:url manifest) "/StructureDefinition/%s-%s")
@@ -511,7 +513,8 @@
   "Trnsforms IgPop valueset to a canonical valuest."
   [manifest [id body]]
   {:resourceType "ValueSet"
-   :id (str (:id manifest) "-" (name id))
+   :id (make-valueset-id manifest id)
+   :url  (make-valueset-url manifest id)
    :name (->> (str/split (name id) #"-") (map capitalize) (apply str))
    :title (str/replace (name id) "-" " ")
    :status (:status body "active")
