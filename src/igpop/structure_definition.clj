@@ -14,6 +14,10 @@
    :purpose :copyright :keyword :fhirVersion :mapping :kind :abstract :context
    :contextInvariant :type :baseDefinition :derivation :snapshot :differential])
 
+(def restricted-keys-in-elements
+  "Keys that cannot be in differential.elements"
+  (disj (set resource-root-keys) :type :short :id :url))
+
 ;; TODO: delete this value (we use resouce-root-keys for filtering purpose).
 ;; Or maybe we can use these keys in special-keys analysers (future ideas)
 (def igpop-properties
@@ -57,8 +61,10 @@
 
 
 (defn make-profile-url [manifest profile-type profile-id]
-  (format "%s/profiles/%s-%s/%s"
-          (:url manifest) (:id manifest) (name profile-type) (name profile-id)))
+  (format "%s/StructureDefinition/%s-%s%s"
+          (:url manifest) (:id manifest) (name profile-type)
+          (if (= (name profile-id) "basic") "" (str "-" (name profile-id)))))
+
 
 ;; (defn make-extension-url [base-url ext-url]
 ;;   (when ext-url
@@ -67,14 +73,17 @@
 ;;       (str base-url "/" ext-url))))
 
 (defn make-extension-url [manifest profile-type extension-id]
-  (format "%s/profiles/%s-%s-%s"
-          (:url manifest) (:id manifest) (name profile-type) (name extension-id)))
+  (format "%s/StructureDefinition/%s-%s%s"
+          (:url manifest) (:id manifest) (name profile-type)
+          (if (= (name extension-id) "basic") "" (str "-" (name extension-id)))))
 
 
 (defn make-valueset-url [manifest value-id]
-  (format "%s/valuesets/%s-%s"
-          (:url manifest) (:id manifest)  (name value-id)))
+  (format "%s/ValueSet/%s-%s"
+          (:url manifest) (:id manifest) (name value-id)))
 
+(defn make-valueset-id [manifest value-id]
+  (str (:id manifest) "-" (name value-id)))
 
 
 ;; (format-url (str (:url manifest) "/StructureDefinition/%s-%s")
@@ -298,8 +307,7 @@
       (assoc :sliceName (name (peek path))
              :isModifier false
              :type [{:code "Extension"
-                     :profile [(format-url (str (:url manifest) "/StructureDefinition/%s-%s")
-                                           (name (first path)) (name (peek path)))]}])))
+                     :profile [(make-extension-url manifest (name (first path)) (name (peek path)))]}])))
 
 
 (defn flatten-element
@@ -330,10 +338,12 @@
 
 (defn convert-profile-elements
   "Convert `element` (recurcive struct)
-  with `type` to flattened StructureDefinition for resource"
+  with `type` to flattened StructureDefinition for resource
+  Also cleanup all root properties from nested elements"
   [manifest type element]
   (->> (flatten-element manifest [type] element)
        (rest)  ;;  remove root element from definition
+       (map (fn [[k v]] [k (apply dissoc v restricted-keys-in-elements)]))
        (mapv (partial element->sd manifest))))
 
 
@@ -343,6 +353,7 @@
   [manifest type element]
   (->> (flatten-element manifest [type] element)
        (map (fn [[k v]] [k (dissoc v :url)]))
+       (map (fn [[k v]] [k (apply dissoc v restricted-keys-in-elements)]))
        (mapv (partial element->sd manifest))))
 
 (defn simple-flatten-element
@@ -509,7 +520,8 @@
   "Trnsforms IgPop valueset to a canonical valuest."
   [manifest [id body]]
   {:resourceType "ValueSet"
-   :id (str (:id manifest) "-" (name id))
+   :id (make-valueset-id manifest id)
+   :url  (make-valueset-url manifest id)
    :name (->> (str/split (name id) #"-") (map capitalize) (apply str))
    :title (str/replace (name id) "-" " ")
    :status (:status body "active")

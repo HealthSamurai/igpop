@@ -4,7 +4,8 @@
             [matcho.core :as matcho]
             [igpop.loader :as loader]
             [igpop.structure-definition :as sd]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.set :as set]))
 
 (deftest resource-root-keys-test
   (is (= sd/resource-root-keys
@@ -90,16 +91,22 @@
       (is (= {:type [{:profile ["http://example.com/az-HumanName"] :code "HumanName"}]}
              (sd/prop->sd nil element id path :profile "http://example.com/az-HumanName"))
           (str "value should be injected into path [:type 0 :profile]"
-               " and extracted type name from url and placed by path [:type 0 :code]")))
+               " and extracted type name from url and placed by path [:type 0 :code]"))
+
+      (is (= {:type [{:profile ["http://example.com/StructureDefinition/test.ag-HumanName"] :code "HumanName"}]}
+             (sd/prop->sd {:diff-profiles {:HumanName {:basic {:baseDefinition "HumanName"}}} :id "test.ag" :url "http://example.com"}
+                          element id path :profile "HumanName"))
+          (str "value should be injected into path [:type 0 :profile]"
+               " and retrived type-name from context by path [:diff-profiles resource-type :basic :baseDefinition] and placed by path [:type 0 :code]")) )
 
     (testing "refers"
       (is (= {:type
               [{:code "Reference"
-                :targetProfile ["http://example.com/profiles/ig-ae-Practitioner/basic"]}
+                :targetProfile ["http://example.com/StructureDefinition/ig-ae-Practitioner"]}
                {:code "Reference"
-                :targetProfile ["http://example.com/profiles/ig-ae-Organization/basic"]}
+                :targetProfile ["http://example.com/StructureDefinition/ig-ae-Organization"]}
                {:code "Reference"
-                :targetProfile ["http://example.com/profiles/ig-ae-Patient/basic"]}]}
+                :targetProfile ["http://example.com/StructureDefinition/ig-ae-Patient"]}]}
              (sd/prop->sd {:url "http://example.com", :id "ig-ae"}
                           element id path :refers
                           [{:profile "basic"
@@ -110,7 +117,7 @@
                             :resourceType "Patient"}]))
           "Reference should result in type restriction with correct URL to the referenced resource."))
     (testing "valueset"
-      (is (= {:binding {:valueSet "http://example.com/valuesets/ig-sample"
+      (is (= {:binding {:valueSet "http://example.com/ValueSet/ig-sample"
                         :description "test"
                         :strength "extensible"}}
              (sd/prop->sd {:url "http://example.com" :id "ig"} element id path :valueset {:id "sample" :description "test"}))
@@ -155,7 +162,7 @@
   (is (= {:id "Patient.gender"
           :path "Patient.gender"
           :mustSupport true
-          :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/igpop-administrative-gender"
+          :binding {:valueSet "https://healthsamurai.github.io/igpop/ValueSet/igpop-administrative-gender"
                     :strength "extensible"
                     :description nil}}
          (sd/element->sd {:url "https://healthsamurai.github.io/igpop" :id "igpop"}
@@ -305,14 +312,14 @@
           {:id "Extension.extension", :path "Extension.extension", :mustSupport true,
            :slicing {:discriminator [{:type "value", :path "url"}], :ordered false, :rules "open"}}
           {:id "Extension.extension:text", :path "Extension.extension", :mustSupport true, :min 1, :short "Race Text",
-           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/profiles/Extension/text"]}],
+           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/StructureDefinition/Extension/text"]}],
            :sliceName "text", :isModifier false}
           {:id "Extension.extension:ombCategory", :path "Extension.extension", :mustSupport true, :min 0 :max "*"
-           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/profiles/Extension/ombCategory"]}],
+           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/StructureDefinition/Extension/ombCategory"]}],
            :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/omb-race-category",
                      :strength "extensible", :description nil}, :sliceName "ombCategory", :isModifier false}
           {:id "Extension.extension:detailed", :path "Extension.extension", :mustSupport true, :min 0 :max "*"
-           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/profiles/Extension/detailed"]}],
+           :type [{:code "Extension", :profile ["https://healthsamurai.github.io/ig-ae/StructureDefinition/Extension/detailed"]}],
            :binding {:valueSet "https://healthsamurai.github.io/igpop/valuesets/detailed-race", :strength "extensible", :description nil},
            :short "Extended race codes", :sliceName "detailed", :isModifier false}
           {:id "Extension.url", :path "Extension.url", :mustSupport true, :type [{:code "uri"}], :fixedUrl "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
@@ -346,7 +353,7 @@
 
         (testing "generated 'url' of sd should go to 'fixedUri' property of 'Element.url'"
           (matcho/match
-           res {:differential {:element [{} {} {:id "Extension.url" :fixedUri "http://example.com/profiles/hl7.fhir.test-AZAdverseEvent-AZEmployeeReporter"} {}]}}))))
+           res {:differential {:element [{} {} {:id "Extension.url" :fixedUri "http://example.com/StructureDefinition/hl7.fhir.test-AZAdverseEvent-AZEmployeeReporter"} {}]}}))))
 
 
     ;; TODO: Dissalow to provide url property completely
@@ -374,26 +381,33 @@
         (matcho/match result {:resourceType "StructureDefinition"
                               :id "hl7.fhir.test-Patient"
                               :type "Patient"
-                              :url "http://example.com/profiles/hl7.fhir.test-Patient/basic"
+                              :url "http://example.com/StructureDefinition/hl7.fhir.test-Patient"
                               :differential {}}))
 
       (testing "should generate correct 'additional' root properties"
         (matcho/match result {:title "Basic patient profile"}))
 
       (testing "should generate elements in differential with correct ids and types"
-        (def *res result)
         (matcho/match
          result {:differential {:element [{:id "Patient.extension"}
                                           {:id "Patient.extension:race" :type [{:code "Extension"}]}
                                           {:id "Patient.extension:birthsex" :type [{:code "Extension"}]}
                                           {:id "Patient.identifier"}]}}))
 
-      #_(testing "should generate elements in differential with correct ids and types"
-          (matcho/match
-           result {:differential {:element [{:id "Patient.extension"}
-                                            {:id "Patient.extension:race" :type [{:code "Extension"}]}
-                                            {:id "Patient.extension:birthsex" :type [{:code "Extension"}]}
-                                            {:id "Patient.identifier"}]}}))
+      (testing "should remove root-properties (restricted) from differential.elements"
+        (let [manifest {:id "hl7.fhir.test" :url "http://example.com"}
+              profile {:elements
+                       {:extension
+                        {:ethnicity
+                         (merge
+                          {:description "Patient Ethnicity Extension"
+                           :type "CodeableConcept"
+                           :valueset {:id "detailed-ethnicity" :description "The value should be from the valueset detailed-ethnicity"}}
+                          (zipmap sd/restricted-keys-in-elements (repeat "ROOT_KEY_DUMMY_VALUE")))}}}
+              result (sd/profile->structure-definition manifest :Patient :basic profile profile)]
+          (def *res result)
+          (is (= #{} (set/intersection sd/restricted-keys-in-elements
+                      (->> result :differential :element (mapcat keys) (into #{})))))))
       )))
 
 (deftest get-extensions-test
@@ -417,7 +431,17 @@
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-ombCategory", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-detailed", :type "Extension"}
       {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-birthsex", :type "Extension"}
-      {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-region", :type "Extension"}]))
+      {:resourceType "StructureDefinition", :id "hl7.fhir.test-Patient-region", :type "Extension"}])
+
+    (testing "Extension elements in resource definition should have correct type.code and type.profile url in it"
+      (matcho/match
+       result
+       [{:type "Patient"
+         :differential
+         {:element
+          [{}
+           {:id "Patient.extension:race"
+            :type [{:code "Extension" :profile ["http://example.com/StructureDefinition/hl7.fhir.test-Patient-race"]}]}]}}])))
 
   (testing "When some of elements refers to extension profile from separare igpop-profile"
     (let [manifest {:id "hl7.fhir.test" :url "http://example.com"
@@ -429,7 +453,7 @@
        [{:differential
          {:element
           [{:id "Patient.name",
-            :type [{:code "HumanName", :profile ["http://example.com/profiles/hl7.fhir.test-HumanName-basic"]}]}]}}]))))
+            :type [{:code "HumanName", :profile ["http://example.com/StructureDefinition/hl7.fhir.test-HumanName"]}]}]}}]))))
 
 
 
@@ -441,9 +465,10 @@
                     [{:code "req-det", :display "Requested detailed investigation"}
                      {:code "N/A", :display "No further cooperation is available"}]}})]
     (matcho/match
-     (sd/ig-vs->valueset {:id "hl7.fhir.test"} valueset)
+     (sd/ig-vs->valueset {:id "hl7.fhir.test" :url "http://example.com"} valueset)
      {:resourceType "ValueSet"
       :id "hl7.fhir.test-survey-status"
+      :url "http://example.com/ValueSet/hl7.fhir.test-survey-status"
       :name "SurveyStatus"
       :title "survey status"
       :status "active"
