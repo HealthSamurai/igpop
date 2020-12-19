@@ -14,6 +14,10 @@
    :purpose :copyright :keyword :fhirVersion :mapping :kind :abstract :context
    :contextInvariant :type :baseDefinition :derivation :snapshot :differential])
 
+(def restricted-keys-in-elements
+  "Keys that cannot be in differential.elements"
+  (disj (set resource-root-keys) :type :short :id :url))
+
 ;; TODO: delete this value (we use resouce-root-keys for filtering purpose).
 ;; Or maybe we can use these keys in special-keys analysers (future ideas)
 (def igpop-properties
@@ -334,10 +338,12 @@
 
 (defn convert-profile-elements
   "Convert `element` (recurcive struct)
-  with `type` to flattened StructureDefinition for resource"
+  with `type` to flattened StructureDefinition for resource
+  Also cleanup all root properties from nested elements"
   [manifest type element]
   (->> (flatten-element manifest [type] element)
        (rest)  ;;  remove root element from definition
+       (map (fn [[k v]] [k (apply dissoc v restricted-keys-in-elements)]))
        (mapv (partial element->sd manifest))))
 
 
@@ -347,6 +353,7 @@
   [manifest type element]
   (->> (flatten-element manifest [type] element)
        (map (fn [[k v]] [k (dissoc v :url)]))
+       (map (fn [[k v]] [k (apply dissoc v restricted-keys-in-elements)]))
        (mapv (partial element->sd manifest))))
 
 (defn simple-flatten-element

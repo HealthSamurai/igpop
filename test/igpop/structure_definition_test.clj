@@ -4,7 +4,8 @@
             [matcho.core :as matcho]
             [igpop.loader :as loader]
             [igpop.structure-definition :as sd]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.set :as set]))
 
 (deftest resource-root-keys-test
   (is (= sd/resource-root-keys
@@ -387,19 +388,26 @@
         (matcho/match result {:title "Basic patient profile"}))
 
       (testing "should generate elements in differential with correct ids and types"
-        (def *res result)
         (matcho/match
          result {:differential {:element [{:id "Patient.extension"}
                                           {:id "Patient.extension:race" :type [{:code "Extension"}]}
                                           {:id "Patient.extension:birthsex" :type [{:code "Extension"}]}
                                           {:id "Patient.identifier"}]}}))
 
-      #_(testing "should generate elements in differential with correct ids and types"
-          (matcho/match
-           result {:differential {:element [{:id "Patient.extension"}
-                                            {:id "Patient.extension:race" :type [{:code "Extension"}]}
-                                            {:id "Patient.extension:birthsex" :type [{:code "Extension"}]}
-                                            {:id "Patient.identifier"}]}}))
+      (testing "should remove root-properties (restricted) from differential.elements"
+        (let [manifest {:id "hl7.fhir.test" :url "http://example.com"}
+              profile {:elements
+                       {:extension
+                        {:ethnicity
+                         (merge
+                          {:description "Patient Ethnicity Extension"
+                           :type "CodeableConcept"
+                           :valueset {:id "detailed-ethnicity" :description "The value should be from the valueset detailed-ethnicity"}}
+                          (zipmap sd/restricted-keys-in-elements (repeat "ROOT_KEY_DUMMY_VALUE")))}}}
+              result (sd/profile->structure-definition manifest :Patient :basic profile profile)]
+          (def *res result)
+          (is (= #{} (set/intersection sd/restricted-keys-in-elements
+                      (->> result :differential :element (mapcat keys) (into #{})))))))
       )))
 
 (deftest get-extensions-test
