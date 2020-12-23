@@ -16,7 +16,7 @@
 
 (def restricted-keys-in-elements
   "Keys that cannot be in differential.elements"
-  (disj (set resource-root-keys) :type :short :id :url))
+  (disj (set resource-root-keys) :type :short))
 
 ;; TODO: delete this value (we use resouce-root-keys for filtering purpose).
 ;; Or maybe we can use these keys in special-keys analysers (future ideas)

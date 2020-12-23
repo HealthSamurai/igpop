@@ -406,7 +406,7 @@
                           (zipmap sd/restricted-keys-in-elements (repeat "ROOT_KEY_DUMMY_VALUE")))}}}
               result (sd/profile->structure-definition manifest :Patient :basic profile profile)]
           (def *res result)
-          (is (= #{} (set/intersection sd/restricted-keys-in-elements
+          (is (= #{} (set/intersection (disj sd/restricted-keys-in-elements :id :url) ;; id and url are generated
                       (->> result :differential :element (mapcat keys) (into #{})))))))
       )))
 
