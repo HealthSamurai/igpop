@@ -16,7 +16,7 @@
 
 (def restricted-keys-in-elements
   "Keys that cannot be in differential.elements"
-  (disj (set resource-root-keys) :type :short :id :url))
+  (disj (set resource-root-keys) :type :short))
 
 ;; TODO: delete this value (we use resouce-root-keys for filtering purpose).
 ;; Or maybe we can use these keys in special-keys analysers (future ideas)
@@ -26,14 +26,6 @@
   #{:disabled :required :minItems :maxItems
     :elements :union :constant :constraints
     :valueset :description :collection})
-
-(defn- url-encode [s] (URLEncoder/encode s "UTF-8"))
-
-(defn- format-url
-  "Make url from 'url-template' with special tokens '%s'
-  Replaces tokens with url-encoded parts"
-  [url-template & parts]
-  (apply format url-template (map url-encode parts)))
 
 (defn- take-while+
   [pred coll]
@@ -54,6 +46,15 @@
 (defn url? [o]
   (and (string? o) (str/starts-with? o "http")))
 
+(defn- url-encode [s] (URLEncoder/encode s "UTF-8"))
+
+(defn- format-url
+  "Make url from 'url-template' with special tokens '%s'
+  Replaces tokens with url-encoded parts"
+  [url-template & parts]
+  (apply format url-template (map url-encode parts)))
+
+
 (defn make-profile-id [project-id profile-type profile-id]
   (str project-id "-" (name profile-type)
        (when (not= :basic profile-id)
@@ -65,25 +66,17 @@
           (:url manifest) (:id manifest) (name profile-type)
           (if (= (name profile-id) "basic") "" (str "-" (name profile-id)))))
 
-
-;; (defn make-extension-url [base-url ext-url]
-;;   (when ext-url
-;;     (if (url? ext-url)
-;;       ext-url
-;;       (str base-url "/" ext-url))))
-
 (defn make-extension-url [manifest profile-type extension-id]
   (format "%s/StructureDefinition/%s-%s%s"
           (:url manifest) (:id manifest) (name profile-type)
           (if (= (name extension-id) "basic") "" (str "-" (name extension-id)))))
 
-
 (defn make-valueset-url [manifest value-id]
   (format "%s/ValueSet/%s-%s"
           (:url manifest) (:id manifest) (name value-id)))
 
-(defn make-valueset-id [manifest value-id]
-  (str (:id manifest) "-" (name value-id)))
+(defn make-valueset-id [project-id value-id]
+  (str project-id "-" (name value-id)))
 
 
 ;; (format-url (str (:url manifest) "/StructureDefinition/%s-%s")
@@ -520,7 +513,7 @@
   "Trnsforms IgPop valueset to a canonical valuest."
   [manifest [id body]]
   {:resourceType "ValueSet"
-   :id (make-valueset-id manifest id)
+   :id (make-valueset-id (:id manifest) id)
    :url  (make-valueset-url manifest id)
    :name (->> (str/split (name id) #"-") (map capitalize) (apply str))
    :title (str/replace (name id) "-" " ")
@@ -528,6 +521,34 @@
    :date (:date body (java.util.Date.))
    :compose {:include [(merge (select-keys body [:system])
                               {:concept (:concepts body)})]}})
+
+(defn build-sd-id-idx
+  "Returns map of `{sd-id igpop-path}` where:
+  * `sd-id` - generated structure-definition id
+  * `igpop-path`  - path of profile in `[ctx :diff-profiles]`"
+  [ctx]
+  (->> (for [[type profiles-by-id] (ctx :diff-profiles)
+             [id diff] profiles-by-id]
+         (cons [(make-profile-id (:id ctx) type id)
+                [type id]]
+               (map (fn [[path _]]
+                      [(make-profile-id (:id ctx) type (last path))
+                       (into [type id] path)])
+                    (get-extensions diff))))
+       (apply concat)
+       (into {})))
+
+;; (build-sd-id-idx ctx)
+
+
+(defn build-vs-id-idx
+  "Returns map of `{vs-id valueset-path}` where:
+  * `vd-id` - generated value-set structure-definition id
+  * `valueset-path`  - path of valueset in `[ctx :valuesets]`"
+  [ctx]
+  (->> (for [ig-vs (keys (:valuesets ctx))]
+         [(make-valueset-id (:id ctx) ig-vs) [ig-vs]])
+       (into {})))
 
 (defn project->bundle
   "Transforms IgPop project to a bundle of structure definitions."
@@ -633,11 +654,11 @@
      ;; {:url "http://my-super-site"
      ;;  :id "ig-az"
      ;;  :BAD "GGG"}
-     :Address
+     :Observation
      :basic
                                         ;test-profile
-     ;; (-> ctx :profiles :Address :basic)
-     ;; (-> ctx :profiles :Address :basic)
+     (-> ctx :profiles :Observation)
+     (-> ctx :profiles :Observation)
                                         ;test-base
      ;; (:diff-profile ctx)
      ;; (:snapshot ctx)
@@ -645,8 +666,15 @@
     )
    )
 
+  (dump (get-in ctx [:profiles :Observation :basic :elements :extension :pregnancyFlag]))
+  (dump (get-in ctx [:diff-profiles :Observation :basic :elements :extension :pregnancyFlag]))
+  (dump (get-in ctx [:profiles :Observation :basic :elements :extension :pregnancyFlag]))
+  (dump (get-in ctx [:profiles :Observation :basic :elements :extension :pregnancyFlag]))
 
-  (-> ctx :profiles :HumanName)
+  (-> ctx :valuesets keys)
+
+  (dump (build-sd-id-idx ctx))
+  (dump (build-vs-id-idx ctx))
 
   (dump (profile->structure-definition
          {:url "prefix"} :AZAdverseEvent :AZAdverseEvent test-profile test-base))
