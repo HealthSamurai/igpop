@@ -75,8 +75,8 @@
   (format "%s/ValueSet/%s-%s"
           (:url manifest) (:id manifest) (name value-id)))
 
-(defn make-valueset-id [manifest value-id]
-  (str (:id manifest) "-" (name value-id)))
+(defn make-valueset-id [project-id value-id]
+  (str project-id "-" (name value-id)))
 
 
 ;; (format-url (str (:url manifest) "/StructureDefinition/%s-%s")
@@ -513,7 +513,7 @@
   "Trnsforms IgPop valueset to a canonical valuest."
   [manifest [id body]]
   {:resourceType "ValueSet"
-   :id (make-valueset-id manifest id)
+   :id (make-valueset-id (:id manifest) id)
    :url  (make-valueset-url manifest id)
    :name (->> (str/split (name id) #"-") (map capitalize) (apply str))
    :title (str/replace (name id) "-" " ")
@@ -547,7 +547,7 @@
   * `valueset-path`  - path of valueset in `[ctx :valuesets]`"
   [ctx]
   (->> (for [ig-vs (keys (:valuesets ctx))]
-         [(make-valueset-id ctx ig-vs) [ig-vs]])
+         [(make-valueset-id (:id ctx) ig-vs) [ig-vs]])
        (into {})))
 
 (defn project->bundle
@@ -654,11 +654,11 @@
      ;; {:url "http://my-super-site"
      ;;  :id "ig-az"
      ;;  :BAD "GGG"}
-     :Address
+     :Observation
      :basic
                                         ;test-profile
-     ;; (-> ctx :profiles :Address :basic)
-     ;; (-> ctx :profiles :Address :basic)
+     (-> ctx :profiles :Observation)
+     (-> ctx :profiles :Observation)
                                         ;test-base
      ;; (:diff-profile ctx)
      ;; (:snapshot ctx)

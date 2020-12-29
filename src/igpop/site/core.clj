@@ -114,7 +114,7 @@
          :body "File has been saved!"}))))
 
 (defn get-resource-sd [ctx req]
-  (let [sd-id (get-in req [:route-params :sd-id])]
+  (let [sd-id (str/replace (get-in req [:route-params :sd-id]) #".json$" "")]
     (if (get-in ctx [:path-by-sd-id sd-id])
       (let [path     (get-in ctx [:path-by-sd-id sd-id])
             rt       (first path)
@@ -129,7 +129,7 @@
       {:status 404 :body "File not found!"})))
 
 (defn get-valueset-sd [ctx req]
-  (let [vs-id (get-in req [:route-params :vs-id])
+  (let [vs-id (str/replace (get-in req [:route-params :vs-id]) #".json$" "")
         path (get-in ctx [:path-by-vs-id vs-id])]
     (if path
       {:status 200
@@ -166,13 +166,16 @@
       (handler ctx (assoc req :route-params params))
       {:status 404 :body "Not Found"})))
 
+(defn ctx-build-sd-indexes [ctx]
+  (assoc ctx :path-by-sd-id (sd/build-sd-id-idx ctx)
+             :path-by-vs-id (sd/build-vs-id-idx ctx)))
+
 (defn dispatch [ctx {uri :uri meth :request-method :as req}]
   (or
    (handle-static req)
    (do
      (igpop.loader/reload ctx)
-     (swap! ctx assoc :path-by-sd-id (sd/build-sd-id-idx @ctx)
-                      :path-by-vs-id (sd/build-vs-id-idx @ctx))
+     (swap! ctx ctx-build-sd-indexes)
      (*dispatch @ctx req))))
 
 (defn mk-handler [home]
@@ -223,7 +226,8 @@
 (defn build [home base-url]
   (let [ctx (-> (igpop.loader/load-project home)
                 (assoc :base-url base-url)
-                (assoc-in [:flags :no-edit] true))
+                (assoc-in [:flags :no-edit] true)
+                (ctx-build-sd-indexes))
         build-dir (io/file home "build")]
     (.mkdir build-dir)
 
@@ -240,6 +244,17 @@
     (dump-page ctx home ["valuesets"] :index)
     (doseq [[id _] (get-in ctx [:valuesets])]
       (dump-page ctx home ["valuesets" (name id) {:format "html"}]))
+
+    (.mkdir (io/file build-dir "StructureDefinition"))
+    (doseq [[rt prs] (:profiles ctx)]
+      (doseq [[id pr] (if-not (some #(= % :basic) (keys prs))
+                        (assoc prs :basic {})
+                        prs)]
+        (dump-page ctx home ["StructureDefinition" (sd/make-profile-id (:id ctx) rt id) {:format "json"}])))
+
+    (.mkdir (io/file build-dir "ValueSet"))
+    (doseq [[id _] (get-in ctx [:valuesets])]
+      (dump-page ctx home ["ValueSet" (sd/make-valueset-id (:id ctx) id) {:format "json"}]))
 
     (.mkdir (io/file build-dir "docs"))
     (dump-page ctx home ["docs"] :index)
