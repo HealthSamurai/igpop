@@ -58,16 +58,16 @@
                                  (http/send! chann (cheshire.core/generate-string resp))))))))
 
 (defn get-profile [ctx req]
-(let [parsed-name (-> req
+  (let [ sd-id (-> req
                         (get :uri)
                         (clojure.string/replace #"/get-profile/" "")
                         (clojure.string/split #"&"))
-        file-name-yaml (if (= "basic" (last parsed-name))
-                         (str (first parsed-name) ".yaml")
-                         (str (clojure.string/join "/" parsed-name) ".yaml"))
-        file-name-igpop (if (= "basic" (last parsed-name))
-                          (str (first parsed-name) ".igpop")
-                          (str (clojure.string/join "/" parsed-name) ".igpop"))]
+        file-name-yaml (if (= "basic" (last  sd-id))
+                         (str (first  sd-id) ".yaml")
+                         (str (clojure.string/join "/"  sd-id) ".yaml"))
+        file-name-igpop (if (= "basic" (last  sd-id))
+                          (str (first  sd-id) ".igpop")
+                          (str (clojure.string/join "/"  sd-id) ".igpop"))]
     (cond
       (.exists (io/file (str (:home ctx) "/src/" file-name-yaml)))
       (let [content (slurp (io/file (str (:home ctx) "/src/" file-name-yaml)))]
@@ -88,16 +88,16 @@
    :body (io/input-stream (io/resource "public/editor/index.html"))})
 
 (defn post-profile! [ctx req]
-  (let [parsed-name (-> req
+  (let [ sd-id (-> req
                         (get :uri)
                         (clojure.string/replace #"/post-profile/" "")
                         (clojure.string/split #"&"))
-        file-name-yaml (if (= "basic" (last parsed-name))
-                         (str (first parsed-name) ".yaml")
-                         (str (clojure.string/join "/" parsed-name) ".yaml"))
-        file-name-igpop (if (= "basic" (last parsed-name))
-                          (str (first parsed-name) ".igpop")
-                          (str (clojure.string/join "/" parsed-name) ".igpop"))]
+        file-name-yaml (if (= "basic" (last  sd-id))
+                         (str (first  sd-id) ".yaml")
+                         (str (clojure.string/join "/"  sd-id) ".yaml"))
+        file-name-igpop (if (= "basic" (last  sd-id))
+                          (str (first  sd-id) ".igpop")
+                          (str (clojure.string/join "/"  sd-id) ".igpop"))]
     (cond
       (.exists (io/file (str (:home ctx) "/src/" file-name-yaml)))
       (let [file (io/file (str (:home ctx) "/src/" file-name-yaml))
@@ -113,6 +113,30 @@
         {:status 200
          :body "File has been saved!"}))))
 
+(defn get-resource-sd [ctx req]
+  (let [sd-id (get-in req [:route-params :sd-id])]
+    (if (get-in ctx [:path-by-sd-id sd-id])
+      (let [path     (get-in ctx [:path-by-sd-id sd-id])
+            rt       (first path)
+            id       (last path)
+            profile  (get-in ctx (into [:diff-profiles] path))
+            snapshot (get-in ctx (into [:snapshot] path))]
+        {:status 200
+         :body (cheshire.core/generate-string
+                (if (or (sd/path-extension-root? path) (sd/path-extension? path))
+                  (sd/extension->structure-definition ctx rt id profile snapshot)
+                  (sd/profile->structure-definition ctx rt id profile snapshot)))})
+      {:status 404 :body "File not found!"})))
+
+(defn get-valueset-sd [ctx req]
+  (let [vs-id (get-in req [:route-params :vs-id])
+        path (get-in ctx [:path-by-vs-id vs-id])]
+    (if path
+      {:status 200
+       :body (cheshire.core/generate-string
+              (sd/ig-vs->valueset ctx [(last path) (get-in ctx (into [:valuesets] path))]))}
+      {:status 404 :body "File not found!"})))
+
 (def routes
   {:GET #'welcome
    "ig.yaml" {:GET #'source}
@@ -126,7 +150,9 @@
    "edit" {[:profile-id] {:GET #'edit}}
    "profiles" {:GET #'igpop.site.profiles/profiles-dashboard
                [:resource-type] {:GET #'igpop.site.profiles/profile
-                                 [:profile] {:GET #'igpop.site.profiles/profile}}}})
+                                 [:profile] {:GET #'igpop.site.profiles/profile}}}
+   "StructureDefinition" {[:sd-id] {:GET #'get-resource-sd}}
+   "ValueSet" {[:vs-id] {:GET #'get-valueset-sd}}})
 
 (defn dynamic-routes [ctx]
  (let [m (sd/npm-manifest ctx)]
@@ -145,6 +171,8 @@
    (handle-static req)
    (do
      (igpop.loader/reload ctx)
+     (swap! ctx assoc :path-by-sd-id (sd/build-sd-id-idx @ctx)
+                      :path-by-vs-id (sd/build-vs-id-idx @ctx))
      (*dispatch @ctx req))))
 
 (defn mk-handler [home]
@@ -198,7 +226,7 @@
                 (assoc-in [:flags :no-edit] true))
         build-dir (io/file home "build")]
     (.mkdir build-dir)
-    
+
     (.mkdir (io/file build-dir "profiles"))
     (dump-page ctx home [] :index)
     (dump-page ctx home ["profiles"] :index)
