@@ -35,7 +35,7 @@
       (merge base obj))))
 
 (defn capitalized? [s]
-  (when (string? s)
+  (when (and (string? s) (not (str/blank? s)))
     (Character/isUpperCase (first s))))
 
 (defn parse-name
