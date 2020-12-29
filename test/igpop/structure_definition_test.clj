@@ -262,7 +262,7 @@
 
 (deftest extension->structure-definition-test
   (let [race-extension (get (sd/get-extensions patient) [:elements :extension :race])
-        manifest {:id "hl7.fhir.test" :fhir "4.0.1", :url "http://example.com"}
+        manifest {:id "hl7.fhir.test" :fhir "4.0.1", :url "http://example.com" :publisher "HS" :date "2020-12-29"}
         result (sd/extension->structure-definition manifest "Patient.extension" :race race-extension race-extension)]
 
     (testing "Root static properties should be correct"
@@ -285,6 +285,11 @@
         :context        [{:type "element", :expression "Patient.extension"}],
         :differential   {:element []}}))
 
+    (testing "Root additional properties from manifest should be correct"
+      (matcho/match
+       result
+       {:publisher "HS"
+        :date "2020-12-29"}))
 
     (testing "Root additional properties should be correct"
       (matcho/match
@@ -374,8 +379,8 @@
 
 (deftest profile->structure-definition-test
   (testing "converting profile to structure-definition"
-    (let [result (sd/profile->structure-definition {:id "hl7.fhir.test"
-                                                    :url "http://example.com"} :Patient :basic patient-basic patient-basic)]
+    (let [result (sd/profile->structure-definition {:id "hl7.fhir.test" :url "http://example.com" :publisher "HS" :date "2020-12-29"}
+                                                   :Patient :basic patient-basic patient-basic)]
 
       (testing "should generate correct root properties"
         (matcho/match result {:resourceType "StructureDefinition"
@@ -386,6 +391,9 @@
 
       (testing "should generate correct 'additional' root properties"
         (matcho/match result {:title "Basic patient profile"}))
+
+      (testing "should get additional properties from manifest"
+        (matcho/match result {:publisher "HS" :date "2020-12-29"}))
 
       (testing "should generate elements in differential with correct ids and types"
         (matcho/match
@@ -464,16 +472,23 @@
                     :concepts
                     [{:code "req-det", :display "Requested detailed investigation"}
                      {:code "N/A", :display "No further cooperation is available"}]}})]
-    (matcho/match
-     (sd/ig-vs->valueset {:id "hl7.fhir.test" :url "http://example.com"} valueset)
-     {:resourceType "ValueSet"
-      :id "hl7.fhir.test-survey-status"
-      :url "http://example.com/ValueSet/hl7.fhir.test-survey-status"
-      :name "SurveyStatus"
-      :title "survey status"
-      :status "active"
-      :compose {:include [{:system "Intellijent source"
-                           :concept (:concepts (val valueset))}]}})))
+
+    (testing "genearted root properties should be correct"
+      (matcho/match
+       (sd/ig-vs->valueset {:id "hl7.fhir.test" :url "http://example.com"} valueset)
+       {:resourceType "ValueSet"
+        :id "hl7.fhir.test-survey-status"
+        :url "http://example.com/ValueSet/hl7.fhir.test-survey-status"
+        :name "SurveyStatus"
+        :title "survey status"
+        :status "active"
+        :compose {:include [{:system "Intellijent source"
+                             :concept (:concepts (val valueset))}]}}))
+
+    (testing "additional properties should be taken from manifest"
+      (matcho/match
+       (sd/ig-vs->valueset {:id "" :url "" :publisher "HS" :date "2020-12-29"} valueset)
+       {:publisher "HS" :date "2020-12-29"}))))
 
 (deftest project->bundle-test
   (let [project-path (.getPath (io/resource "test-project"))

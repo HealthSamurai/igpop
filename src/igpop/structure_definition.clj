@@ -125,10 +125,7 @@
 
 (defmethod prop->sd :constraints
   [_ _ _ _ _ value]
-  {:constraint (mapv convert-constraint value)}
-  #_(->> value
-         (mapv convert-constraint)
-         (assoc {} :constraint)))
+  {:constraint (mapv convert-constraint value)})
 
 (defmethod prop->sd :union
   [_ _ id path _ value]
@@ -140,8 +137,7 @@
 (defmethod prop->sd :refers
   [manifest _ _ _ _ value]
   (letfn [(make-url [{rt :resourceType p :profile}]
-            (make-profile-url manifest rt p)
-            #_(format-url (str (:url manifest) "/profiles/%s/%s") rt p))]
+            (make-profile-url manifest rt p))]
     {:type (mapv #(ordered-map {:code "Reference" :targetProfile [(make-url %)]})
                  (filter :resourceType value))}))
 
@@ -358,13 +354,6 @@
          (for [[id el] (get element :elements)]
            (simple-flatten-element (conj path id) el))))
 
-;; (defn simple-flatten-element2
-;;   "Like flatten-element, but does not interpret extension as special case.
-;;   We need in Extension SD element with id : Extension.extension."
-;;   [path element]
-;;   (reduce-profile assoc (ordered-map) path element))
-
-
 ;; HACK: bad staff here - our structure is not correct profile.
 (defn enrich-simple-extension
   "When we met simple(not nested) extension property - we need to generate
@@ -381,14 +370,11 @@
   "Convert `element`with `type` to sequenced StructureDefinition for simple extension"
   [manifest fixedUri type element]
   (->>
-   ;; (assoc element :url (make-extension-url (:url manifest) (:url element)))
    (assoc element :url fixedUri)
    (enrich-simple-extension manifest fixedUri)
    (simple-flatten-element [type])
    (map (fn [[k v]] [k (dissoc v :url)]))
    (mapv (partial element->sd manifest))))
-
-;; (enrich-simple-extension {:minItems 10})
 
 (def resource-root-keys-sort-order
   (zipmap resource-root-keys (range)))
@@ -419,14 +405,14 @@
     :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
     :derivation     "constraint"
     :context        [{:type "element", :expression (name profile-type)}]}
+   ;; -- replaced by manifest values
+   (select-keys manifest [:publisher :date])
    ;; -- replaced by user values
    (select-keys diff resource-root-keys)
    ;; -- pinned values
    {:resourceType "StructureDefinition"
     :type         "Extension"
-    ;; :id           (str/join "-" [(:id manifest) (name profile-type) (name profile-id)])
     :id           (make-profile-id (:id manifest) profile-type profile-id)
-    ;; :url          (make-extension-url (:url manifest) (:url diff))
     :url          (make-extension-url manifest profile-type profile-id)
     ;; :snapshot {:element (convert-ext :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
     :differential {:element
@@ -469,6 +455,8 @@
    ;; version: ''
    ;; description: This is the AZ profile (StructureDefinition) for AdverseEvent
    ;; elements: {}
+   ;; -- replaced by manifest values
+   (select-keys manifest [:publisher :date])
    ;; -- replaced by user values
    (select-keys diff resource-root-keys)
    ;; -- pinned values
@@ -512,15 +500,19 @@
 (defn ig-vs->valueset
   "Trnsforms IgPop valueset to a canonical valuest."
   [manifest [id body]]
-  {:resourceType "ValueSet"
-   :id (make-valueset-id (:id manifest) id)
-   :url  (make-valueset-url manifest id)
-   :name (->> (str/split (name id) #"-") (map capitalize) (apply str))
-   :title (str/replace (name id) "-" " ")
-   :status (:status body "active")
-   :date (:date body (java.util.Date.))
-   :compose {:include [(merge (select-keys body [:system])
-                              {:concept (:concepts body)})]}})
+  (merge
+   (sorted-map-by resource-keys-comparator)
+   ;; get from manifest
+   (select-keys manifest [:publisher]) ;; :date injected below
+   {:resourceType "ValueSet"
+    :id (make-valueset-id (:id manifest) id)
+    :url  (make-valueset-url manifest id)
+    :name (->> (str/split (name id) #"-") (map capitalize) (apply str))
+    :title (str/replace (name id) "-" " ")
+    :status (:status body "active")
+    :date (or (:date body) (:date manifest) (java.util.Date.))
+    :compose {:include [(merge (select-keys body [:system])
+                               {:concept (:concepts body)})]}}))
 
 (defn build-sd-id-idx
   "Returns map of `{sd-id igpop-path}` where:
