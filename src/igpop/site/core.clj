@@ -80,7 +80,6 @@
       :else {:status 404 :body "File not found!"})))
 
 
-
 (defn edit [ctx req]
   (println req)
   {:status 200
@@ -246,15 +245,12 @@
       (dump-page ctx home ["valuesets" (name id) {:format "html"}]))
 
     (.mkdir (io/file build-dir "StructureDefinition"))
-    (doseq [[rt prs] (:profiles ctx)]
-      (doseq [[id pr] (if-not (some #(= % :basic) (keys prs))
-                        (assoc prs :basic {})
-                        prs)]
-        (dump-page ctx home ["StructureDefinition" (sd/make-profile-id (:id ctx) rt id) {:format "json"}])))
+    (doseq [sd-id (keys (:path-by-sd-id ctx))]
+      (dump-page ctx home ["StructureDefinition" sd-id {:format "json"}]))
 
     (.mkdir (io/file build-dir "ValueSet"))
-    (doseq [[id _] (get-in ctx [:valuesets])]
-      (dump-page ctx home ["ValueSet" (sd/make-valueset-id (:id ctx) id) {:format "json"}]))
+    (doseq [vs-id (keys (:path-by-vs-id ctx))]
+      (dump-page ctx home ["ValueSet" vs-id {:format "json"}]))
 
     (.mkdir (io/file build-dir "docs"))
     (dump-page ctx home ["docs"] :index)
@@ -272,6 +268,7 @@
 (comment
 
   (def hm (.getAbsolutePath (io/file  "example")))
+  (def hm (.getAbsolutePath (io/file  "../ig-ae")))
 
   (def srv (start hm 8899))
 
@@ -279,5 +276,6 @@
   (build hm "/igpop")
 
   (srv)
+  ;; (apply u/href {} ["StructureDefinition" (sd/make-profile-id (:id sd/ctx) :Adress :basic) {:format "json"}])
 
   (handler {:uri "/" :request-method :get}))
