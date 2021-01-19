@@ -94,7 +94,7 @@
                " and extracted type name from url and placed by path [:type 0 :code]"))
 
       (is (= {:type [{:profile ["http://example.com/StructureDefinition/test.ag-HumanName"] :code "HumanName"}]}
-             (sd/prop->sd {:diff-profiles {:HumanName {:basic {:baseDefinition "HumanName"}}} :id "test.ag" :url "http://example.com"}
+             (sd/prop->sd {:diff-profiles {:HumanName {:basic {:baseDefinition "HumanName"}}} :prefix "test.ag-" :url "http://example.com"}
                           element id path :profile "HumanName"))
           (str "value should be injected into path [:type 0 :profile]"
                " and retrived type-name from context by path [:diff-profiles resource-type :basic :baseDefinition] and placed by path [:type 0 :code]")) )
@@ -107,7 +107,7 @@
                 :targetProfile ["http://example.com/StructureDefinition/ig-ae-Organization"]}
                {:code "Reference"
                 :targetProfile ["http://example.com/StructureDefinition/ig-ae-Patient"]}]}
-             (sd/prop->sd {:url "http://example.com", :id "ig-ae"}
+             (sd/prop->sd {:url "http://example.com", :prefix "ig-ae-"}
                           element id path :refers
                           [{:profile "basic"
                             :resourceType "Practitioner"}
@@ -120,7 +120,7 @@
       (is (= {:binding {:valueSet "http://example.com/ValueSet/ig-sample"
                         :description "test"
                         :strength "extensible"}}
-             (sd/prop->sd {:url "http://example.com" :id "ig"} element id path :valueset {:id "sample" :description "test"}))
+             (sd/prop->sd {:url "http://example.com" :prefix "ig-"} element id path :valueset {:id "sample" :description "test"}))
           "Valueset should result in binding with correct URL and description."))
 
     (testing "mappings"
@@ -153,7 +153,7 @@
           :min 1
           :max "1"
           :short "Identifier"}
-         (sd/element->sd {:url "https://healthsamurai.github.io/igpop" :id "igpop"}
+         (sd/element->sd {:url "https://healthsamurai.github.io/igpop" :prefix "igpop-"}
                          [[:Patient :identifier]
                           {:minItems 1
                            :maxItems 1
@@ -165,7 +165,7 @@
           :binding {:valueSet "https://healthsamurai.github.io/igpop/ValueSet/igpop-administrative-gender"
                     :strength "extensible"
                     :description nil}}
-         (sd/element->sd {:url "https://healthsamurai.github.io/igpop" :id "igpop"}
+         (sd/element->sd {:url "https://healthsamurai.github.io/igpop" :prefix "igpop-"}
                          [[:Patient :gender]
                           {:valueset {:id "administrative-gender"}}]))))
 
@@ -262,7 +262,7 @@
 
 (deftest extension->structure-definition-test
   (let [race-extension (get (sd/get-extensions patient) [:elements :extension :race])
-        manifest {:id "hl7.fhir.test" :fhir "4.0.1", :url "http://example.com" :publisher "HS" :date "2020-12-29"}
+        manifest {:prefix "hl7.fhir.test-" :fhir "4.0.1", :url "http://example.com" :publisher "HS" :date "2020-12-29"}
         result (sd/extension->structure-definition manifest "Patient.extension" :race race-extension race-extension)]
 
     (testing "Root static properties should be correct"
@@ -334,7 +334,7 @@
 
       (let [ext {:type "string", :description "AZ Employee Reporter"
                  :minItems 2, :maxItems 4}
-            manifest {:id "hl7.fhir.test" :url "http://example.com"}
+            manifest {:prefix "hl7.fhir.test-" :url "http://example.com"}
             res (sd/extension->structure-definition manifest "AZAdverseEvent" :AZEmployeeReporter ext ext)]
 
         (testing " additional elements should be generated - 'extension', 'url' and 'value[x]'"
@@ -364,7 +364,7 @@
     ;; TODO: Dissalow to provide url property completely
     (testing "When 'url' prop is given"
       (let [ext {:url "urn:extension:sometype-someextension" }
-            manifest {:id "project-id" :url "http://example.com"}
+            manifest {:prefix "project-id" :url "http://example.com"}
             res (sd/extension->structure-definition manifest "SomeType" :SomeExtension ext ext)]
 
         (testing "it should not be passed as postfix to top-level property of StructureDefinition - 'url'"
@@ -379,7 +379,7 @@
 
 (deftest profile->structure-definition-test
   (testing "converting profile to structure-definition"
-    (let [result (sd/profile->structure-definition {:id "hl7.fhir.test" :url "http://example.com" :publisher "HS" :date "2020-12-29"}
+    (let [result (sd/profile->structure-definition {:prefix "hl7.fhir.test-" :url "http://example.com" :publisher "HS" :date "2020-12-29"}
                                                    :Patient :basic patient-basic patient-basic)]
 
       (testing "should generate correct root properties"
@@ -403,7 +403,7 @@
                                           {:id "Patient.identifier"}]}}))
 
       (testing "should remove root-properties (restricted) from differential.elements"
-        (let [manifest {:id "hl7.fhir.test" :url "http://example.com"}
+        (let [manifest {:prefix "hl7.fhir.test" :url "http://example.com"}
               profile {:elements
                        {:extension
                         {:ethnicity
@@ -429,7 +429,7 @@
 
 
 (deftest ig-profile->structure-definitions
-  (let [manifest {:id "hl7.fhir.test" :url "http://example.com"}
+  (let [manifest {:prefix "hl7.fhir.test-" :url "http://example.com"}
         result (sd/ig-profile->structure-definitions manifest :Patient :basic patient patient)]
     (matcho/match
      result
@@ -452,7 +452,7 @@
             :type [{:code "Extension" :profile ["http://example.com/StructureDefinition/hl7.fhir.test-Patient-race"]}]}]}}])))
 
   (testing "When some of elements refers to extension profile from separare igpop-profile"
-    (let [manifest {:id "hl7.fhir.test" :url "http://example.com"
+    (let [manifest {:prefix "hl7.fhir.test-" :url "http://example.com"
                     :diff-profiles {:HumanName {:basic {:baseDefinition "HumanName"}}}}
           profile {:elements {:name {:profile "HumanName"}}}
           result (sd/ig-profile->structure-definitions manifest :Patient :basic profile profile)]
@@ -475,7 +475,7 @@
 
     (testing "genearted root properties should be correct"
       (matcho/match
-       (sd/ig-vs->valueset {:id "hl7.fhir.test" :url "http://example.com"} valueset)
+       (sd/ig-vs->valueset {:prefix "hl7.fhir.test-" :url "http://example.com"} valueset)
        {:resourceType "ValueSet"
         :id "hl7.fhir.test-survey-status"
         :url "http://example.com/ValueSet/hl7.fhir.test-survey-status"

@@ -124,7 +124,8 @@
          :body (cheshire.core/generate-string
                 (if (or (sd/path-extension-root? path) (sd/path-extension? path))
                   (sd/extension->structure-definition ctx rt id profile snapshot)
-                  (sd/profile->structure-definition ctx rt id profile snapshot)))})
+                  (sd/profile->structure-definition ctx rt id profile snapshot))
+                {:pretty true})})
       {:status 404 :body "File not found!"})))
 
 (defn get-valueset-sd [ctx req]
@@ -133,7 +134,8 @@
     (if path
       {:status 200
        :body (cheshire.core/generate-string
-              (sd/ig-vs->valueset ctx [(last path) (get-in ctx (into [:valuesets] path))]))}
+              (sd/ig-vs->valueset ctx [(last path) (get-in ctx (into [:valuesets] path))])
+              {:pretty true})}
       {:status 404 :body "File not found!"})))
 
 (def routes
@@ -235,8 +237,8 @@
     (dump-page ctx home ["profiles"] :index)
     (doseq [[rt prs] (:profiles ctx)]
       (doseq [[id pr] (if-not (some #(= % :basic) (keys prs))
-                (assoc prs :basic {})
-                prs)]
+                        (assoc prs :basic {})
+                        prs)]
         (dump-page ctx home ["profiles" (name rt) (name id) {:format "html"}])))
 
     (.mkdir (io/file build-dir "valuesets"))
