@@ -21,8 +21,7 @@
 ;; TODO: delete this value (we use resouce-root-keys for filtering purpose).
 ;; Or maybe we can use these keys in special-keys analysers (future ideas)
 (def igpop-properties
-  "IgPop special properties wich will be interpreted
-  and discarded from Structure Defineitison structures"
+  "IgPop special properties wich will be interpreted and discarded from Structure Defineitison structures"
   #{:disabled :required :minItems :maxItems
     :elements :union :constant :constraints
     :valueset :description :collection})
@@ -55,28 +54,28 @@
   (apply format url-template (map url-encode parts)))
 
 
-(defn make-profile-id [project-id profile-type profile-id]
-  (str project-id "-" (name profile-type)
+(defn make-profile-id [prefix profile-type profile-id]
+  (str (or prefix "") (name profile-type)
        (when (not= :basic profile-id)
          (str "-" (name profile-id)))))
 
 
 (defn make-profile-url [manifest profile-type profile-id]
-  (format "%s/StructureDefinition/%s-%s%s"
-          (:url manifest) (:id manifest) (name profile-type)
+  (format "%s/StructureDefinition/%s%s%s"
+          (:url manifest) (or (:prefix manifest) "") (name profile-type)
           (if (= (name profile-id) "basic") "" (str "-" (name profile-id)))))
 
 (defn make-extension-url [manifest profile-type extension-id]
-  (format "%s/StructureDefinition/%s-%s%s"
-          (:url manifest) (:id manifest) (name profile-type)
+  (format "%s/StructureDefinition/%s%s%s"
+          (:url manifest) (or (:prefix manifest) "") (name profile-type)
           (if (= (name extension-id) "basic") "" (str "-" (name extension-id)))))
 
 (defn make-valueset-url [manifest value-id]
-  (format "%s/ValueSet/%s-%s"
-          (:url manifest) (:id manifest) (name value-id)))
+  (format "%s/ValueSet/%s%s"
+          (:url manifest) (:prefix manifest) (name value-id)))
 
-(defn make-valueset-id [project-id value-id]
-  (str project-id "-" (name value-id)))
+(defn make-valueset-id [prefix value-id]
+  (str (or prefix "") (name value-id)))
 
 
 ;; (format-url (str (:url manifest) "/StructureDefinition/%s-%s")
@@ -412,7 +411,7 @@
    ;; -- pinned values
    {:resourceType "StructureDefinition"
     :type         "Extension"
-    :id           (make-profile-id (:id manifest) profile-type profile-id)
+    :id           (make-profile-id (:prefix manifest) profile-type profile-id)
     :url          (make-extension-url manifest profile-type profile-id)
     ;; :snapshot {:element (convert-ext :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
     :differential {:element
@@ -461,7 +460,7 @@
    (select-keys diff resource-root-keys)
    ;; -- pinned values
    {:resourceType "StructureDefinition"
-    :id           (make-profile-id (:id manifest) profile-type profile-id)
+    :id           (make-profile-id (:prefix manifest) profile-type profile-id)
     :url          (make-profile-url manifest profile-type profile-id)
     ;; -- :snapshot {:element (convert-profile-elements manifest profile-type snapshot)}
     :differential {:element (convert-profile-elements manifest profile-type diff)}}))
@@ -505,7 +504,7 @@
    ;; get from manifest
    (select-keys manifest [:publisher]) ;; :date injected below
    {:resourceType "ValueSet"
-    :id (make-valueset-id (:id manifest) id)
+    :id (make-valueset-id (:prefix manifest) id)
     :url  (make-valueset-url manifest id)
     :name (->> (str/split (name id) #"-") (map capitalize) (apply str))
     :title (str/replace (name id) "-" " ")
@@ -521,10 +520,10 @@
   [ctx]
   (->> (for [[type profiles-by-id] (ctx :diff-profiles)
              [id diff] profiles-by-id]
-         (cons [(make-profile-id (:id ctx) type id)
+         (cons [(make-profile-id (:prefix ctx) type id)
                 [type id]]
                (map (fn [[path _]]
-                      [(make-profile-id (:id ctx) type (last path))
+                      [(make-profile-id (:prefix ctx) type (last path))
                        (into [type id] path)])
                     (get-extensions diff))))
        (apply concat)
@@ -539,7 +538,7 @@
   * `valueset-path`  - path of valueset in `[ctx :valuesets]`"
   [ctx]
   (->> (for [ig-vs (keys (:valuesets ctx))]
-         [(make-valueset-id (:id ctx) ig-vs) [ig-vs]])
+         [(make-valueset-id (:prefix ctx) ig-vs) [ig-vs]])
        (into {})))
 
 (defn project->bundle
@@ -623,13 +622,13 @@
   (def ctx (igpop.loader/load-project hm))
 
   (defn dump [x & [format]]
-    (println "dump")
     (spit "./my_tasks/temp.yaml"
           (if (= format :json)
             (cheshire.core/generate-string x {:pretty true})
             (clj-yaml.core/generate-string x))))
 
-  (dump (-> ctx :diff-profiles :AdverseEvent))
+  (-> ctx :path :Address)
+  (dump (-> ctx :diff-profiles :Address))
   (dump (-> ctx :diff-profiles keys))
   (dump (-> ctx :resources :AdverseEvent))
   (dump (-> ctx :profiles :Patient))
@@ -678,14 +677,15 @@
 
   ;; (flatten-element [ :AZAdverseEvent ] test-profile)
   (let [ext (val (first (get-extensions test-profile)))]
-    (convert-ext {} :Extension
+    #_(convert-ext {} :Extension
                  (merge {:elements {:value (assoc ext :minItems 0 :maxItems 0)}}
                         (select-keys ext [:minItems :maxItems]))))
 
   (project->bundle ctx)
 
 
-  (generate-package! :npm ctx :file (temp-file "package" ".zip"))
+  (generate-package! :npm ctx :file #_(temp-file "package" ".zip"))
 
 
-  -------------------------------------)
+ ;; -------------------------------------
+  )
