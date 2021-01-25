@@ -39,7 +39,26 @@ elements:
   description:
     type: string
     description: Project description
-
+  version:
+    type: string
+    description: Project version. (Used in FHIR Packages)
+  author:
+    type: string
+    description: Author of the project
+  licence:
+    type: code
+    description: Licence used by this project (Used in FHIR Packages)
+    enum: [CC0-1.0]
+  keywords:
+    type: string
+    coll: true
+    description: Keywords, used for searching in fhir-registry
+  maintainers:
+    coll: true
+    description: List of maineiners of this project (Used in FHIR Packages)
+    elements:
+      name: { type: string }
+      email: { type: string }
 ```
 
 You can refer manifest elements with `project.attr.attr` expression

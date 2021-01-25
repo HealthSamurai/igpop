@@ -1,18 +1,20 @@
 {:paths ["src" "resources"]
  :deps  {org.clojure/clojure            {:mvn/version "1.10.1"}
          clj-commons/clj-yaml           {:mvn/version "0.7.0"}
-         cheshire                       {:mvn/version "5.8.1"}
+         cheshire/cheshire              {:mvn/version "5.8.1"}
          com.sun.xml.bind/jaxb-core     {:mvn/version "2.3.0.1"}
          com.sun.xml.bind/jaxb-impl     {:mvn/version "2.3.2"}
          healthsamurai/matcho           {:mvn/version "0.3.3"}
-         http-kit                       {:mvn/version "2.4.0-alpha3"}
-         route-map                      {:mvn/version "0.0.7-RC4"}
-         ring                           {:mvn/version "1.7.1"}
+         http-kit/http-kit              {:mvn/version "2.4.0-alpha3"}
+         route-map/route-map            {:mvn/version "0.0.7-RC4"}
+         ring/ring                      {:mvn/version "1.7.1"}
          ring/ring-defaults             {:mvn/version "0.3.2"}
-         zprint                         {:mvn/version "0.4.16"}
-         hiccup                         {:mvn/version "1.0.5"}
-         garden                         {:mvn/version "1.3.9"}
-         json-schema                    {:mvn/version "0.2.0-RC10"}
+         zprint/zprint                  {:mvn/version "0.4.16"}
+         hiccup/hiccup                  {:mvn/version "1.0.5"}
+         garden/garden                  {:mvn/version "1.3.9"}
+         json-schema/json-schema        {:mvn/version "0.2.0-RC10"}
+
+         org.apache.commons/commons-compress {:mvn/version "1.20"}
 
          com.atlassian.commonmark/commonmark {:mvn/version "0.15.0"}
          com.atlassian.commonmark/commonmark-ext-gfm-tables {:mvn/version "0.15.0"}
@@ -39,6 +41,6 @@
 
   :build {:extra-paths ["env/build"]
           :jvm-opts    ^:replace ["-XX:-OmitStackTraceInFastThrow"]
-          :extra-deps  {cambada {:git/url "https://github.com/HealthSamurai/cambada"
+          :extra-deps  {cambada/cambada {:git/url "https://github.com/HealthSamurai/cambada"
                                  :sha     "e44a0bebd039285f3e10f15f5703d6eaf92672c7"}}
           :main-opts   ["-m" "build"]}}}

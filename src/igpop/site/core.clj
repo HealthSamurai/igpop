@@ -8,6 +8,7 @@
    [igpop.site.packages]
    [igpop.site.views :as views]
    [igpop.structure-definition :as sd]
+   [igpop.fhir-package :as fp]
    [ring.middleware.head]
    [ring.util.codec]
    [ring.util.response]
@@ -152,12 +153,14 @@
    "profiles" {:GET #'igpop.site.profiles/profiles-dashboard
                [:resource-type] {:GET #'igpop.site.profiles/profile
                                  [:profile] {:GET #'igpop.site.profiles/profile}}}
-   "StructureDefinition" {[:sd-id] {:GET #'get-resource-sd}}
+   "StructureDefinition" {;; :GET #'igpop.site.structure-definitions/sd-dashboard
+                          [:sd-id] {:GET #'get-resource-sd}}
    "ValueSet" {[:vs-id] {:GET #'get-valueset-sd}}})
 
 (defn dynamic-routes [ctx]
  (let [m (sd/npm-manifest ctx)]
-   {(str (:name m) ".zip") {:GET #'igpop.site.packages/npm-package}}))
+   {(str (:name m) ".zip") {:GET #'igpop.site.packages/npm-package}
+    (str (:id ctx) ".tgz") {:GET #'igpop.site.packages/fhir-package}}))
 
 (defn *dispatch [ctx {uri :uri meth :request-method :as req}]
   (let [uri (str/replace uri #"\.html$" "")
@@ -265,7 +268,8 @@
       (when-not (or (= f "static-resources") (= f "static-resources\n"))
         (io/copy (io/input-stream (io/resource (str "public/" f)))
                  (io/file build-dir "static" (last (str/split f #"/"))))))
-    (sd/generate-package! :npm ctx)))
+    (sd/generate-package! :npm ctx)
+    (fp/generate-fhir-package! ctx)))
 
 (comment
 
@@ -277,7 +281,8 @@
   (build hm "http://localhost/igpop/example/build")
   (build hm "/igpop")
 
-  (srv)
+  (srv) ;; stop
+
   ;; (apply u/href {} ["StructureDefinition" (sd/make-profile-id (:id sd/ctx) :Adress :basic) {:format "json"}])
 
   (handler {:uri "/" :request-method :get}))
