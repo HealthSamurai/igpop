@@ -9,7 +9,6 @@
   (:import (org.apache.commons.compress.archivers.tar TarArchiveEntry TarArchiveOutputStream)
            (org.apache.commons.compress.compressors.gzip GzipCompressorOutputStream)))
 
-
 (defn ->package-json
   "creates `package.json` content from `ctx`"
   [{:keys [id version title url
@@ -65,6 +64,36 @@
 ;;
 ;; Tarballs SHALL be in the original tarball format (e.g. a 99 character file name length limit).Te examples
 
+(defn generate-fhir-package-content
+  "Create content for FHIR-Package. Returns seq of pairs [file-path file-content]
+  File-content is prettyfied json strings"
+  [ig-ctx resources]
+  (->> (concat [["package/package.json" (->package-json ig-ctx)]
+                ["package/.index.json" (->index-json resources)]]
+               (for [sd resources] [(str "package/" (:id sd) ".json") sd]))
+       (map (fn [[file content]]
+              [file (json/generate-string content {:pretty true})]))))
+
+;; TODO move to utils
+(defn make-tgz-file
+  "Make `.tgz` file with given content.
+  file-content-pairs = `[file-path content]`
+  content should be `string`"
+  [file file-content-pairs]
+  (io/make-parents file)
+  (with-open [fout  (io/output-stream file)
+              gzout (GzipCompressorOutputStream. fout)
+              tout  (TarArchiveOutputStream. gzout)]
+    (doseq [[fname ^String content] file-content-pairs]
+      (let [entry (TarArchiveEntry. fname)
+            bytes (.getBytes content "UTF-8")]
+        (.setSize entry (count bytes))
+        (.putArchiveEntry tout entry)
+        (io/copy bytes tout)
+        (.closeArchiveEntry tout)))
+    (.finish tout))
+  file)
+
 (defn generate-fhir-package!
   "Create FHIR Package file and returns it.
   Creates tgz file in `/[project-home]/build/[project-id].tgz`
@@ -72,24 +101,9 @@
   [ig-ctx & {:as opts}]
   (let [file (or (:file opts)
                  (io/file (:home ig-ctx) "build" (str (:id ig-ctx) ".tgz")))
-        resources (sd/project->structure-definitions ig-ctx)]
-    (io/make-parents file)
-    (with-open [fout  (io/output-stream file)
-                gzout (GzipCompressorOutputStream. fout)
-                tout  (TarArchiveOutputStream. gzout)]
-      (letfn [(add-tgz-entry [entry-name content]
-                (let [entry (TarArchiveEntry. entry-name)
-                      bytes (.getBytes (json/generate-string content {:pretty true}) "UTF-8")]
-                  (.setSize entry (count bytes))
-                  (.putArchiveEntry tout entry)
-                  (io/copy bytes tout)
-                  (.closeArchiveEntry tout)))]
-        (doseq [sd resources]
-          (add-tgz-entry (str "package/" (:id sd) ".json") sd))
-        (add-tgz-entry "package/package.json" (->package-json ig-ctx))
-        (add-tgz-entry "package/.index.json" (->index-json resources)))
-      (.finish tout))
-    file))
+        resources (sd/project->structure-definitions ig-ctx)
+        file-contents (generate-fhir-package-content ig-ctx resources)]
+    (make-tgz-file file file-contents)))
 
 
 (comment
@@ -104,7 +118,7 @@
   (-> (sd/project->bundle ctx)
       :entry first :resource :id)
 
-  (make-package-tgz ctx)
+  (generate-fhir-package! ctx)
 
   nil)
 
