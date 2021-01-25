@@ -1,6 +1,6 @@
 {
     "name": "igpop-cli",
-    "version": "0.5.3",
+    "version": "0.5.4",
     "description": "Sugar FHIR profiling for programming beings",
     "author": "niquola",
     "license": "MIT",
