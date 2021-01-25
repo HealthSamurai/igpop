@@ -8,6 +8,7 @@
    [igpop.site.packages]
    [igpop.site.views :as views]
    [igpop.structure-definition :as sd]
+   [igpop.fhir-package :as fp]
    [ring.middleware.head]
    [ring.util.codec]
    [ring.util.response]
@@ -267,7 +268,8 @@
       (when-not (or (= f "static-resources") (= f "static-resources\n"))
         (io/copy (io/input-stream (io/resource (str "public/" f)))
                  (io/file build-dir "static" (last (str/split f #"/"))))))
-    (sd/generate-package! :npm ctx)))
+    (sd/generate-package! :npm ctx)
+    (fp/generate-fhir-package! ctx)))
 
 (comment
 
