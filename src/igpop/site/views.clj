@@ -167,7 +167,7 @@
     [:a {:href (u/generate-docs-href ctx)} "Docs"]
     [:a {:href (u/generate-profiles-href ctx)} "Profiles"]
     [:a {:href (u/generate-valueset-href ctx )} "ValueSets"]
-    [:a {:href (u/generate-package-href ctx)} "Package"]]])
+    [:a {:href (u/generate-fhir-package-href ctx)} "Package"]]])
 
 
 (defn current-page [uri res-url]

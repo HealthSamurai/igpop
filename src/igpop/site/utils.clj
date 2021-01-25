@@ -60,6 +60,9 @@
   (let [manifest (npm-manifest ctx)]
     (href ctx (:name manifest) {:format "zip"})))
 
+(defn generate-fhir-package-href [ctx]
+  (href ctx (:id ctx) {:format "tgz"}))
+
 (defn deep-merge
   [& maps]
   (letfn [(m [& xs]

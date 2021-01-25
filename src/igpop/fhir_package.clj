@@ -65,8 +65,8 @@
 ;;
 ;; Tarballs SHALL be in the original tarball format (e.g. a 99 character file name length limit).Te examples
 
-(defn make-package-tgz
-  "Create FHIR Package file
+(defn generate-fhir-package!
+  "Create FHIR Package file and returns it.
   Creates tgz file in `/[project-home]/build/[project-id].tgz`
   You can override output file by specifying `:file` proprty in opts"
   [ig-ctx & {:as opts}]
@@ -88,7 +88,8 @@
           (add-tgz-entry (str "package/" (:id sd) ".json") sd))
         (add-tgz-entry "package/package.json" (->package-json ig-ctx))
         (add-tgz-entry "package/.index.json" (->index-json resources)))
-      (.finish tout))))
+      (.finish tout))
+    file))
 
 
 (comment
