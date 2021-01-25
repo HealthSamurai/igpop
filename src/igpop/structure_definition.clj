@@ -541,6 +541,17 @@
          [(make-valueset-id (:prefix ctx) ig-vs) [ig-vs]])
        (into {})))
 
+(defn project->structure-definitions
+  "Generate structure-definitions (profiles/valuesets/extensions) from project context"
+  [{:keys [valuesets diff-profiles snapshot] :as ctx}]
+  (let [vsets    (for [ig-vs valuesets]
+                   (ig-vs->valueset ctx ig-vs))
+        profiles (for [[type profiles-by-id] diff-profiles
+                       [id diff] profiles-by-id
+                       struct-def (ig-profile->structure-definitions ctx type id diff (get-in snapshot [type id]))]
+                   struct-def)]
+    (concat vsets profiles)))
+
 (defn project->bundle
   "Transforms IgPop project to a bundle of structure definitions."
   [ctx]
@@ -561,6 +572,7 @@
     (->> (concat vsets profiles)
          (into [])
          (assoc result :entry))))
+
 
 (defmulti generate-package!
   "Generate a Structure Definitions package of specified type.
