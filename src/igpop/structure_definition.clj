@@ -231,7 +231,6 @@
   "Remove ':elements' part from path"
   [path] (into [] (remove #{:elements}) path))
 
-
 (defn path->id
   "Convert path (vector) to joined string with special separator"
   [path]
@@ -246,6 +245,11 @@
        (take-while+ (partial not= :extension))
        (map name)
        (str/join ".")))
+
+(defn sd-path->context-expression
+  "Return context.expression of extension by it's path (sd-path)"
+  [path] (str/join "." (map name (remove #{:basic :extension} (butlast path)))))
+
 
 ;; ----------------------------- PROFILE utils ---------------------------------
 
@@ -267,7 +271,7 @@
   [path element]
   (cond (path-extension-root? path)
         [element element path]
-        :default
+        :else
         [(dissoc element :elements) (get element :elements) (conj path :elements)]))
 
 (defn reduce-profile
@@ -385,85 +389,84 @@
 (defn extension->structure-definition
   "Transforms IgPop extension to a structure definition.
 
-  manifest      - igpop manifest map
-  profile-type  - keyword for resource type
-  profile-id    - profile-id for profile-type. (used as postfix in urls)
-  diff          - differential profile
-  snapshot      - snapshoted profile
+  manifest       - igpop manifest map
+  resource-type   - keyword for resource type
+  extension-path - path of extension in profile
+  diff           - differential profile
+  snapshot       - snapshoted profile
   "
-  [manifest profile-type profile-id diff snapshot]
-  (merge
-   (sorted-map-by resource-keys-comparator)
+  [manifest resource-type extension-path diff snapshot]
+  (let [extension-id (last extension-path)]
+    (merge
+     (sorted-map-by resource-keys-comparator)
    ;; -- default values
-   {:name           (name profile-id) ;; REVIEW - is this correct value?
-    :description    (or (:description diff) (:description snapshot))
-    :status         "active"
-    :fhirVersion    (:fhir manifest)
-    :kind           "complex-type" ;; always a complex-type
-    :abstract       false
-    :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
-    :derivation     "constraint"
-    :context        [{:type "element", :expression (name profile-type)}]}
+     {:name           (name extension-id) ;; REVIEW - is this correct value?
+      :description    (or (:description diff) (:description snapshot))
+      :status         "active"
+      :fhirVersion    (:fhir manifest)
+      :kind           "complex-type" ;; always a complex-type
+      :abstract       false
+      :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"
+      :derivation     "constraint"
+      :context        [{:type "element",
+                        :expression (sd-path->context-expression extension-path)}]}
    ;; -- replaced by manifest values
-   (select-keys manifest [:publisher :date])
+     (select-keys manifest [:publisher :date])
    ;; -- replaced by user values
-   (select-keys diff resource-root-keys)
+     (select-keys diff resource-root-keys)
    ;; -- pinned values
-   {:resourceType "StructureDefinition"
-    :type         "Extension"
-    :id           (make-profile-id (:prefix manifest) profile-type profile-id)
-    :url          (make-extension-url manifest profile-type profile-id)
+     {:resourceType "StructureDefinition"
+      :type         "Extension"
+      :id           (make-profile-id (:prefix manifest) resource-type extension-id)
+      :url          (make-extension-url manifest resource-type extension-id)
     ;; :snapshot {:element (convert-ext :Extension (if (:elements snapshot) snapshot {:elements {:value snapshot}}))}
-    :differential {:element
-                   (if (:elements diff)
-                     (convert-nested-extension-elements manifest :Extension diff)
+      :differential {:element
+                     (if (:elements diff)
+                       (convert-nested-extension-elements manifest :Extension diff)
                      ;; HACK for id = "Extension"  min/max should came from diff.
                      ;;  for id = "Extension.value" min/max = 1 - by default (At least for now) - [Vitaly 06.10.2020]
-                     (convert-simple-extension-elements manifest
-                                                        (make-extension-url manifest profile-type profile-id)
-                                                        :Extension diff))}}))
+                       (convert-simple-extension-elements manifest
+                                                          (make-extension-url manifest resource-type extension-id)
+                                                          :Extension diff))}})))
 
 
 (defn profile->structure-definition
   "Transforms IgPop profile to a structure definition.
 
   manifest      - igpop manifest map
-  profile-type  - keyword for resource type
-  profile-id    - profile-id for profile-type. (used as postfix in urls)
+  resource-type - keyword for resource type
+  profile-id    - profile-id for resource-type.
   diff          - differential profile
   snapshot      - snapshoted profile
   "
-  [manifest profile-type profile-id diff snapshot]
+  [manifest resource-type profile-id diff snapshot]
   (merge
    (sorted-map-by resource-keys-comparator)
    ;; -- default values
    {
     :description  (or (:description diff) (:description snapshot))
-    :type         (name profile-type)
+    :type         (name resource-type)
     :name         (when (not= :basic profile-id) (name profile-id))
     :kind         "resource" ;; resource or complex-type
     :status       "active"
     :fhirVersion  (:fhir manifest)
     :abstract     false}
    ;; url: "https://healthsamurai.github.io/ig-ae/profiles/StructureDefinition/AZAdverseEvent"
-   ;; name: "az-adverseevent"
    ;; :derivation constraint
    ;; title: ''
    ;; context: {}
    ;; identifier: {}
    ;; version: ''
-   ;; description: This is the AZ profile (StructureDefinition) for AdverseEvent
-   ;; elements: {}
    ;; -- replaced by manifest values
    (select-keys manifest [:publisher :date])
    ;; -- replaced by user values
    (select-keys diff resource-root-keys)
    ;; -- pinned values
    {:resourceType "StructureDefinition"
-    :id           (make-profile-id (:prefix manifest) profile-type profile-id)
-    :url          (make-profile-url manifest profile-type profile-id)
-    ;; -- :snapshot {:element (convert-profile-elements manifest profile-type snapshot)}
-    :differential {:element (convert-profile-elements manifest profile-type diff)}}))
+    :id           (make-profile-id (:prefix manifest) resource-type profile-id)
+    :url          (make-profile-url manifest resource-type profile-id)
+    ;; -- :snapshot {:element (convert-profile-elements manifest resource-type snapshot)}
+    :differential {:element (convert-profile-elements manifest resource-type diff)}}))
 
 
 (defn get-extensions
@@ -480,18 +483,18 @@
   "Transforms IgPop profile into a set of structure definitions.
 
   manifest      - igpop manifest map
-  profile-type  - keyword for resource type
-  profile-id    - profile-id for profile-type. (used as postfix in urls)
+  resource-type  - keyword for resource type
+  profile-id    - profile-id for resource-type. (used as postfix in urls)
   diff          - differential profile
   snapshot      - snapshoted profile
   "
-  [manifest profile-type profile-id diff snapshot]
-  (let [profile (profile->structure-definition manifest profile-type profile-id diff snapshot)
+  [manifest resource-type profile-id diff snapshot]
+  (let [profile (profile->structure-definition manifest resource-type profile-id diff snapshot)
         extensions (->> (get-extensions diff)
                         ;; (remove #{:profile}) ;; NOTE: Remove extensions wich refers to profiles. We don't need to generate SD files for them
                         (map (fn [[path element-diff]]
                                (extension->structure-definition
-                                manifest profile-type (last path) element-diff (get-in snapshot path)))))]
+                                manifest resource-type (path->sd-path path) element-diff (get-in snapshot path)))))]
     (->> (cons profile extensions)
          (filter some?)
          (into []))))
@@ -620,9 +623,6 @@
   (def test-base (clj-yaml.core/parse-string (slurp "./npm/fhir-4.0.0/src/AdverseEvent.yaml")))
   (def test-profile (clj-yaml.core/parse-string (slurp "../ig-ae/src/AdverseEvent.yaml")))
   (def bad-result-data (json/parse-string (slurp "my_tasks/hl7.fhir.ae-AdverseEvent-AZEmployeeReporter.json")))
-
-  (extension->structure-definition [] "" "id" test-profile test-profile)
-
 
 
   ; -------------------------------------
