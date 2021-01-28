@@ -124,7 +124,7 @@
         {:status 200
          :body (cheshire.core/generate-string
                 (if (or (sd/path-extension-root? path) (sd/path-extension? path))
-                  (sd/extension->structure-definition ctx rt id profile snapshot)
+                  (sd/extension->structure-definition ctx rt (sd/path->sd-path path) profile snapshot)
                   (sd/profile->structure-definition ctx rt id profile snapshot))
                 {:pretty true})})
       {:status 404 :body "File not found!"})))

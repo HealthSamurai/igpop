@@ -196,7 +196,7 @@
                        :title "US Core Race Extension. "
                        :url "exn:extension:patient-race"
                        :elements {:extension
-                                  {:text {:required true, :description "Race Text", :type "string"}
+                                  {:text {:required true, :title "Race Text" :description "Race Text", :type "string"}
                                    :ombCategory {:collection true, :type "Coding", :valueset {:id "omb-race-category"}}
                                    :detailed {:collection true, :type "Coding", :valueset {:id "detailed-race"}, :description "Extended race codes"}}
                                   :url {:type "uri", :constant "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
@@ -261,9 +261,9 @@
 
 
 (deftest extension->structure-definition-test
-  (let [race-extension (get (sd/get-extensions patient) [:elements :extension :race])
+  (let [race-extension (get (sd/get-extensions patient) [:elements :extension :race :elements :extension :text])
         manifest {:prefix "hl7.fhir.test-" :fhir "4.0.1", :url "http://example.com" :publisher "HS" :date "2020-12-29"}
-        result (sd/extension->structure-definition manifest "Patient.extension" :race race-extension race-extension)]
+        result (sd/extension->structure-definition manifest "Patient" [:Patient :race :text] race-extension race-extension)]
 
     (testing "Root static properties should be correct"
       (matcho/match
@@ -279,10 +279,10 @@
     (testing "Root evaluated properties should be correct"
       (matcho/match
        result
-       {:id             "hl7.fhir.test-Patient.extension-race"
-        :name           "race"
-        :description    "US Core Race Extension",
-        :context        [{:type "element", :expression "Patient.extension"}],
+       {:id             "hl7.fhir.test-Patient-text"
+        :name           "text"
+        :description    "Race Text",
+        :context        [{:type "element", :expression "Patient.race"}],
         :differential   {:element []}}))
 
     (testing "Root additional properties from manifest should be correct"
@@ -294,7 +294,7 @@
     (testing "Root additional properties should be correct"
       (matcho/match
        result
-       {:title "US Core Race Extension. "}))
+       {:title "Race Text"}))
 
 
     (testing "fhirVersion should be taken from manifest"
@@ -335,7 +335,7 @@
       (let [ext {:type "string", :description "AZ Employee Reporter"
                  :minItems 2, :maxItems 4}
             manifest {:prefix "hl7.fhir.test-" :url "http://example.com"}
-            res (sd/extension->structure-definition manifest "AZAdverseEvent" :AZEmployeeReporter ext ext)]
+            res (sd/extension->structure-definition manifest "AZAdverseEvent" [:AZAdverseEvent :AZEmployeeReporter] ext ext)]
 
         (testing " additional elements should be generated - 'extension', 'url' and 'value[x]'"
           (matcho/match
@@ -365,7 +365,7 @@
     (testing "When 'url' prop is given"
       (let [ext {:url "urn:extension:sometype-someextension" }
             manifest {:prefix "project-id" :url "http://example.com"}
-            res (sd/extension->structure-definition manifest "SomeType" :SomeExtension ext ext)]
+            res (sd/extension->structure-definition manifest "SomeType" [:SomeType :SomeExtension] ext ext)]
 
         (testing "it should not be passed as postfix to top-level property of StructureDefinition - 'url'"
           (is (not (str/ends-with? (:url res) (:url ext)))))
