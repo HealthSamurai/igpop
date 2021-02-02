@@ -96,11 +96,12 @@
 
 (defn generate-fhir-package!
   "Create FHIR Package file and returns it.
-  Creates tgz file in `/[project-home]/build/[project-id].tgz`
+  Creates tgz file in `/[project-home]/build/package.tgz`
+  NOTE: by default fhir-validator searching `package.tgz` in site root.
   You can override output file by specifying `:file` proprty in opts"
   [ig-ctx & {:as opts}]
   (let [file (or (:file opts)
-                 (io/file (:home ig-ctx) "build" (str (:id ig-ctx) ".tgz")))
+                 (io/file (:home ig-ctx) "build" "package.tgz"))
         resources (sd/project->structure-definitions ig-ctx)
         file-contents (generate-fhir-package-content ig-ctx resources)]
     (make-tgz-file file file-contents)))
