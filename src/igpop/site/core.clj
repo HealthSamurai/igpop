@@ -251,10 +251,12 @@
 
     (.mkdir (io/file build-dir "StructureDefinition"))
     (doseq [sd-id (keys (:path-by-sd-id ctx))]
+      (dump-page ctx home ["StructureDefinition" sd-id])
       (dump-page ctx home ["StructureDefinition" sd-id {:format "json"}]))
 
     (.mkdir (io/file build-dir "ValueSet"))
     (doseq [vs-id (keys (:path-by-vs-id ctx))]
+      (dump-page ctx home ["ValueSet" vs-id])
       (dump-page ctx home ["ValueSet" vs-id {:format "json"}]))
 
     (.mkdir (io/file build-dir "docs"))
@@ -285,4 +287,5 @@
 
   ;; (apply u/href {} ["StructureDefinition" (sd/make-profile-id (:id sd/ctx) :Adress :basic) {:format "json"}])
 
-  (handler {:uri "/" :request-method :get}))
+  ;; (handler {:uri "/" :request-method :get})
+  )
