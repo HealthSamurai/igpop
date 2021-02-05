@@ -1,5 +1,5 @@
 (ns igpop.fhir-package-test
-  (:require [clojure.test :as t :refer [deftest is testing are]]
+  (:require [clojure.test :as t :refer [deftest is testing]]
             [matcho.core :as matcho]
             [igpop.fhir-package :as fp]))
 
