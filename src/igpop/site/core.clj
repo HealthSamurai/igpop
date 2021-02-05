@@ -158,9 +158,9 @@
    "ValueSet" {[:vs-id] {:GET #'get-valueset-sd}}})
 
 (defn dynamic-routes [ctx]
- (let [m (sd/npm-manifest ctx)]
-   {(str (:name m) ".zip") {:GET #'igpop.site.packages/npm-package}
-    (str (:id ctx) ".tgz") {:GET #'igpop.site.packages/fhir-package}}))
+  (let [m (sd/npm-manifest ctx)]
+    {(str (:name m) ".zip") {:GET #'igpop.site.packages/npm-package}
+     "package.tgz" {:GET #'igpop.site.packages/fhir-package}})) ;; Eventually 'package.tgz' became static link. TODO: maybe move to another place
 
 (defn *dispatch [ctx {uri :uri meth :request-method :as req}]
   (let [uri (str/replace uri #"\.html$" "")

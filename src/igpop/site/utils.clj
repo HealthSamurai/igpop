@@ -61,7 +61,7 @@
     (href ctx (:name manifest) {:format "zip"})))
 
 (defn generate-fhir-package-href [ctx]
-  (href ctx (:id ctx) {:format "tgz"}))
+  (href ctx "package" {:format "tgz"}))
 
 (defn deep-merge
   [& maps]
