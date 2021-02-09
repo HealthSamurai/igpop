@@ -140,6 +140,17 @@
               {:pretty true})}
       {:status 404 :body "File not found!"})))
 
+(defn get-codesystem-sd [ctx req]
+  (let [cs-id (str/replace (get-in req [:route-params :cs-id]) #".json$" "")
+        path (get-in ctx [:path-by-cs-id cs-id])]
+    (if path
+      {:status 200
+       :body (cheshire.core/generate-string
+              (sd/ig-cs->codesystem ctx [(last path) (get-in ctx (into [:codesystems] path))])
+              {:pretty true})}
+      {:status 404 :body "File not found!"})))
+
+
 (def routes
   {:GET #'welcome
    "ig.yaml" {:GET #'source}
@@ -149,7 +160,7 @@
    "valuesets" {:GET #'igpop.site.valuesets/valuesets-dashboard
                 [:valuset-id] {:GET #'igpop.site.valuesets/valueset}}
    "codesystems" {:GET #'igpop.site.codesystems/codesystems-dashboard
-                [:valuset-id] {:GET #'igpop.site.codesystems/codesystem}}
+                  [:codesystem-id] {:GET #'igpop.site.codesystems/codesystem}}
    "get-profile" {[:profile-id] {:GET #'get-profile}}
    "post-profile" {[:profile-id] {:POST #'post-profile!}}
    "edit" {[:profile-id] {:GET #'edit}}
@@ -158,7 +169,8 @@
                                  [:profile] {:GET #'igpop.site.profiles/profile}}}
    "StructureDefinition" {;; :GET #'igpop.site.structure-definitions/sd-dashboard
                           [:sd-id] {:GET #'get-resource-sd}}
-   "ValueSet" {[:vs-id] {:GET #'get-valueset-sd}}})
+   "ValueSet" {[:vs-id] {:GET #'get-valueset-sd}}
+   "CodeSystem" {[:cs-id] {:GET #'get-codesystem-sd}}})
 
 (defn dynamic-routes [ctx]
   (let [m (sd/npm-manifest ctx)]
@@ -173,16 +185,12 @@
       (handler ctx (assoc req :route-params params))
       {:status 404 :body "Not Found"})))
 
-(defn ctx-build-sd-indexes [ctx]
-  (assoc ctx :path-by-sd-id (sd/build-sd-id-idx ctx)
-             :path-by-vs-id (sd/build-vs-id-idx ctx)))
-
 (defn dispatch [ctx {uri :uri meth :request-method :as req}]
   (or
    (handle-static req)
    (do
      (igpop.loader/reload ctx)
-     (swap! ctx ctx-build-sd-indexes)
+     (swap! ctx sd/ctx-build-sd-indexes)
      (*dispatch @ctx req))))
 
 (defn mk-handler [home]
@@ -234,7 +242,7 @@
   (let [ctx (-> (igpop.loader/load-project home)
                 (assoc :base-url base-url)
                 (assoc-in [:flags :no-edit] true)
-                (ctx-build-sd-indexes))
+                (sd/ctx-build-sd-indexes))
         build-dir (io/file home "build")]
     (.mkdir build-dir)
 
@@ -261,6 +269,11 @@
     (doseq [vs-id (keys (:path-by-vs-id ctx))]
       (dump-page ctx home ["ValueSet" vs-id])
       (dump-page ctx home ["ValueSet" vs-id {:format "json"}]))
+
+    (.mkdir (io/file build-dir "CodeSystem"))
+    (doseq [cs-id (keys (:path-by-cs-id ctx))]
+      (dump-page ctx home ["CodeSystem" cs-id])
+      (dump-page ctx home ["CodeSystem" cs-id {:format "json"}]))
 
     (.mkdir (io/file build-dir "docs"))
     (dump-page ctx home ["docs"] :index)

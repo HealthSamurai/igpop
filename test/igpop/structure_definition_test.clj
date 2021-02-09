@@ -16,6 +16,23 @@
       (str "Keys should be correct and placed in correct order. "
            "According to https://www.hl7.org/fhir/structuredefinition.html")))
 
+(deftest valueset-resource-root-keys-test
+  (is (= sd/valueset-resource-root-keys
+         [:resourceType :id :url :identifier :version :name :title :status :experimental :date :publisher
+          :contact :description :useContext :jurisdiction :immutable :purpose :copyright
+          :compose :expansion])
+      (str "Keys should be correct and placed in correct order. "
+           "According to https://www.hl7.org/fhir/valueset.html")))
+
+(deftest codesystem-resource-root-keys-test
+  (is (= sd/codesystem-resource-root-keys
+         [:resourceType :id :url :identifier :version :name :title :status :experimental
+          :date :publisher :contact :description :useContext :jurisdiction :purpose
+          :copyright :caseSensitive :valueSet :hierarchyMeaning :compositional
+          :versionNeeded :content :supplements :count :filter :property :concept])
+      (str "Keys should be correct and placed in correct order. "
+           "According to https://www.hl7.org/fhir/codesystem.html")))
+
 (deftest url?-test
   (are [x y] (= (sd/url? x) y)
     "http" true
@@ -489,6 +506,32 @@
       (matcho/match
        (sd/ig-vs->valueset {:id "" :url "" :publisher "HS" :date "2020-12-29"} valueset)
        {:publisher "HS" :date "2020-12-29"}))))
+
+
+(deftest ig-cs->codesystem-test
+  (let [codesystem (first
+                    {:survey-status
+                     {:concepts
+                      [{:code "req-det", :display "Requested detailed investigation"}
+                       {:code "N/A", :display "No further cooperation is available"}]}})]
+
+    (testing "genearted root properties should be correct"
+      (matcho/match
+       (sd/ig-cs->codesystem {:prefix "hl7.fhir.test-" :url "http://example.com"} codesystem)
+        {:resourceType "CodeSystem"
+         :id "hl7.fhir.test-survey-status"
+         :url "http://example.com/CodeSystem/hl7.fhir.test-survey-status"
+         :name "SurveyStatus"
+         :title "survey status"
+         :status "active"
+         :content "complete"
+         :concept (:concepts (val codesystem))}))
+
+    (testing "additional properties should be taken from manifest"
+      (matcho/match
+       (sd/ig-cs->codesystem {:id "" :url "" :publisher "HS" :date "2020-12-29"} codesystem)
+        {:publisher "HS" :date "2020-12-29"}))))
+
 
 (deftest project->bundle-test
   (let [project-path (.getPath (io/resource "test-project"))
