@@ -4,6 +4,7 @@
    [igpop.loader]
    [igpop.site.profiles]
    [igpop.site.valuesets]
+   [igpop.site.codesystems]
    [igpop.site.docs]
    [igpop.site.packages]
    [igpop.site.views :as views]
@@ -144,9 +145,11 @@
    "ig.yaml" {:GET #'source}
    "lsp" {:GET #'lsp}
    "docs" {:GET #'igpop.site.docs/dashboard
-          [:doc-id] {[:curr-doc] {:GET #'igpop.site.docs/doc-page}}}
+           [:doc-id] {[:curr-doc] {:GET #'igpop.site.docs/doc-page}}}
    "valuesets" {:GET #'igpop.site.valuesets/valuesets-dashboard
                 [:valuset-id] {:GET #'igpop.site.valuesets/valueset}}
+   "codesystems" {:GET #'igpop.site.codesystems/codesystems-dashboard
+                [:valuset-id] {:GET #'igpop.site.codesystems/codesystem}}
    "get-profile" {[:profile-id] {:GET #'get-profile}}
    "post-profile" {[:profile-id] {:POST #'post-profile!}}
    "edit" {[:profile-id] {:GET #'edit}}
