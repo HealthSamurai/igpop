@@ -4,7 +4,6 @@
          cheshire/cheshire              {:mvn/version "5.8.1"}
          com.sun.xml.bind/jaxb-core     {:mvn/version "2.3.0.1"}
          com.sun.xml.bind/jaxb-impl     {:mvn/version "2.3.2"}
-         healthsamurai/matcho           {:mvn/version "0.3.3"}
          http-kit/http-kit              {:mvn/version "2.4.0-alpha3"}
          route-map/route-map            {:mvn/version "0.0.7-RC4"}
          ring/ring                      {:mvn/version "1.7.1"}
@@ -32,7 +31,8 @@
                              refactor-nrepl/refactor-nrepl {:mvn/version "2.4.0"}}
                :jvm-opts    ^:replace ["-XX:-OmitStackTraceInFastThrow"]}
 
-  :test         {:extra-paths ["test"]}
+  :test         {:extra-paths ["test"]
+                 :extra-deps {healthsamurai/matcho           {:mvn/version "0.3.3"}}}
 
   :runner       {:extra-deps {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner"
                                                          :sha     "209b64504cb3bd3b99ecfec7937b358a879f55c1"}}
@@ -42,5 +42,5 @@
   :build {:extra-paths ["env/build"]
           :jvm-opts    ^:replace ["-XX:-OmitStackTraceInFastThrow"]
           :extra-deps  {cambada/cambada {:git/url "https://github.com/HealthSamurai/cambada"
-                                 :sha     "e44a0bebd039285f3e10f15f5703d6eaf92672c7"}}
+                                         :sha     "e44a0bebd039285f3e10f15f5703d6eaf92672c7"}}
           :main-opts   ["-m" "build"]}}}
