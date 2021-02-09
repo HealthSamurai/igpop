@@ -42,31 +42,12 @@
   "Determines by file-name - file format and path for placing file-data in context."
   ([dir file-name]
    (let [parts (str/split file-name #"\.")]
-     (cond
-       (and (= 2 (count parts))
-            (capitalized? dir)
-            (= "yaml" (second parts)))
-
+     (if (and (= 2 (count parts))
+              (capitalized? dir)
+              (= "yaml" (second parts)))
        {:to [:source (keyword dir) (keyword (first parts))]
         :format :yaml}
-
-       (and
-        (= 3 (count parts))
-        (= "vs" (first parts))
-        (= "yaml" (last parts)))
-
-       {:to [:valuesets (keyword (second parts))]
-        :format :yaml}
-
-       (and
-        (= 3 (count parts))
-        (= "vs" (first parts))
-        (= "csv" (last parts)))
-
-       {:to [:valuesets (keyword (second parts)) :concepts]
-        :format :csv}
-
-       :else nil)))
+       (parse-name file-name))))
 
   ([file-name]
    (let [parts (str/split file-name #"\.")]
@@ -77,7 +58,6 @@
 
        {:to [:source (keyword (first parts)) :basic]
         :format :yaml}
-
 
        (and (= 3 (count parts))
             (= "vs" (first parts))
@@ -93,6 +73,19 @@
        {:to [:valuesets (keyword (second parts)) :concepts]
         :format :csv}
 
+       (and (= 3 (count parts))
+            (= "cs" (first parts))
+            (= "yaml" (nth parts 2)))
+
+       {:to [:codesystems (keyword (second parts))]
+        :format :yaml}
+
+       (and (= 3 (count parts))
+            (= "cs" (first parts))
+            (= "csv" (nth parts 2)))
+
+       {:to [:codesystems (keyword (second parts)) :concepts]
+        :format :csv}
 
        :else
        nil))))
@@ -137,24 +130,24 @@
 (defn build-profiles [ctx mode]
   (->> ctx
        :source
-       (reduce (fn [acc [rt profiles]]
-                 (reduce (fn [acc [id profile]]
-                           (let [rich-profile (enrich ctx [rt] profile)
-                                 resources (get-in ctx (into [:base :profiles] [rt]))
-                                 snapshot (u/deep-merge resources rich-profile)]
-                             (assoc-in acc [rt id]
-                                       (cond
-                                         (= mode "profiles") rich-profile
-                                         (= mode "resources") resources
-                                         (= mode "diff-profiles") profile
-                                         (= mode "snapshot") snapshot))))
-                         acc profiles))
-               {})
+       (reduce
+        (fn [acc [rt profiles]]
+          (reduce
+           (fn [acc [id profile]]
+             (assoc-in acc [rt id]
+                       (case mode
+                         "profiles"      (enrich ctx [rt] profile)
+                         "resources"     (get-in ctx (into [:base :profiles] [rt]))
+                         "diff-profiles" profile
+                         "snapshot"      (u/deep-merge (get-in ctx (into [:base :profiles] [rt]))
+                                                       (enrich ctx [rt] profile)))))
+           acc profiles))
+        {})
        (assoc ctx (keyword mode))
        (get-inlined-valuesets)))
 
 (defn load-defs [ctx pth]
-  (let [files (.listFiles (io/file (str pth "/src")))
+  (let [files (.listFiles (io/file pth "src"))
         homepage (first (filter #(= (.getName %) "homepage.md") files))
         user-data (->> files
                        (sort-by #(count (.getName %)))
@@ -187,19 +180,19 @@
                                                   :else
                                                   acc))))
                                           acc files))
-                                (let [rt (keyword nm)]
-                                  (reduce (fn [acc f]
-                                            (if-let [insert (parse-name nm (.getName f))]
-                                              (let [source (read-file (:format insert) (.getPath f))]
-                                                (merge-in acc (:to insert) source))
-                                              acc))
-                                          acc (.listFiles f))))
+                                (reduce (fn [acc f]
+                                          (if-let [insert (parse-name nm (.getName f))]
+                                            (let [source (read-file (:format insert) (.getPath f))]
+                                              (merge-in acc (:to insert) source))
+                                            acc))
+                                        acc (.listFiles f)))
                               (if-let [insert (parse-name nm)]
                                 (let [source (read-file (:format insert) (.getPath f))]
                                   ;; (println "..." insert)
                                   (merge-in acc (:to insert) source))
                                 (do (println "TODO:" f)
-                                    acc))))) {}))]
+                                    acc)))))
+                        {}))]
     (-> (merge ctx user-data)
         (build-profiles "resources")
         (build-profiles "profiles")
@@ -211,9 +204,8 @@
     (when (.exists file) file)))
 
 (defn load-fhir [home fhir-version]
-  (let [fhir-dir (if-let [dir (safe-file home (str "igpop-fhir-" fhir-version) "src")]
-                   dir
-                   (safe-file home (str "node_modules/igpop-fhir-" fhir-version) "src"))]
+  (let [fhir-dir (or (safe-file home (str "igpop-fhir-" fhir-version) "src")
+                     (safe-file home (str "node_modules/igpop-fhir-" fhir-version) "src"))]
     (if fhir-dir
       (->> (file-seq fhir-dir)
            (reduce (fn [acc f]
@@ -223,43 +215,51 @@
                          (let [rt (str/replace nm #"\.yaml$" "")]
                            (assoc-in acc [:valuesets (keyword rt)]
                                      (read-yaml (.getPath f))))
-                         (and (str/ends-with? nm ".yaml"))
+                         (str/ends-with? nm ".yaml")
                          (let [rt (str/replace nm #"\.yaml$" "")]
-                           (assoc-in acc [:profiles (keyword rt)] (read-yaml (.getPath f))))))) {}))
+                           (assoc-in acc [:profiles (keyword rt)] (read-yaml (.getPath f)))))))
+                   {}))
       (println "Could not find " (.getPath (io/file home (str "igpop-fhir-" fhir-version)))))))
 
 (defn load-definitions [home fhir-version]
-  (let [fhir-types (if-let [dir (safe-file home (str "igpop-fhir-" fhir-version) "fhir-types-definition.yaml")]
-                     dir
-                     (safe-file home (str "node_modules/igpop-fhir-" fhir-version) "fhir-types-definition.yaml"))]
-    (if fhir-types
-      (read-yaml fhir-types)
-      (println "Could not find " (.getPath (io/file home (str "igpop-fhir-" fhir-version) "fhir-types-definition.yaml"))))))
+  (if-let [fhir-types (or (safe-file home (str "igpop-fhir-" fhir-version) "fhir-types-definition.yaml")
+                          (safe-file home (str "node_modules/igpop-fhir-" fhir-version) "fhir-types-definition.yaml"))]
+    (read-yaml fhir-types)
+    (println "Could not find " (.getPath (io/file home (str "igpop-fhir-" fhir-version) "fhir-types-definition.yaml")))))
 
 (defn load-and-parse [file-name]
-  (let [defaults (safe-file file-name)]
-    (read-yaml defaults)))
+  (read-yaml (safe-file file-name)))
 
 (defn load-project [home-dir]
   (let [manifest-file (io/file home-dir "ig.yaml")]
     (when-not (.exists manifest-file)
       (throw (Exception. (str "Manifest " (.getPath manifest-file) " does not exists"))))
 
-    (let [manifest (read-yaml (.getPath manifest-file))
-          fhir (when-let [fv (:fhir manifest)] (load-fhir home-dir fv))
-          definitions (when-let [fv (:fhir manifest)] (load-definitions home-dir fv)) ;; REVIEW:   json-schema loading.
+    (let [manifest (read-yaml manifest-file)
+          fhir (some->> (:fhir manifest) (load-fhir home-dir))
+          definitions (some->> (:fhir manifest) (load-definitions home-dir)) ;; REVIEW:   json-schema loading.
           manifest' (assoc manifest :base fhir :home home-dir :definitions definitions)]
       (merge
        manifest'
        (load-defs manifest' home-dir)))))
 
+(defn reset-ctx [ctx]
+  (dissoc ctx :profiles :sources :valuesets :codesystems))
+
 (defn reload [ctx]
   (swap! ctx
          (fn [{home :home :as ctx}]
            (merge
-            (dissoc ctx :profiles :sources :valuesets)
+            (reset-ctx ctx)
             (read-yaml (io/file home "ig.yaml"))
             (load-defs ctx home)))))
 
 
+(comment
 
+  (def hm (.getAbsolutePath (io/file  "../ig-ae")))
+
+  (def ctx (load-project hm))
+  (:codesystems ctx)
+
+  )
