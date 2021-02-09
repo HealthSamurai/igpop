@@ -41,8 +41,8 @@
 
     (matcho/match
      (sut/parse-name "Patient.yaml")
-     {:to [:source :Patient :basic]
-      :format :yaml})
+      {:to [:source :Patient :basic]
+       :format :yaml})
 
     ;; (matcho/match
     ;;  (sut/parse-name "pr.Patient.example.pt1.yaml")
@@ -51,21 +51,28 @@
 
     (matcho/match
      (sut/parse-name "Patient" "lab.yaml")
-     {:to [:source :Patient :lab]
-      :format :yaml})
+      {:to [:source :Patient :lab]
+       :format :yaml})
 
     (matcho/match
      (sut/parse-name "vs.dic1.yaml")
-     {:to [:valuesets :dic1]
-      :format :yaml})
+      {:to [:valuesets :dic1]
+       :format :yaml})
 
     (matcho/match
      (sut/parse-name "vs.dic1.csv")
-     {:to [:valuesets :dic1 :concepts]
-      :format :csv})
+      {:to [:valuesets :dic1 :concepts]
+       :format :csv})
 
+    (matcho/match
+     (sut/parse-name "cs.system1.yaml")
+      {:to [:codesystems :system1]
+       :format :yaml})
 
-    )
+    (matcho/match
+     (sut/parse-name "cs.system2.csv")
+      {:to [:codesystems :system2 :concepts]
+       :format :csv}))
 
   (def project (sut/load-project project-path))
 
@@ -75,17 +82,17 @@
   (io/file project-path "igpop-fhir-4.0.0")
 
   (comment (matcho/match
-           (:base project)
-           nil))
+            (:base project)
+             nil))
 
   (matcho/match
    (:source project)
-   {:Patient {:basic {:elements {}}}})
+    {:Patient {:basic {:elements {}}}})
 
   (matcho/match
    (:Patient (:profiles project))
-   {:lab-report {}
-    :basic {}})
+    {:lab-report {}
+     :basic {}})
 
   (second (get-in project [:profiles :Patient :basic :elements]))
 
@@ -98,9 +105,8 @@
 
   (matcho/match
    (get-in project [:valuesets :dict1])
-   {:concepts [{:code "male" :display "Male"}]})
+    {:concepts [{:code "male" :display "Male"}]})
 
   (is (not (nil? (get-in project [:docs :pages :welcome]))))
   (is (not (nil? (get-in project [:docs :menu]))))
-  (get-in project [:docs :pages])
-)
+  (get-in project [:docs :pages]))

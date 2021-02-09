@@ -166,7 +166,8 @@
    [:div#top-nav
     [:a {:href (u/generate-docs-href ctx)} "Docs"]
     [:a {:href (u/generate-profiles-href ctx)} "Profiles"]
-    [:a {:href (u/generate-valueset-href ctx )} "ValueSets"]
+    [:a {:href (u/generate-valueset-href ctx)} "ValueSets"]
+    [:a {:href (u/generate-codesystem-href ctx)} "CodeSystem"]
     [:a {:href (u/generate-fhir-package-href ctx)} "Package"]]])
 
 

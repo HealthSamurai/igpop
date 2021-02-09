@@ -1,5 +1,7 @@
 target
 .cpcache
+.idea
+.calva
 pom.xml
 pom.xml
 .nrepl-port
@@ -9,4 +11,6 @@ src/igpop/test.clj
 show-project.json
 plain-igpop.json
 profiles-others.json
-
+.clj-kondo/*
+.lsp/*
+.DS_Store

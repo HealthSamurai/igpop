@@ -56,6 +56,14 @@
                         (href ctx "valuesets"))]
     valueset-link))
 
+(defn generate-codesystem-href [ctx]
+  (let [codesystems (:codesystems ctx)
+        codesystem-instance (first (keys (sort-by first codesystems)))
+        codesystem-link (if codesystem-instance
+                        (href ctx "codesystems" (str (name codesystem-instance) ".html"))
+                        (href ctx "codesystems"))]
+    codesystem-link))
+
 (defn generate-package-href [ctx]
   (let [manifest (npm-manifest ctx)]
     (href ctx (:name manifest) {:format "zip"})))

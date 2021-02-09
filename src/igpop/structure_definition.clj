@@ -14,6 +14,17 @@
    :purpose :copyright :keyword :fhirVersion :mapping :kind :abstract :context
    :contextInvariant :type :baseDefinition :derivation :snapshot :differential])
 
+(def valueset-resource-root-keys
+  [:resourceType :id :url :identifier :version :name :title :status :experimental :date :publisher
+   :contact :description :useContext :jurisdiction :immutable :purpose :copyright
+   :compose :expansion])
+
+(def codesystem-resource-root-keys
+  [:resourceType :id :url :identifier :version :name :title :status :experimental
+   :date :publisher :contact :description :useContext :jurisdiction :purpose
+   :copyright :caseSensitive :valueSet :hierarchyMeaning :compositional
+   :versionNeeded :content :supplements :count :filter :property :concept])
+
 (def restricted-keys-in-elements
   "Keys that cannot be in differential.elements"
   (disj (set resource-root-keys) :type :short))
@@ -62,20 +73,42 @@
 
 (defn make-profile-url [manifest profile-type profile-id]
   (format "%s/StructureDefinition/%s%s%s"
-          (:url manifest) (or (:prefix manifest) "") (name profile-type)
+          (:url manifest) (:prefix manifest "") (name profile-type)
           (if (= (name profile-id) "basic") "" (str "-" (name profile-id)))))
 
 (defn make-extension-url [manifest profile-type extension-id]
   (format "%s/StructureDefinition/%s%s%s"
-          (:url manifest) (or (:prefix manifest) "") (name profile-type)
+          (:url manifest) (:prefix manifest "") (name profile-type)
           (if (= (name extension-id) "basic") "" (str "-" (name extension-id)))))
 
 (defn make-valueset-url [manifest value-id]
   (format "%s/ValueSet/%s%s"
-          (:url manifest) (:prefix manifest) (name value-id)))
+          (:url manifest) (:prefix manifest "") (name value-id)))
+
+(defn make-codesystem-url [manifest value-id]
+  (format "%s/CodeSystem/%s%s"
+          (:url manifest) (:prefix manifest "") (name value-id)))
+
 
 (defn make-valueset-id [prefix value-id]
   (str (or prefix "") (name value-id)))
+
+(defn make-valueset-title [valueset-id]
+  (str/replace (name valueset-id) "-" " "))
+
+(defn make-valueset-name [valueset-id]
+  (->> (str/split (name valueset-id) #"-")
+       (map capitalize)
+       (apply str)))
+
+(defn make-codesystem-id [prefix system-id]
+  (make-valueset-id prefix system-id))
+
+(defn make-codesystem-title [codesystem-id]
+  (make-valueset-title codesystem-id))
+
+(defn make-codesystem-name [codesystem-id]
+  (make-valueset-name codesystem-id))
 
 
 ;; (format-url (str (:url manifest) "/StructureDefinition/%s-%s")
@@ -382,9 +415,24 @@
 (def resource-root-keys-sort-order
   (zipmap resource-root-keys (range)))
 
+(def valueset-resource-root-keys-sort-order
+  (zipmap valueset-resource-root-keys (range)))
+
+(def codesystem-resource-root-keys-sort-order
+  (zipmap codesystem-resource-root-keys (range)))
+
 (defn resource-keys-comparator [x y]
   (compare (resource-root-keys-sort-order x)
            (resource-root-keys-sort-order y)))
+
+(defn valueset-resource-keys-comparator [x y]
+  (compare (valueset-resource-root-keys-sort-order x)
+           (valueset-resource-root-keys-sort-order y)))
+
+(defn codesystem-resource-keys-comparator [x y]
+  (compare (codesystem-resource-root-keys-sort-order x)
+           (codesystem-resource-root-keys-sort-order y)))
+
 
 (defn extension->structure-definition
   "Transforms IgPop extension to a structure definition.
@@ -500,21 +548,40 @@
          (into []))))
 
 (defn ig-vs->valueset
-  "Trnsforms IgPop valueset to a canonical valuest."
+  "Transform IgPop valueset to a canonical valuest."
   [manifest [id body]]
   (merge
-   (sorted-map-by resource-keys-comparator)
+   (sorted-map-by valueset-resource-keys-comparator)
    ;; get from manifest
    (select-keys manifest [:publisher]) ;; :date injected below
    {:resourceType "ValueSet"
-    :id (make-valueset-id (:prefix manifest) id)
-    :url  (make-valueset-url manifest id)
-    :name (->> (str/split (name id) #"-") (map capitalize) (apply str))
-    :title (str/replace (name id) "-" " ")
-    :status (:status body "active")
-    :date (or (:date body) (:date manifest) (java.util.Date.))
+    :id      (make-valueset-id (:prefix manifest) id)
+    :url     (make-valueset-url manifest id)
+    :name    (make-valueset-name id)
+    :title   (make-valueset-title id)
+    :status  (:status body "active")
+    :date    (or (:date body) (:date manifest) (java.util.Date.))
     :compose {:include [(merge (select-keys body [:system])
                                {:concept (:concepts body)})]}}))
+
+
+(defn ig-cs->codesystem
+  "Transform IgPop CodeSystem to a canonical CodeSystem."
+  [manifest [id body]]
+  (merge
+   (sorted-map-by codesystem-resource-keys-comparator)
+   ;; get from manifest
+   (select-keys manifest [:publisher]) ;; :date injected below
+   {:resourceType "CodeSystem"
+    :id      (make-codesystem-id (:prefix manifest) id)
+    :url     (make-codesystem-url manifest id)
+    :name    (make-codesystem-name id)
+    :title   (make-codesystem-title id)
+    :status  (:status body "active")
+    :date    (or (:date body) (:date manifest) (java.util.Date.))
+    :content (:content body "complete")
+    :concept (:concepts body)}))
+
 
 (defn build-sd-id-idx
   "Returns map of `{sd-id igpop-path}` where:
@@ -534,35 +601,56 @@
 
 ;; (build-sd-id-idx ctx)
 
-
 (defn build-vs-id-idx
   "Returns map of `{vs-id valueset-path}` where:
-  * `vd-id` - generated value-set structure-definition id
+  * `vs-id` - generated value-set structure-definition id
   * `valueset-path`  - path of valueset in `[ctx :valuesets]`"
   [ctx]
   (->> (for [ig-vs (keys (:valuesets ctx))]
          [(make-valueset-id (:prefix ctx) ig-vs) [ig-vs]])
        (into {})))
 
+(defn build-cs-id-idx
+  "Returns map of `{cs-id codesystem-path}` where:
+  * `cs-id` - generated CodeSystem structure-definition id
+  * `codesystem-path`  - path of codesystem in `[ctx :codesystems]`"
+  [ctx]
+  (->> (for [ig-cs (keys (:codesystems ctx))]
+         [(make-codesystem-id (:prefix ctx) ig-cs) [ig-cs]])
+       (into {})))
+
+
+(defn ctx-build-sd-indexes [ctx]
+  (assoc ctx
+         :path-by-sd-id (build-sd-id-idx ctx)
+         :path-by-vs-id (build-vs-id-idx ctx)
+         :path-by-cs-id (build-cs-id-idx ctx)))
+
 (defn project->structure-definitions
   "Generate structure-definitions (profiles/valuesets/extensions) from project context"
-  [{:keys [valuesets diff-profiles snapshot] :as ctx}]
+  [{:keys [valuesets codesystems diff-profiles snapshot] :as ctx}]
   (let [vsets    (for [ig-vs valuesets]
                    (ig-vs->valueset ctx ig-vs))
+        csys     (for [ig-cs codesystems]
+                   (ig-cs->codesystem ctx ig-cs))
         profiles (for [[type profiles-by-id] diff-profiles
                        [id diff] profiles-by-id
                        struct-def (ig-profile->structure-definitions ctx type id diff (get-in snapshot [type id]))]
                    struct-def)]
-    (concat vsets profiles)))
+    (concat vsets csys profiles)))
 
 (defn project->bundle
   "Transforms IgPop project to a bundle of structure definitions."
   [ctx]
-  (let [{:keys [valuesets diff-profiles snapshot]} ctx
+  (let [{:keys [valuesets codesystems diff-profiles snapshot]} ctx
         vsets    (for [ig-vs valuesets
                        :let [vset (ig-vs->valueset ctx ig-vs)]]
                    {:fullUrl (str (:base-url ctx) "/" (:id vset))
                     :resource vset})
+        csys    (for [ig-cs codesystems
+                       :let [cs (ig-cs->codesystem ctx ig-cs)]]
+                   {:fullUrl (str (:base-url ctx) "/" (:id cs))
+                    :resource cs})
         profiles (for [[type profiles-by-id] diff-profiles
                        [id diff] profiles-by-id
                        struct-def (ig-profile->structure-definitions ctx type id diff (get-in snapshot [type id]))]
@@ -572,7 +660,7 @@
                   :id "resources"
                   :meta {:lastUpdated (java.util.Date.)}
                   :type "collection"}]
-    (->> (concat vsets profiles)
+    (->> (concat vsets csys profiles)
          (into [])
          (assoc result :entry))))
 
@@ -622,7 +710,6 @@
   (require 'clj-yaml.core)
   (def test-base (clj-yaml.core/parse-string (slurp "./npm/fhir-4.0.0/src/AdverseEvent.yaml")))
   (def test-profile (clj-yaml.core/parse-string (slurp "../ig-ae/src/AdverseEvent.yaml")))
-  (def bad-result-data (json/parse-string (slurp "my_tasks/hl7.fhir.ae-AdverseEvent-AZEmployeeReporter.json")))
 
 
   ; -------------------------------------
