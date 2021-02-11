@@ -28,6 +28,9 @@
    :maintainers  (or maintainers []),
    :license      (or licence "CC0-1.0")))
 
+(defn make-resource-file-name
+  [{:keys [resourceType id]}]
+  (str resourceType "-" id ".json"))
 
 (defn ->index-json
   "creates `.index.json` content from structure-definitions"
@@ -36,8 +39,8 @@
   ;; //:index-version a fixed number that identifies the version of this file; tools should rebuild the .index.json file if they encounter an unrecognised number
   {:index-version 1
    :files
-   (for [{:keys [id resourceType url version kind type]} struct-defs]
-     (cond-> {:filename     (str id ".json")
+   (for [{:keys [id resourceType url version kind type] :as sd} struct-defs]
+     (cond-> {:filename     (make-resource-file-name sd)
               :resourceType resourceType
               :id           id
               :url          url}
@@ -70,7 +73,7 @@
   [ig-ctx resources]
   (->> (concat [["package/package.json" (->package-json ig-ctx)]
                 ["package/.index.json" (->index-json resources)]]
-               (for [sd resources] [(str "package/" (:id sd) ".json") sd]))
+               (for [sd resources] [(str "package/" (make-resource-file-name sd)) sd]))
        (map (fn [[file content]]
               [file (json/generate-string content {:pretty true})]))))
 
