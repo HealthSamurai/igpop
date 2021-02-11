@@ -70,13 +70,23 @@
           :url "http://example.com/SructureDefintions/AdverseEvent"
           :kind "resource" :version "0.0.1" :type "AdverseEvent"}])
         {:files
-         [{:filename "AdverseEvent.json"
-           :resourceType "StructureDefinition"
+         [{:resourceType "StructureDefinition"
            :id "AdverseEvent"
            :url "http://example.com/SructureDefintions/AdverseEvent"
            :version "0.0.1"
            :kind "resource"
            :type "AdverseEvent"}]}))
+
+    (testing "create correct files names according to resourcetype"
+      (matcho/match
+       (fp/->index-json
+        [{:id "AdverseEvent" :resourceType "StructureDefinition"}
+         {:id "condition-outcome" :resourceType "ValueSet"}
+         {:id "Condition-outcome" :resourceType "CodeSystem"}])
+        {:files
+         [{:filename "StructureDefinition-AdverseEvent.json"}
+          {:filename "ValueSet-condition-outcome.json"}
+          {:filename "CodeSystem-Condition-outcome.json"}]}))
 
     (testing "not create :version,:kind,:type properties if they are not exists in resource"
       (is (= [:filename :resourceType :id :url]
