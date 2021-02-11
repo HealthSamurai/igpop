@@ -572,14 +572,18 @@
    (sorted-map-by codesystem-resource-keys-comparator)
    ;; get from manifest
    (select-keys manifest [:publisher]) ;; :date injected below
+   ;; default values
    {:resourceType "CodeSystem"
-    :id      (make-codesystem-id (:prefix manifest) id)
-    :url     (make-codesystem-url manifest id)
     :name    (make-codesystem-name id)
     :title   (make-codesystem-title id)
-    :status  (:status body "active")
     :date    (or (:date body) (:date manifest) (java.util.Date.))
-    :content (:content body "complete")
+    :status  "active"
+    :content "complete"}
+   ;; -- replaced by user values
+   (select-keys body codesystem-resource-root-keys)
+   ;; -- pinned values
+   {:id  (make-codesystem-id (:prefix manifest) id)
+    :url (make-codesystem-url manifest id)
     :concept (:concepts body)}))
 
 
