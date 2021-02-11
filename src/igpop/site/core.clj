@@ -260,6 +260,11 @@
     (doseq [[id _] (get-in ctx [:valuesets])]
       (dump-page ctx home ["valuesets" (name id) {:format "html"}]))
 
+    (.mkdir (io/file build-dir "codesystems"))
+    (dump-page ctx home ["codesystems"] :index)
+    (doseq [[id _] (get-in ctx [:codesystems])]
+      (dump-page ctx home ["codesystems" (name id) {:format "html"}]))
+
     (.mkdir (io/file build-dir "StructureDefinition"))
     (doseq [sd-id (keys (:path-by-sd-id ctx))]
       (dump-page ctx home ["StructureDefinition" sd-id])
