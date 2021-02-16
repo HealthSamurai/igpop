@@ -1,5 +1,5 @@
 {:paths ["src" "resources"]
- :deps  {org.clojure/clojure            {:mvn/version "1.10.1"}
+ :deps  {org.clojure/clojure            {:mvn/version "1.10.2"}
          clj-commons/clj-yaml           {:mvn/version "0.7.0"}
          cheshire/cheshire              {:mvn/version "5.8.1"}
          com.sun.xml.bind/jaxb-core     {:mvn/version "2.3.0.1"}
@@ -25,14 +25,14 @@
  :aliases
  {:nrepl      {:extra-paths ["env/dev" "test"]
                :extra-deps  {spieden/spyscope              {:mvn/version "0.1.7"} ;; newer version without bugs (fork)
-                             org.clojure/clojure           {:mvn/version "1.10.0"}
-                             org.clojure/tools.nrepl       {:mvn/version "0.2.13"}
-                             cider/cider-nrepl             {:mvn/version "0.25.2"}
-                             refactor-nrepl/refactor-nrepl {:mvn/version "2.4.0"}}
+                             org.clojure/clojure           {:mvn/version "1.10.2"}
+                             nrepl/nrepl                   {:mvn/version "0.8.3"}
+                             cider/cider-nrepl             {:mvn/version "0.25.5"}
+                             refactor-nrepl/refactor-nrepl {:mvn/version "2.5.0"}}
                :jvm-opts    ^:replace ["-XX:-OmitStackTraceInFastThrow"]}
 
   :test         {:extra-paths ["test"]
-                 :extra-deps {healthsamurai/matcho           {:mvn/version "0.3.3"}}}
+                 :extra-deps {healthsamurai/matcho         {:mvn/version "0.3.3"}}}
 
   :runner       {:extra-deps {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner"
                                                          :sha     "209b64504cb3bd3b99ecfec7937b358a879f55c1"}}

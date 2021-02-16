@@ -21,3 +21,6 @@ build:	jar
 
 test:
 	clojure -A:test:runner
+
+publish-npm:
+	cd npm/igpop && npm publish
