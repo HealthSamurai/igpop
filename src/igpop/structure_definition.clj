@@ -394,7 +394,7 @@
 (defn enrich-simple-extension
   "When we met simple(not nested) extension property - we need to generate
   additional elements for it in Extension SD file"
-  [manifest fixedUri diff]
+  [_manifest fixedUri diff]
   (merge
    {:elements {:extension {:minItems 0 :maxItems 0}
                :url {:minItems 1 :maxItems 1 :fixedUri fixedUri}

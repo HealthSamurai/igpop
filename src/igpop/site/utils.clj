@@ -13,6 +13,10 @@
               (str "/" (str/join "/" pth) fmt))]
     res))
 
+
+(defn to-local-href [ctx url]
+  (str/replace url (:url ctx) ""))
+
 (defn p [v k] (prn v) v)
 
 (defn generate-docs-href [ctx]
