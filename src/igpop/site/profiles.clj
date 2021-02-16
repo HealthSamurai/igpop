@@ -4,6 +4,7 @@
    [clojure.string :as str]
    [garden.core :as gc]
    [clj-yaml.core]
+   [igpop.structure-definition :as sd]
    [igpop.site.utils :as u]))
 
 (defn read-yaml [pth]
@@ -207,8 +208,8 @@
    "boolean" [:span.fa.fa-toggle-on]
    "Money" [:span.fa.fa-dollar-sign]
    "base64Binary" [:span.fa.fa-file-archive]
-   "integer" "Z" 
-   "positiveInteger" "Z" 
+   "integer" "Z"
+   "positiveInteger" "Z"
    "Narrative" [:span.fa.fa-pen]
    "string" [:span.fa.fa-pen]
    "markdown" [:span.fa.fa-pen]
@@ -252,17 +253,17 @@
     [:span.tp-link.coll (str " [" (or (:minItems el) 0) ".." (or (:maxItems el) "*") "]")]))
 
 (defn has-children? [el]
-  (or
-   (:elements el)
-   (:union el
-   (:slices el))))
+  (or (:elements el)
+      (:union el)
+      (:slices el)))
+
+
+(defn build-path [dissoc-path]
+  (interpose :elements (map keyword (str/split (name dissoc-path) #"\."))))
 
 (defn put-values [els vals mode]
   (reduce-kv (fn [acc k v]
-               (into acc (let [path (butlast
-                                     (reduce (fn [acc pth]
-                                               (conj acc pth :elements))
-                                             [] (map keyword (str/split (name k) #"\."))))]
+               (into acc (let [path (build-path k)]
                            (if (get-in els path)
                              (let [type-instead-of-union? (and (= mode :union)
                                                                (instance? clojure.lang.LazySeq v)
@@ -286,9 +287,6 @@
             (assoc m k {}))))
       m)
     (dissoc m k)))
-
-(defn build-path [dissoc-path]
-  (map keyword (str/split (str/replace (name dissoc-path) #"\." " elements ") #" ")))
 
 (defn get-children [nm el]
   (letfn [(constant-match-rewrite [el v]
@@ -340,27 +338,27 @@
     [:div.el-title nm (required-span el) " " (type-span el) (collection-span el)]
     [:div.desc
      [:div
-     (when-let [d (:description el)]
-       [:span d " "])
-     (when-let [vs (:valueset el)]
-       (let [href (or (:url vs)
-                      (u/href ctx "valuesets" (str (:id vs) ".html")))]
-         [:span
-         [:a.vs {:href href}
-          [:span.fa.fa-tag]
-          " "
-          (or (:url vs) (:id vs))]
-         (if-let [s (:strength vs)]
-           [:b {:style "font-size: 12px"} "&nbsp" s]
-           [:b {:style "font-size: 12px"} "&nbspExtensible"])]))
-     (when-let [url (:url el)]
-       [:div [:b "URL:&nbsp"] [:a.vs {:href url} url] " "])
-     (when-let [constant (:constant el)]
-       [:div [:b "Constant:&nbsp"] constant " "])
-     (when-let [match (:match el)]
-       [:div [:b "Match:&nbsp"] match " "])
-     (when-let [disabled (:disabled el)]
-       [:div [:b "Disabled"] " "])]]]])
+      (when-let [d (:description el)]
+        [:span d " "])
+      (when-let [vs (:valueset el)]
+        (let [href (or (:url vs)
+                       (u/href ctx "valuesets" (str (:id vs) ".html")))]
+          [:span
+           [:a.vs {:href href}
+            [:span.fa.fa-tag]
+            " "
+            (or (:url vs) (:id vs))]
+           (if-let [s (:strength vs)]
+             [:b {:style "font-size: 12px"} "&nbsp" s]
+             [:b {:style "font-size: 12px"} "&nbspExtensible"])]))
+      (when-let [url (:url el)]
+        [:div [:b "URL:&nbsp"] [:a.vs {:href (u/to-local-href ctx url)} url] " "])
+      (when-let [constant (:constant el)]
+        [:div [:b "Constant:&nbsp"] constant " "])
+      (when-let [match (:match el)]
+        [:div [:b "Match:&nbsp"] match " "])
+      (when-let [disabled (:disabled el)]
+        [:div [:b "Disabled"] " "])]]]])
 
 (defn new-elements [ctx elements]
   (->> elements
@@ -384,6 +382,17 @@
                                    {:display (name n)
                                     :href (u/href ctx "profiles" (name rt)  (name n) {:format "html"})})))}))))
 
+;; TODO refactor this stuff. Move somewhere. Remove sd namespace dependency
+(defn enrich-extensions-with-sd-urls [ctx rt profile]
+  (sd/reduce-profile
+   (fn [acc path _]
+     (if (sd/path-extension? path)
+       (assoc-in acc (conj path :url)
+                 (sd/make-extension-url ctx rt (->> path sd/path->sd-path last)))
+       acc))
+   profile
+   profile))
+
 (defn profile [ctx {{rt :resource-type nm :profile} :route-params :as req}]
   ;; (clojure.pprint/pprint ctx)
   (let [profile (get-in ctx [:profiles (keyword rt) (keyword nm)])
@@ -391,53 +400,54 @@
         snapshot (get-in ctx [:snapshot (keyword rt) (keyword nm)])]
     {:status 200
      :body (views/layout ctx
-            style-tag
-            (views/menu (profiles-to-menu ctx) req)
-            [:div#content
-             ;;[:h1 rt " " [:span.sub (str/lower-case rt) "-" nm]]
-             [:h1 rt " " [:span.sub (str/lower-case rt) "-" nm (when (not (:no-edit (:flags ctx))) [:a.refbtn {:onclick "openEditor()"} "edit"])]]
-             [:div.summary (:description profile)]
-             [:hr]
-             [:div.navbar
-              [:button#profile-tab.navbutton.tabActive {:onClick "openTab('profile')"}
-               [:div.navtext "Profiles"]]
-              [:button#snapshot-tab.navbutton {:onClick "openTab('snapshot')"}
-               [:div.navtext "Snapshot"]]
-              [:button#examples-tab.navbutton {:onClick "openTab('examples')"}
-               [:div.navtext "Examples"]]
-              [:button#resource-tab.navbutton {:onClick "openTab('resource')"}
-               [:div.navtext "Resource Content"]]]
-             [:div#profile.treecontainer
-              [:br]
-              [:h3 "Profile Differential"]
-              [:br]
-              [:div.profile
-               [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
-               (new-elements ctx (:elements profile))]]
-             [:div#snapshot.treecontainer {:style "display: none;"}
-              [:br]
-              [:h3 "Snapshot"]
-              [:br]
-              [:div.profile
-               [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
-               (new-elements ctx (:elements snapshot))]]
-             [:div#examples.treecontainer {:style "display: none;"}
-              [:br]
-              [:h3 "Examples"]
-              [:br]
-              (for [[id example] (:examples profile)]
-                [:div
-                 [:h5 id]
-                 [:pre.example [:code (clj-yaml.core/generate-string example)]]])]
-             [:div#resource.treecontainer {:style "display:none"}
-              [:br]
-              [:h3 "Resource Content"]
-              [:div.summary (:description resource)]
-              [:hr]
-              [:br]
-              [:div.profile
-               [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
-               (new-elements ctx (:elements resource))] ]])}))
+                         style-tag
+                         (views/menu (profiles-to-menu ctx) req)
+                         [:div#content
+                          ;;[:h1 rt " " [:span.sub (str/lower-case rt) "-" nm]]
+                          [:h1 rt " " [:span.sub (str/lower-case rt) "-" nm
+                                       (when (not (:no-edit (:flags ctx))) [:a.refbtn {:onclick "openEditor()"} "edit"])]]
+                          [:div.summary (:description profile)]
+                          [:hr]
+                          [:div.navbar
+                           [:button#profile-tab.navbutton.tabActive {:onClick "openTab('profile')"}
+                            [:div.navtext "Profiles"]]
+                           [:button#snapshot-tab.navbutton {:onClick "openTab('snapshot')"}
+                            [:div.navtext "Snapshot"]]
+                           [:button#examples-tab.navbutton {:onClick "openTab('examples')"}
+                            [:div.navtext "Examples"]]
+                           [:button#resource-tab.navbutton {:onClick "openTab('resource')"}
+                            [:div.navtext "Resource Content"]]]
+                          [:div#profile.treecontainer
+                           [:br]
+                           [:h3 "Profile Differential"]
+                           [:br]
+                           [:div.profile
+                            [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
+                            (new-elements ctx (:elements (enrich-extensions-with-sd-urls ctx rt profile)))]]
+                          [:div#snapshot.treecontainer {:style "display: none;"}
+                           [:br]
+                           [:h3 "Snapshot"]
+                           [:br]
+                           [:div.profile
+                            [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
+                            (new-elements ctx (:elements (enrich-extensions-with-sd-urls ctx rt snapshot)))]]
+                          [:div#examples.treecontainer {:style "display: none;"}
+                           [:br]
+                           [:h3 "Examples"]
+                           [:br]
+                           (for [[id example] (:examples profile)]
+                             [:div
+                              [:h5 id]
+                              [:pre.example [:code (clj-yaml.core/generate-string example)]]])]
+                          [:div#resource.treecontainer {:style "display:none"}
+                           [:br]
+                           [:h3 "Resource Content"]
+                           [:div.summary (:description resource)]
+                           [:hr]
+                           [:br]
+                           [:div.profile
+                            [:h5 [:div.tp.profile [:span.fa.fa-folder]] rt]
+                            (new-elements ctx (:elements resource))] ]])}))
 
 (defn profile-link [ctx rt nm pr]
   [:a.db-item {:href (u/href ctx "profiles" (name rt) (name nm) {:format "html"})}
