@@ -15,7 +15,9 @@
 
 
 (defn to-local-href [ctx url]
-  (str/replace url (:url ctx) ""))
+  (if (:base-url ctx)
+    (str/replace url (:url ctx) (:base-url ctx))
+    (str/replace url (:url ctx) "")))
 
 (defn p [v k] (prn v) v)
 
