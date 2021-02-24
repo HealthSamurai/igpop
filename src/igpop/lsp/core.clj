@@ -1,14 +1,13 @@
 (ns igpop.lsp.core
-  (:require
-   [igpop.parser]
-   [igpop.loader]
-   [zprint.core]
-   [igpop.lsp.suggest]
-   [json-rpc.core :refer [proc]]
-   [clojure.java.io :as io]
-   [igpop.lsp.validation]
-   [zprint.core :as zp]))
-
+  (:require [clojure.java.io :as io]
+            igpop.loader
+            igpop.lsp.suggest
+            igpop.lsp.validation
+            igpop.parser
+            [json-rpc.core :refer [proc]]
+            [zprint.core :as zp])
+  (:import java.nio.channels.AsynchronousChannelGroup
+           [java.util.concurrent Executors TimeUnit]))
 
 (defmethod
   proc
@@ -199,6 +198,14 @@
 ;;   [ctx msg]
 ;;   {:result {}})
 
+(defn start [^String home ^Integer port]
+  (let [group (AsynchronousChannelGroup/withThreadPool (Executors/newSingleThreadExecutor))]
+
+    (json-rpc.core/start (atom {:type :tcp
+                                :port port
+                                :manifest (igpop.loader/load-project home)})
+                         group)
+    (.awaitTermination group (Long/MAX_VALUE) (TimeUnit/SECONDS))))
 
 
 
@@ -234,6 +241,3 @@
   (json-rpc.core/stop ctx)
 
   )
-
-
-

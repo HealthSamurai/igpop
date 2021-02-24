@@ -1,17 +1,10 @@
 (ns json-rpc.tcp
-  (:require [promesa.core :as p]
-            [clojure.string :as str]
-            [cheshire.core])
-  (:import
-   [java.nio.channels
-    AsynchronousServerSocketChannel
-    AsynchronousSocketChannel
-    SocketChannel
-    CompletionHandler
-    AsynchronousCloseException]
-   [java.net InetSocketAddress]
-   [java.nio.charset StandardCharsets]
-   [java.nio ByteBuffer]))
+  (:require cheshire.core
+            [clojure.string :as str])
+  (:import java.net.InetSocketAddress
+           java.nio.ByteBuffer
+           [java.nio.channels AsynchronousCloseException AsynchronousServerSocketChannel AsynchronousSocketChannel CompletionHandler SocketChannel]
+           java.nio.charset.StandardCharsets))
 
 (set! *warn-on-reflection* true)
 
@@ -131,17 +124,18 @@
       (.accept ^AsynchronousServerSocketChannel listener nil  this)
       (read-channel (:handler @ctx) sc conns))))
 
-(defn start [ctx]
-  (let [port (:port @ctx)
+(defn start
+  [ctx group]
+  (let [{port :port} @ctx
         _ (assert port (str ":port required, got " @ctx))
-        assc (AsynchronousServerSocketChannel/open)
+        assc (AsynchronousServerSocketChannel/open group)
         sa  (InetSocketAddress. port)
         listener (.bind assc sa)
         conns (atom #{})]
     (println "tcp server started at  " port)
     (.accept listener nil (handler listener ctx conns))
     (swap! ctx (fn [ctx]
-                 (-> 
+                 (->
                   (update ctx :lsp assoc :sock assc :conns conns)
                   (assoc :_sefl ctx)))))
   ctx)
@@ -166,4 +160,3 @@
   (def ctx (start (atom {:port 7345 :handler println})))
 
   )
-
