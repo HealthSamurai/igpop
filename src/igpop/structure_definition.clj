@@ -643,6 +643,11 @@
                    struct-def)]
     (concat vsets csys profiles)))
 
+(defn ctx-build-structure-definitions [ctx]
+  (let [sds (project->structure-definitions ctx)]
+    (assoc ctx :structure-definitions
+           (zipmap (map :id sds) sds))))
+
 (defn project->bundle
   "Transforms IgPop project to a bundle of structure definitions."
   [ctx]

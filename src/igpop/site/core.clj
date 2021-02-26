@@ -191,6 +191,7 @@
    (do
      (igpop.loader/reload ctx)
      (swap! ctx sd/ctx-build-sd-indexes)
+     (swap! ctx sd/ctx-build-structure-definitions) ;; REVIEW: is that good thing to preserve all structure definitions IN_MEMORY ?
      (*dispatch @ctx req))))
 
 (defn mk-handler [home]
@@ -242,7 +243,9 @@
   (let [ctx (-> (igpop.loader/load-project home)
                 (assoc :base-url base-url)
                 (assoc-in [:flags :no-edit] true)
-                (sd/ctx-build-sd-indexes))
+                (sd/ctx-build-sd-indexes)
+                (sd/ctx-build-structure-definitions) ;; REVIEW: is that good thing to preserve all structure definitions IN_MEMORY ?
+                )
         build-dir (io/file home "build")]
     (.mkdir build-dir)
 
