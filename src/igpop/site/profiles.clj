@@ -352,7 +352,7 @@
              [:b {:style "font-size: 12px"} "&nbsp" s]
              [:b {:style "font-size: 12px"} "&nbspExtensible"])]))
       (when-let [url (:url el)]
-        [:div [:b "URL:&nbsp"] [:a.vs {:href (u/to-local-href ctx url)} url] " "])
+        [:div [:b "URL:&nbsp"] [:a.vs {:href (u/to-local-href ctx (str url ".html"))} url] " "])
       (when-let [constant (:constant el)]
         [:div [:b "Constant:&nbsp"] constant " "])
       (when-let [match (:match el)]

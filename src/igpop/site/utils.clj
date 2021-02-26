@@ -2,22 +2,22 @@
   (:require [clojure.string :as str]
             [igpop.structure-definition :refer [npm-manifest]]))
 
-(defn href [ctx & pth]
+(defn href
+  [{:keys [base-url] :as ctx} & pth]
   (let [[pth opts] (if (map? (last pth))
-                     [(butlast pth) (last pth) ]
+                     [(butlast pth) (last pth)]
                      [pth {}])
         fmt (when-let [fmt (:format opts)]
               (str "." fmt))
-        res (if-let [bu (:base-url ctx)]
-              (str (str/join "/" (into [bu] pth)) fmt)
+        res (if base-url
+              (str (str/join "/" (into [base-url] pth)) fmt)
               (str "/" (str/join "/" pth) fmt))]
     res))
 
+;; (href {:base-url "HELLO"} "StructureDefintions" "person" {:format "html"})
 
-(defn to-local-href [ctx url]
-  (if (:base-url ctx)
-    (str/replace url (:url ctx) (:base-url ctx))
-    (str/replace url (:url ctx) "")))
+(defn to-local-href [ctx global-href]
+  (str/replace global-href (:url ctx) (:base-url ctx "")))
 
 (defn p [v k] (prn v) v)
 
@@ -61,6 +61,15 @@
                         (href ctx "valuesets" (str (name valueset-instance) ".html"))
                         (href ctx "valuesets"))]
     valueset-link))
+
+(defn generate-structure-definition-href [ctx]
+  (let [structure-definitions (:structure-definitions ctx)
+        structure-definition-instance (first (keys (sort-by first structure-definitions)))
+        structure-definition-link (if structure-definition-instance
+                          (href ctx "StructureDefinition" (str (name structure-definition-instance) ".html"))
+                          (href ctx "StructureDefinition"))]
+    structure-definition-link))
+
 
 (defn generate-codesystem-href [ctx]
   (let [codesystems (:codesystems ctx)

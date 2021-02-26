@@ -168,6 +168,7 @@
     [:a {:href (u/generate-profiles-href ctx)} "Profiles"]
     [:a {:href (u/generate-valueset-href ctx)} "ValueSets"]
     [:a {:href (u/generate-codesystem-href ctx)} "CodeSystems"]
+    [:a {:href (u/generate-structure-definition-href ctx)} "StructureDefinitions"]
     [:a {:href (u/generate-fhir-package-href ctx)} "Package"]]])
 
 
