@@ -303,6 +303,7 @@
 
 (defn structure-definitions-to-menu [{resources :structure-definitions :as ctx}]
   (->> resources
+       (filter #(-> % val :resourceType (= "StructureDefinition")))
        keys
        (map (fn [id]
               {:display id
