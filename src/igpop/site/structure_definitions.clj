@@ -175,134 +175,11 @@
 
 (def style-tag [:style (gc/css styles)])
 
-;; (def type-symbols
-;;   {"Reference" [:span.fa.fa-arrow-right]
-;;    "date" [:span.fa.fa-calendar-day]
-;;    "dateTime" [:span.fa.fa-clock]
-;;    "Period" [:span.fa.fa-clock]
-;;    "instant" [:span.fa.fa-clock]
-;;    "Range" [:span.fa.fa-arrows-alt-h]
-;;    "Distance" [:span.fa.fa-arrows-alt-h]
-;;    "SampledData" [:span.fa.fa-wave-square]
-;;    "time" [:span.fa.fa-clock]
-;;    "Duration" [:span.fa.fa-clock]
-;;    "Timing" [:span.fa.fa-calendar-check]
-;;    "Address" [:span.fa.fa-home]
-;;    "CodeableConcept" [:span.fa.fa-tags]
-;;    "Coding" [:span.fa.fa-tag]
-;;    "code" [:span.fa.fa-tag]
-;;    "Identifier" [:span.fa.fa-fingerprint]
-;;    "id" [:span.fa.fa-fingerprint]
-;;    "uri" [:span.fa.fa-link]
-;;    "canonical" [:span.fa.fa-link]
-;;    "Signature" [:span.fa.fa-signature]
-;;    "Attachment" [:span.fa.fa-file-download]
-;;    "url" [:span.fa.fa-link]
-;;    "Dosage" [:span.fa.fa-pills]
-;;    "oid" [:span.fa.fa-fingerprint]
-;;    "uuid" [:span.fa.fa-fingerprint]
-;;    "Quantity" [:span.fa.fa-tachometer-alt]
-;;    "Ratio" [:span.fa.fa-balance-scale]
-;;    "HumanName" [:span.fa.fa-user]
-;;    "Meta" [:span.fa.fa-info-circle]
-;;    "boolean" [:span.fa.fa-toggle-on]
-;;    "Money" [:span.fa.fa-dollar-sign]
-;;    "base64Binary" [:span.fa.fa-file-archive]
-;;    "integer" "Z"
-;;    "positiveInteger" "Z"
-;;    "Narrative" [:span.fa.fa-pen]
-;;    "string" [:span.fa.fa-pen]
-;;    "markdown" [:span.fa.fa-pen]
-;;    "Annotation" [:span.fa.fa-pen]
-;;    "ContactPoint" [:span.fa.fa-phone]
-;;    "Extension" [:span.fa.fa-align-left]
-;;    "Complex" [:span.fa.fa-asterisk]})
 
-;; (defn type-icon [nm el]
-;;   (if-let [tp (:type el)]
-;;     [:span.tp {:class
-;;                (if (not-empty tp)
-;;                  (str tp (when (Character/isUpperCase (first tp)) " complex"))
-;;                  (str tp))}
-;;      (or
-;;       (get type-symbols tp)
-;;       (when (str/includes? (str (:type el)) "Reference") [:span.fa.fa-arrow-right])
-;;       (if (not-empty tp) (subs tp 0 1))
-;;       "?")]
-;;     [:span.tp {:class "obj"} (cond
-;;                                (= :extension nm) [:span.fa.fa-folder-plus]
-;;                                (= :Extension nm) [:span.fa.fa-align-left]
-;;                                (:union el) [:span.fa.fa-question-circle]
-;;                                (:slice el) [:span.fa.fa-layer-group]
-;;                                (:elements el) [:span.fa.fa-folder]
-;;                                :else "?")]))
-
-(defn required-span [el]
-  (when (or (:required el)
-            (and (:minItems el)
-                 (number? (:minItems el))
-                 (> (:minItems el) 0)))
-    [:span.required "*"]))
-
-(defn type-span [el]
-  (when-let [tp (:type el)]
-    [:span.tp-link  tp]))
-
-(defn collection-span [el]
-  (when (:collection el)
-    [:span.tp-link.coll (str " [" (or (:minItems el) 0) ".." (or (:maxItems el) "*") "]")]))
-
-(defn has-children? [el]
-  (or (:elements el)
-      (:union el)
-      (:slices el)))
-
-
-;;(update (:slices el) :passport dissoc :constant)))
-;; (update my-map :first-level dissoc :second-level)
-(defn element-row [ctx nm el]
-  [:div.el-header
-   [:span.link]
-   (when (or (has-children? el) (#{:Extension :extension} nm) (= :slices nm))
-     [:span.down-link])
-   ;; (type-icon nm el)
-   [:div.el-line
-    [:div.el-title nm (required-span el) " " (type-span el) (collection-span el)]
-    [:div.desc
-     [:div
-      (when-let [d (:description el)]
-        [:span d " "])
-      (when-let [vs (:valueset el)]
-        (let [href (or (:url vs)
-                       (u/href ctx "valuesets" (str (:id vs) ".html")))]
-          [:span
-           [:a.vs {:href href}
-            [:span.fa.fa-tag]
-            " "
-            (or (:url vs) (:id vs))]
-           (if-let [s (:strength vs)]
-             [:b {:style "font-size: 12px"} "&nbsp" s]
-             [:b {:style "font-size: 12px"} "&nbspExtensible"])]))
-      (when-let [url (:url el)]
-        [:div [:b "URL:&nbsp"] [:a.vs {:href (u/to-local-href ctx url)} url] " "])
-      (when-let [constant (:constant el)]
-        [:div [:b "Constant:&nbsp"] constant " "])
-      (when-let [match (:match el)]
-        [:div [:b "Match:&nbsp"] match " "])
-      (when-let [disabled (:disabled el)]
-        [:div [:b "Disabled"] " "])]]]])
-
-(defn new-elements [ctx elements]
-  (->> elements
-       (mapv (fn [[nm el]]
-               [:div.el
-                (element-row ctx nm el)
-                #_(when-let [els (get-children nm el)]
-                  (new-elements ctx els))]))
-       (into [:div.el-cnt])))
-
-(defn structure-definitions-to-menu [{resources :structure-definitions :as ctx}]
-  (->> resources
+(defn structure-definitions-to-menu [ctx]
+  (->> ctx
+       :generated
+       :structure-definitions
        keys
        (map (fn [id]
               {:display id
@@ -317,10 +194,8 @@
 (defn render-table [ctx resource]
   (conj [:div.table
          [:div.row.th.first-line
-          [:div.column
-           #_[:div.th "Property"]]
-          [:div.column
-           #_[:div.th "Value"]]]]
+          #_[:div.column [:div.th "Property"]]
+          #_[:div.column [:div.th "Value"]]]]
         (->> resource
              (remove (comp #{:differential :snapshot :resourceType
                           :id :derivation :kind :experimental :context} key))
@@ -335,18 +210,26 @@
 
                                     :else (str v))]])))))
 
-(defn extension? [resource]
-  (-> resource :type (= "Extension")))
+
+(defn extract-extension-urls [resource]
+  (when (sd/sd-profile? resource)
+    (->> resource
+         :differential
+         :element
+         (filter (fn [el] (and (= 1 (count (:type el)))
+                              (= "Extension" (get-in el [:type 0 :code])))))
+         (map (fn [el] (get-in el [:type 0 :profile 0]))))))
 
 (defn structure-definition [ctx {{sd-id :sd-id} :route-params :as req}]
-  (let [resource (get-in ctx [:structure-definitions sd-id])]
+  (let [resource (get-in ctx [:generated :structure-definitions sd-id])]
     {:status 200
      :body (views/layout
             ctx
             style-tag
             (views/menu (structure-definitions-to-menu ctx) req)
             [:div#content
-             [:h2 "StructureDefinition "][:h1  sd-id]
+             [:h2 "StructureDefinition "]
+             [:h1 sd-id]
              [:div.summary (:description resource)]
              [:hr]
              [:div.navbar
@@ -356,14 +239,14 @@
                [:div.navtext "JSON"]]]
              [:div#info.treecontainer
               [:br]
-              [:h4 (str "Resource " (if (extension? resource)
-                                      "Extension"
-                                      "Profile") " Info")]
-              [:div (str "The official URL for this "
-                         (if (extension? resource) "extension" "profile") " is: ")
+              [:h4 (format "Resource %s Info" (if (sd/sd-extension? resource)
+                                                "Extension"
+                                                "Profile"))]
+              [:div (format "The official URL for this %s is: " (if (sd/sd-extension? resource)
+                                                                  "extension"
+                                                                  "profile"))
                [:a.table-link {:href (u/to-local-href ctx (str (:url resource) ".html"))} (:url resource)]  ]
-              ;; [:br]
-              (when-not (extension? resource)
+              (when-not (sd/sd-extension? resource)
                 (let [derived (:baseDefinition resource)]
                   [:div #_[:br]
                    [:div "This structure is derived from "
@@ -371,12 +254,11 @@
               ;; [:br]
               [:div.resource
                (render-table ctx resource)
-               [:br]
-               (when-let [extensions false] ;; TODO Add gathering extensions urls
-                 [:div [:br]
-                  [:div "Extensions"
-                   [:ul (for [ex extensions]
-                          [:li [:a.vs ex]])]]])
+               (when-let [extensions-urls (extract-extension-urls resource)]
+                 [:div #_ [:br]
+                  [:div [:h4 "Extensions"]
+                   [:ul (for [url extensions-urls]
+                          [:li [:a.table-link  {:href (u/to-local-href ctx (str url ".html"))} url]])]]])
                #_[:h5 [:div.tp.profile [:span.fa.fa-folder]] sd-id]]]
              [:div#json.treecontainer {:style "display: none;"}
               [:br]
@@ -405,8 +287,9 @@
    :body (views/layout ctx
           style-tag
           (into [:div#db-content]
-                (->> (:structure-definitions ctx)
-                     (filter #(-> % val :resourceType (= "StructureDefinition")))
+                (->> ctx
+                     :generated
+                     :structure-definitions
                      (sort-by first)
                      (map (fn [[id resource]] (structure-definition-link ctx id resource))))))})
 

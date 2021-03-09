@@ -63,7 +63,7 @@
     valueset-link))
 
 (defn generate-structure-definition-href [ctx]
-  (let [structure-definitions (:structure-definitions ctx)
+  (let [structure-definitions (get-in ctx [:generated :structure-definitions])
         structure-definition-instance (first (keys (sort-by first structure-definitions)))
         structure-definition-link (if structure-definition-instance
                           (href ctx "StructureDefinition" (str (name structure-definition-instance) ".html"))

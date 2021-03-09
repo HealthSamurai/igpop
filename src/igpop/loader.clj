@@ -244,7 +244,7 @@
        (load-defs manifest' home-dir)))))
 
 (defn reset-ctx [ctx]
-  (dissoc ctx :profiles :sources :valuesets :codesystems :structure-definitions))
+  (dissoc ctx :profiles :sources :valuesets :codesystems :generated))
 
 (defn reload [ctx]
   (swap! ctx

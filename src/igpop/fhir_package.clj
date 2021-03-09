@@ -105,7 +105,7 @@
   [ig-ctx & {:as opts}]
   (let [file (or (:file opts)
                  (io/file (:home ig-ctx) "build" "package.tgz"))
-        resources (sd/project->structure-definitions ig-ctx)
+        resources (mapcat val (sd/project->structure-definitions ig-ctx))
         file-contents (generate-fhir-package-content ig-ctx resources)]
     (make-tgz-file file file-contents)))
 

@@ -120,76 +120,25 @@
         html? (or (str/ends-with? raw-sd-id ".html")
                   (not (str/ends-with? raw-sd-id ".json")))
         sd-id (str/replace raw-sd-id #".(json|html)$" "")]
-    (if-let [resource (get-in ctx [:structure-definitions sd-id])]
+    (if-let [resource (get-in ctx [:generated :structure-definitions sd-id])]
       (if html?
         (site-sd/structure-definition ctx req)
         {:status 200 :body (cheshire.core/generate-string resource {:pretty true})})
-      #_{:status 200
-       :body (if html?
-               (site-sd/structure-definition ctx req)
-               #_(views/layout ctx
-                             [:pre (cheshire.core/generate-string resource {:pretty true})]
-                             [:div.content
-                              "Resource Profile: " (:title resource)
-                              #_[:pre json-resource]])
-               (cheshire.core/generate-string resource {:pretty true}))}
-      {:status 404 :body "File not found!"})
-    #_(if (get-in ctx [:path-by-sd-id sd-id])
-        (let [path     (get-in ctx [:path-by-sd-id sd-id])
-              rt       (first path)
-              id       (last path)
-              profile  (get-in ctx (into [:diff-profiles] path))
-              snapshot (get-in ctx (into [:snapshot] path))
-              resource (if (or (sd/path-extension-root? path) (sd/path-extension? path))
-                         (sd/extension->structure-definition ctx rt (sd/path->sd-path path) profile snapshot)
-                         (sd/profile->structure-definition ctx rt id profile snapshot))
-              json-resource (cheshire.core/generate-string resource {:pretty true})]
-          {:status 200
-           :body (if html?
-                   (views/layout ctx
-                                 [:pre json-resource]
-                                 [:div.content
-                                  "Resource Profile: " (:title resource)
-                                  #_[:pre json-resource]])
-                   json-resource)})
-        {:status 404 :body "File not found!"})))
+      {:status 404 :body "File not found!"})))
 
 (defn get-valueset-sd [ctx req]
   (let [vs-id (str/replace (get-in req [:route-params :vs-id]) #".json$" "")
-        valueset (get-in ctx [:structure-definitions vs-id])]
+        valueset (get-in ctx [:generated :valuesets vs-id])]
     (if valueset
       {:status 200 :body (cheshire.core/generate-string valueset {:pretty true})}
       {:status 404 :body "File not found!"})))
 
-
-#_(defn get-valueset-sd [ctx req]
-  (let [vs-id (str/replace (get-in req [:route-params :vs-id]) #".json$" "")
-        path (get-in ctx [:path-by-vs-id vs-id])]
-    (if path
-      {:status 200
-       :body (cheshire.core/generate-string
-              (sd/ig-vs->valueset ctx [(last path) (get-in ctx (into [:valuesets] path))])
-              {:pretty true})}
-      {:status 404 :body "File not found!"})))
-
-
 (defn get-codesystem-sd [ctx req]
   (let [cs-id (str/replace (get-in req [:route-params :cs-id]) #".json$" "")
-        resource (get-in ctx [:structure-definitions cs-id])]
+        resource (get-in ctx [:generated :codesystems cs-id])]
     (if resource
       {:status 200 :body (cheshire.core/generate-string resource {:pretty true})}
       {:status 404 :body "File not found!"})))
-
-#_(defn get-codesystem-sd [ctx req]
-  (let [cs-id (str/replace (get-in req [:route-params :cs-id]) #".json$" "")
-        path (get-in ctx [:path-by-cs-id cs-id])]
-    (if path
-      {:status 200
-       :body (cheshire.core/generate-string
-              (sd/ig-cs->codesystem ctx [(last path) (get-in ctx (into [:codesystems] path))])
-              {:pretty true})}
-      {:status 404 :body "File not found!"})))
-
 
 (def routes
   {:GET #'welcome
@@ -230,7 +179,6 @@
    (handle-static req)
    (do
      (igpop.loader/reload ctx)
-     (swap! ctx sd/ctx-build-sd-indexes)
      (swap! ctx sd/ctx-build-structure-definitions) ;; REVIEW: is that good thing to preserve all structure definitions IN_MEMORY ?
      (*dispatch @ctx req))))
 
@@ -283,7 +231,6 @@
   (let [ctx (-> (igpop.loader/load-project home)
                 (assoc :base-url base-url)
                 (assoc-in [:flags :no-edit] true)
-                (sd/ctx-build-sd-indexes)
                 (sd/ctx-build-structure-definitions) ;; REVIEW: is that good thing to preserve all structure definitions IN_MEMORY ?
                 )
         build-dir (io/file home "build")]
@@ -309,17 +256,17 @@
       (dump-page ctx home ["codesystems" (name id) {:format "html"}]))
 
     (.mkdir (io/file build-dir "StructureDefinition"))
-    (doseq [sd-id (keys (:path-by-sd-id ctx))]
+    (doseq [sd-id (-> ctx :generated :structure-definitions keys)]
       (dump-page ctx home ["StructureDefinition" sd-id {:format "html"}])
       (dump-page ctx home ["StructureDefinition" sd-id {:format "json"}]))
 
     (.mkdir (io/file build-dir "ValueSet"))
-    (doseq [vs-id (keys (:path-by-vs-id ctx))]
+    (doseq [vs-id (-> ctx :generated :valuesets keys)]
       (dump-page ctx home ["ValueSet" vs-id])
       (dump-page ctx home ["ValueSet" vs-id {:format "json"}]))
 
     (.mkdir (io/file build-dir "CodeSystem"))
-    (doseq [cs-id (keys (:path-by-cs-id ctx))]
+    (doseq [cs-id (-> ctx :generated :codesystems keys)]
       (dump-page ctx home ["CodeSystem" cs-id])
       (dump-page ctx home ["CodeSystem" cs-id {:format "json"}]))
 

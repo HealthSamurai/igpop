@@ -56,20 +56,10 @@
 (defn url? [o]
   (and (string? o) (str/starts-with? o "http")))
 
-(defn- url-encode [s] (URLEncoder/encode s "UTF-8"))
-
-(defn- format-url
-  "Make url from 'url-template' with special tokens '%s'
-  Replaces tokens with url-encoded parts"
-  [url-template & parts]
-  (apply format url-template (map url-encode parts)))
-
-
 (defn make-profile-id [prefix profile-type profile-id]
   (str (or prefix "") (name profile-type)
        (when (not= :basic profile-id)
          (str "-" (name profile-id)))))
-
 
 (defn make-profile-url [manifest profile-type profile-id]
   (format "%s/StructureDefinition/%s%s%s"
@@ -109,10 +99,6 @@
 
 (defn make-codesystem-name [codesystem-id]
   (make-valueset-name codesystem-id))
-
-
-;; (format-url (str (:url manifest) "/StructureDefinition/%s-%s")
-;;             (name (first path)) (name (peek path)))
 
 
 ;; -------------------------------- prop->sd -------------------------------
@@ -477,6 +463,9 @@
                                                           (make-extension-url manifest resource-type extension-id)
                                                           :Extension diff))}})))
 
+(defn sd-extension? [resource]
+  (and (= "StructureDefinition" (:resourceType resource))
+       (= "Extension" (:type resource))))
 
 (defn profile->structure-definition
   "Transforms IgPop profile to a structure definition.
@@ -516,6 +505,9 @@
     ;; -- :snapshot {:element (convert-profile-elements manifest resource-type snapshot)}
     :differential {:element (convert-profile-elements manifest resource-type diff)}}))
 
+(defn sd-profile? [resource]
+  (and (= "StructureDefinition" (:resourceType resource))
+       (not= "Extension" (:type resource))))
 
 (defn get-extensions
   "Returns a flattened map of nested extensions where key is a path in
@@ -564,6 +556,8 @@
     :compose {:include [(merge (select-keys body [:system])
                                {:concept (:concepts body)})]}}))
 
+(defn sd-valueset? [resource]
+  (= "ValueSet" (:resourceType resource)))
 
 (defn ig-cs->codesystem
   "Transform IgPop CodeSystem to a canonical CodeSystem."
@@ -586,49 +580,8 @@
     :url (make-codesystem-url manifest id)
     :concept (:concepts body)}))
 
-
-(defn build-sd-id-idx
-  "Returns map of `{sd-id igpop-path}` where:
-  * `sd-id` - generated structure-definition id
-  * `igpop-path`  - path of profile in `[ctx :diff-profiles]`"
-  [ctx]
-  (->> (for [[type profiles-by-id] (ctx :diff-profiles)
-             [id diff] profiles-by-id]
-         (cons [(make-profile-id (:prefix ctx) type id)
-                [type id]]
-               (map (fn [[path _]]
-                      [(make-profile-id (:prefix ctx) type (last path))
-                       (into [type id] path)])
-                    (get-extensions diff))))
-       (apply concat)
-       (into {})))
-
-;; (build-sd-id-idx ctx)
-
-(defn build-vs-id-idx
-  "Returns map of `{vs-id valueset-path}` where:
-  * `vs-id` - generated value-set structure-definition id
-  * `valueset-path`  - path of valueset in `[ctx :valuesets]`"
-  [ctx]
-  (->> (for [ig-vs (keys (:valuesets ctx))]
-         [(make-valueset-id (:prefix ctx) ig-vs) [ig-vs]])
-       (into {})))
-
-(defn build-cs-id-idx
-  "Returns map of `{cs-id codesystem-path}` where:
-  * `cs-id` - generated CodeSystem structure-definition id
-  * `codesystem-path`  - path of codesystem in `[ctx :codesystems]`"
-  [ctx]
-  (->> (for [ig-cs (keys (:codesystems ctx))]
-         [(make-codesystem-id (:prefix ctx) ig-cs) [ig-cs]])
-       (into {})))
-
-
-(defn ctx-build-sd-indexes [ctx]
-  (assoc ctx
-         :path-by-sd-id (build-sd-id-idx ctx)
-         :path-by-vs-id (build-vs-id-idx ctx)
-         :path-by-cs-id (build-cs-id-idx ctx)))
+(defn sd-codesystem? [resource]
+  (= "CodeSystem" (:resourceType resource)))
 
 (defn project->structure-definitions
   "Generate structure-definitions (profiles/valuesets/extensions) from project context"
@@ -641,37 +594,29 @@
                        [id diff] profiles-by-id
                        struct-def (ig-profile->structure-definitions ctx type id diff (get-in snapshot [type id]))]
                    struct-def)]
-    (concat vsets csys profiles)))
+    {:valuesets   vsets
+     :codesystems csys
+     :structure-definitions profiles}))
 
 (defn ctx-build-structure-definitions [ctx]
-  (let [sds (project->structure-definitions ctx)]
-    (assoc ctx :structure-definitions
-           (zipmap (map :id sds) sds))))
+  (let [{:keys [valuesets codesystems
+                structure-definitions]} (project->structure-definitions ctx)]
+    (assoc ctx :generated
+           {:valuesets   (zipmap (map :id valuesets) valuesets)
+            :codesystems (zipmap (map :id codesystems) codesystems)
+            :structure-definitions (zipmap (map :id structure-definitions) structure-definitions)})))
 
 (defn project->bundle
   "Transforms IgPop project to a bundle of structure definitions."
   [ctx]
-  (let [{:keys [valuesets codesystems diff-profiles snapshot]} ctx
-        vsets    (for [ig-vs valuesets
-                       :let [vset (ig-vs->valueset ctx ig-vs)]]
-                   {:fullUrl (str (:base-url ctx) "/" (:id vset))
-                    :resource vset})
-        csys    (for [ig-cs codesystems
-                       :let [cs (ig-cs->codesystem ctx ig-cs)]]
-                   {:fullUrl (str (:base-url ctx) "/" (:id cs))
-                    :resource cs})
-        profiles (for [[type profiles-by-id] diff-profiles
-                       [id diff] profiles-by-id
-                       struct-def (ig-profile->structure-definitions ctx type id diff (get-in snapshot [type id]))]
-                   {:fullUrl  (str (:base-url ctx) "/" (:id struct-def))
-                    :resource struct-def})
-        result   {:resourceType "Bundle"
-                  :id "resources"
-                  :meta {:lastUpdated (java.util.Date.)}
-                  :type "collection"}]
-    (->> (concat vsets csys profiles)
-         (into [])
-         (assoc result :entry))))
+  {:resourceType "Bundle"
+   :id "resources"
+   :meta {:lastUpdated (java.util.Date.)}
+   :type "collection"
+   :entry (vec
+           (for [res (mapcat val (project->structure-definitions ctx))]
+             {:fullUrl  (str (:base-url ctx) "/" (:id res))
+              :resource res}))})
 
 
 (defmulti generate-package!
@@ -735,6 +680,7 @@
             (cheshire.core/generate-string x {:pretty true})
             (clj-yaml.core/generate-string x))))
 
+
   (-> ctx :path :Address)
   (dump (-> ctx :diff-profiles :Address))
   (dump (-> ctx :diff-profiles keys))
@@ -771,9 +717,6 @@
   (dump (get-in ctx [:profiles :Observation :basic :elements :extension :pregnancyFlag]))
 
   (-> ctx :valuesets keys)
-
-  (dump (build-sd-id-idx ctx))
-  (dump (build-vs-id-idx ctx))
 
   (dump (profile->structure-definition
          {:url "prefix"} :AZAdverseEvent :AZAdverseEvent test-profile test-base))
