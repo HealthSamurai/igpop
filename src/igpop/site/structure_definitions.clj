@@ -176,9 +176,10 @@
 (def style-tag [:style (gc/css styles)])
 
 
-(defn structure-definitions-to-menu [{resources :structure-definitions :as ctx}]
-  (->> resources
-       (filter #(-> % val :resourceType (= "StructureDefinition")))
+(defn structure-definitions-to-menu [ctx]
+  (->> ctx
+       :generated
+       :structure-definitions
        keys
        (map (fn [id]
               {:display id
@@ -209,16 +210,9 @@
 
                                     :else (str v))]])))))
 
-(defn extension? [resource]
-  (-> resource :type (= "Extension")))
-
-(defn profile?
-  [{:keys [resourceType type] :as resource}]
-  (and (= resourceType "StructureDefinition")
-       (not= type "Extension")))
 
 (defn extract-extension-urls [resource]
-  (when (profile? resource)
+  (when (sd/sd-profile? resource)
     (->> resource
          :differential
          :element
@@ -227,7 +221,7 @@
          (map (fn [el] (get-in el [:type 0 :profile 0]))))))
 
 (defn structure-definition [ctx {{sd-id :sd-id} :route-params :as req}]
-  (let [resource (get-in ctx [:structure-definitions sd-id])]
+  (let [resource (get-in ctx [:generated :structure-definitions sd-id])]
     {:status 200
      :body (views/layout
             ctx
@@ -245,15 +239,14 @@
                [:div.navtext "JSON"]]]
              [:div#info.treecontainer
               [:br]
-              [:h4 (format "Resource %s Info" (if (extension? resource)
+              [:h4 (format "Resource %s Info" (if (sd/sd-extension? resource)
                                                 "Extension"
                                                 "Profile"))]
-              [:div (format "The official URL for this %s is: " (if (extension? resource)
+              [:div (format "The official URL for this %s is: " (if (sd/sd-extension? resource)
                                                                   "extension"
                                                                   "profile"))
                [:a.table-link {:href (u/to-local-href ctx (str (:url resource) ".html"))} (:url resource)]  ]
-              ;; [:br]
-              (when-not (extension? resource)
+              (when-not (sd/sd-extension? resource)
                 (let [derived (:baseDefinition resource)]
                   [:div #_[:br]
                    [:div "This structure is derived from "
@@ -265,7 +258,7 @@
                  [:div #_ [:br]
                   [:div [:h4 "Extensions"]
                    [:ul (for [url extensions-urls]
-                          [:li [:a.table-link  {:href (u/to-local-href ctx url)} url]])]]])
+                          [:li [:a.table-link  {:href (u/to-local-href ctx (str url ".html"))} url]])]]])
                #_[:h5 [:div.tp.profile [:span.fa.fa-folder]] sd-id]]]
              [:div#json.treecontainer {:style "display: none;"}
               [:br]
@@ -294,8 +287,9 @@
    :body (views/layout ctx
           style-tag
           (into [:div#db-content]
-                (->> (:structure-definitions ctx)
-                     (filter #(-> % val :resourceType (= "StructureDefinition")))
+                (->> ctx
+                     :generated
+                     :structure-definitions
                      (sort-by first)
                      (map (fn [[id resource]] (structure-definition-link ctx id resource))))))})
 
