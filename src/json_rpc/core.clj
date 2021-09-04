@@ -25,18 +25,19 @@
       (http/send! chann (cheshire.core/generate-string msg))
       (json-rpc.tcp/send-message chann msg))))
 
-(defn start [ctx]
-  (let [tp (:type @ctx)
-        {on-req :request on-resp :response} (:json-rpc @ctx)
-        handler (fn [conn msg]
-                  (when on-req (on-req @ctx msg))
-                  (let [resp (proc (assoc @ctx :channel conn) msg)]
-                    (when on-resp (on-resp @ctx resp))
-                    resp))]
-    (swap! ctx assoc :handler handler)
-    (if (= tp :tcp)
-      (json-rpc.tcp/start ctx)
-      (assert false "Not. impl"))))
+(defn start
+  ([ctx] (start ctx nil))
+  ([ctx group] (let [tp (:type @ctx)
+            {on-req :request on-resp :response} (:json-rpc @ctx)
+            handler (fn [conn msg]
+                      (when on-req (on-req @ctx msg))
+                      (let [resp (proc (assoc @ctx :channel conn) msg)]
+                        (when on-resp (on-resp @ctx resp))
+                        resp))]
+        (swap! ctx assoc :handler handler)
+        (if (= tp :tcp)
+          (json-rpc.tcp/start ctx group)
+          (assert false "Not. impl")))))
 
 
 (defn stop [ctx]
@@ -44,5 +45,3 @@
     (if (= tp :tcp)
       (json-rpc.tcp/stop ctx)
       (assert false "Not. impl"))))
-
-
