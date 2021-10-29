@@ -73,7 +73,7 @@
 
 (defn make-valueset-url [manifest value-id]
   (format "%s/ValueSet/%s%s"
-          (:url manifest) (:prefix manifest "") (name value-id)))
+          (:url manifest) (:prefix manifest "") (name (or value-id "MISSED_VS_ID"))))
 
 (defn make-codesystem-url [manifest value-id]
   (format "%s/CodeSystem/%s%s"
@@ -256,7 +256,7 @@
   (->> path
        (mapcat #(if (= :extension %) [% ":"] [% "."]))
        drop-last
-       (map name)
+       (map (fn [x] (when x (name x) (pr-str "ERROR:" path))))
        (apply str)))
 
 (defn path->str [path]
@@ -647,12 +647,19 @@
     (io/make-parents file)
     (with-open [output (ZipOutputStream. (io/output-stream file))
                 writer (io/writer output)]
-      (doseq [resource resources]
-        (let [entry-name (str (:resourceType resource) "/" (:id resource) ".json")
-              entry (ZipEntry. entry-name)]
-          (.putNextEntry output entry)
-          (json/generate-stream resource writer)
-          (.closeEntry output)))
+      (->> resources
+           (reduce (fn [idx resource]
+                     (let [entry-name (str (:resourceType resource) "/" (:id resource) ".json")
+                           entry (ZipEntry. entry-name)]
+                       (if-not (get idx entry-name)
+                         (do
+                           (.putNextEntry output entry)
+                           (json/generate-stream resource writer)
+                           (.closeEntry output)
+                           (assoc idx entry-name true))
+                         (do 
+                           (println "Duplicate entry: " entry-name)
+                           idx)))) {}))
       (.putNextEntry output (ZipEntry. "package.json"))
       (json/generate-stream manifest writer)
       (.closeEntry output))

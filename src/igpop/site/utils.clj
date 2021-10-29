@@ -17,7 +17,9 @@
 ;; (href {:base-url "HELLO"} "StructureDefintions" "person" {:format "html"})
 
 (defn to-local-href [ctx global-href]
-  (str/replace global-href (:url ctx) (:base-url ctx "")))
+  (if global-href
+    (str/replace global-href (:url ctx) (:base-url ctx ""))
+    "ERROR: no global href"))
 
 (defn p [v k] (prn v) v)
 

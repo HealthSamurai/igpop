@@ -79,5 +79,8 @@
 
   (-main "dev" "dir")
 
+  (site/start "/Users/niquola/fhir-ru" 8899)
+
+  (site/build "/Users/niquola/fhir-ru" "http://fhir.ru")
 
   )

@@ -250,7 +250,12 @@
                 (let [derived (:baseDefinition resource)]
                   [:div #_[:br]
                    [:div "This structure is derived from "
-                    [:a.table-link {:href (u/to-local-href ctx derived)} (last (str/split derived #"/"))]]]))
+                    [:a.table-link {:href (u/to-local-href ctx derived)} (if derived
+                                                                           (last (str/split derived #"/"))
+                                                                           (do 
+                                                                             (println 
+                                                                              (str "ERROR: no base definition: " (pr-str (:id resource))))
+                                                                             (str "ERROR: no base definition")))]]]))
               ;; [:br]
               [:div.resource
                (render-table ctx resource)
