@@ -1,7 +1,0 @@
-system: hl7-cs:v3-AdministrativeGender
-concepts:
-- { code: F, display: Female }
-- { code: M, display: Male }
-- system: hl7-cs:v3-NullFlavor
-  code: UNK
-  display: Unknown

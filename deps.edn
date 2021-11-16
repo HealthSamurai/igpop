@@ -18,9 +18,10 @@
 
          com.atlassian.commonmark/commonmark {:mvn/version "0.15.0"}
          com.atlassian.commonmark/commonmark-ext-gfm-tables {:mvn/version "0.15.0"}
+         markdown-clj/markdown-clj {:mvn/version "1.10.6"}
+
          org.clojure/data.csv {:mvn/version "0.1.4"}
-         ;; support for java 11+
-         org.clojure/core.rrb-vector  {:mvn/version "0.0.14"}
+         com.health-samurai/macrocss {:mvn/version "0.1.0"}
          funcool/promesa              {:mvn/version "4.0.0"}}
 
  :aliases
